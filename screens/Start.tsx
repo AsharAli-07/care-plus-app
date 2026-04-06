@@ -1,62 +1,81 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Text, TouchableOpacity, StyleSheet, Animated, ImageBackground } from "react-native";
+import {
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  ImageBackground,
+} from "react-native";
 import { Audio } from "expo-av";
-
-let sound: Audio.Sound | null = null;
-
-
-
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function Start({ navigation }: any) {
+  const soundRef = useRef<Audio.Sound | null>(null);
 
-     useEffect(() => {
-    playSound();
+  // 🎵 SOUND (ONLY WHEN SCREEN IS FOCUSED)
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
 
-    return () => {
-      stopSound();
-    };
-  }, []);
+      const playSound = async () => {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            require("../assets/audio/birdsong.mp3"),
+            {
+              isLooping: true,
+              volume: 0.5,
+            }
+          );
 
-  const playSound = async () => {
-    const { sound: loadedSound } = await Audio.Sound.createAsync(
-      require("../assets/audio/birdsong.mp3"),
-      {
-        isLooping: true,
-        volume: 0.5,
-      }
-    );
+          if (isActive) {
+            soundRef.current = sound;
+            await sound.playAsync();
+          }
+        } catch (error) {
+          console.log("Audio error:", error);
+        }
+      };
 
-    sound = loadedSound;
-    await sound.playAsync();
-  };
+      playSound();
 
-  const stopSound = async () => {
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      sound = null;
-    }
-  };
+      return () => {
+        isActive = false;
 
+        const stopSound = async () => {
+          if (soundRef.current) {
+            try {
+              await soundRef.current.stopAsync();
+              await soundRef.current.unloadAsync();
+              soundRef.current = null;
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        };
+
+        stopSound();
+      };
+    }, [])
+  );
+
+  // 🎬 TEXT ANIMATION
   const opacity = useRef(new Animated.Value(1)).current;
 
   const texts = [
     "Welcome to Care Plus",
     "Connect Your Watch",
-    "Explore Health Journey"
+    "Explore Health Journey",
   ];
 
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-
       Animated.timing(opacity, {
         toValue: 0,
         duration: 800,
         useNativeDriver: true,
       }).start(() => {
-
         setIndex((prev) => (prev + 1) % texts.length);
 
         Animated.timing(opacity, {
@@ -64,26 +83,24 @@ export default function Start({ navigation }: any) {
           duration: 800,
           useNativeDriver: true,
         }).start();
-
       });
-
     }, 5000);
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-       <ImageBackground
-      source={require("../assets/images/bg.jpg")} // your image path
+    <ImageBackground
+      source={require("../assets/images/bg.jpg")}
       style={styles.container}
       resizeMode="cover"
     >
-
       {/* Animated Text */}
       <Animated.Text style={[styles.heading, { opacity }]}>
         {texts[index]}
       </Animated.Text>
 
+      {/* Buttons */}
       <TouchableOpacity style={styles.btn}>
         <Text style={styles.btnText}>Connect Watch</Text>
       </TouchableOpacity>
@@ -94,18 +111,18 @@ export default function Start({ navigation }: any) {
       >
         <Text style={styles.btnText}>Explore</Text>
       </TouchableOpacity>
-
     </ImageBackground>
   );
 }
 
+// 🎨 STYLES
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-     width: "100%",
-  height: "100%",
+    width: "100%",
+    height: "100%",
   },
 
   heading: {
@@ -115,7 +132,7 @@ const styles = StyleSheet.create({
     color: "#045d33",
     textAlign: "center",
     paddingHorizontal: 20,
-    fontFamily: 'Poppins_500Medium'
+    fontFamily: "Poppins_500Medium",
   },
 
   btn: {

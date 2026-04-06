@@ -45,3 +45,8 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+
+// git add .
+// git commit -m "Added bottom navigation and animations"
+// git push
