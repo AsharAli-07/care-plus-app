@@ -19,6 +19,7 @@ export default function BottomTabs() {
     tabBarInactiveTintColor: "#045d33", 
       tabBarStyle: {
       height: 40,
+      backgroundColor: '#e9fff4',
     },
 
         tabBarIcon: ({ color, size, focused }) => {
@@ -27,7 +28,7 @@ export default function BottomTabs() {
               return (
                 <Ionicons
                   name={focused ? "home" : "home-outline"}
-                  size={size}
+                  size={20}
                   color={color}
                 />
               );
@@ -36,7 +37,7 @@ export default function BottomTabs() {
               return (
                 <Ionicons
                   name={focused ? "fitness" : "fitness-outline"}
-                  size={size}
+                  size={20}
                   color={color}
                 />
               );
@@ -45,7 +46,7 @@ export default function BottomTabs() {
               return (
                 <Ionicons
                   name={focused ? "leaf" : "leaf-outline"}
-                  size={size}
+                  size={20}
                   color={color}
                 />
               );
@@ -54,7 +55,7 @@ export default function BottomTabs() {
               return (
                 <Ionicons
                   name={focused ? "moon" : "moon-outline"}
-                  size={size}
+                  size={20}
                   color={color}
                 />
               );
@@ -63,7 +64,7 @@ export default function BottomTabs() {
               return (
                 <Ionicons
                   name={focused ? "settings" : "settings-outline"}
-                  size={size}
+                  size={20}
                   color={color}
                 />
               );
@@ -72,7 +73,7 @@ export default function BottomTabs() {
               return (
                 <Ionicons
                   name="home"
-                  size={size}
+                  size={20}
                   color={color}
                 />
               );

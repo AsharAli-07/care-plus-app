@@ -4,7 +4,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  ImageBackground,
+  ImageBackground, View
 } from "react-native";
 import { Audio } from "expo-av";
 import { useFocusEffect } from "@react-navigation/native";
@@ -90,11 +90,19 @@ export default function Start({ navigation }: any) {
   }, []);
 
   return (
-    <ImageBackground
-      source={require("../assets/images/bg.jpg")}
-      style={styles.container}
-      resizeMode="cover"
-    >
+ <ImageBackground
+   source={require("../assets/images/home-bg.jpg")}
+   style={{ height: "100%", width: "100%",
+ 
+  }}
+   resizeMode="cover"
+ >
+<View style={{  backgroundColor: "rgba(0, 0, 0, 0.30)",
+ justifyContent: "center",   // ✅ vertical center
+  alignItems: "center",       // ✅ horizontal center
+    flex: 1,
+  }}>
+
       {/* Animated Text */}
       <Animated.Text style={[styles.heading, { opacity }]}>
         {texts[index]}
@@ -111,25 +119,20 @@ export default function Start({ navigation }: any) {
       >
         <Text style={styles.btnText}>Explore</Text>
       </TouchableOpacity>
+
+
+</View>
     </ImageBackground>
   );
 }
 
 // 🎨 STYLES
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    height: "100%",
-  },
 
   heading: {
     fontSize: 24,
-    fontWeight: "700",
     marginBottom: 40,
-    color: "#045d33",
+    color: "#ffffffff",
     textAlign: "center",
     paddingHorizontal: 20,
     fontFamily: "Poppins_500Medium",
@@ -137,16 +140,16 @@ const styles = StyleSheet.create({
 
   btn: {
     backgroundColor: "#045d33",
-    padding: 8,
-    borderRadius: 20,
+    padding: 10,
+    borderRadius: 12,
     alignItems: "center",
     marginTop: 20,
     width: "80%",
   },
 
   btnText: {
-    color: "#e9fff4",
-    fontSize: 16,
+    color: "#fff",
+    fontSize: 12,
     fontFamily: "Poppins_400Regular",
   },
 });
