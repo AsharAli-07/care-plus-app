@@ -97,7 +97,7 @@ export default function Start({ navigation }: any) {
   }}
    resizeMode="cover"
  >
-<View style={{  backgroundColor: "rgba(0, 0, 0, 0.30)",
+<View style={{  backgroundColor: "rgba(0, 0, 0, 0.20)",
  justifyContent: "center",   // ✅ vertical center
   alignItems: "center",       // ✅ horizontal center
     flex: 1,
@@ -130,7 +130,7 @@ export default function Start({ navigation }: any) {
 const styles = StyleSheet.create({
 
   heading: {
-    fontSize: 24,
+    fontSize: 20,
     marginBottom: 40,
     color: "#ffffffff",
     textAlign: "center",
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
 
   btn: {
-    backgroundColor: "#045d33",
+    backgroundColor: "#004927ff",
     padding: 10,
     borderRadius: 12,
     alignItems: "center",

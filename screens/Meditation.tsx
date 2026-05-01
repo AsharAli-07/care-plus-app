@@ -1,27 +1,62 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Image } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 const Meditation = () => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>
-        Hello, this is a simple text page!
-      </Text>
-    </View>
+ <View style={{ flex: 1}}>
+<ImageBackground
+  source={require("../assets/images/home-bg.jpg")}
+  style={{ height: "100%", width: "100%"}}
+  resizeMode="cover"
+>
+<View style={styles.overlay}>
+<BlurView
+  intensity={50}
+  tint="prominent"
+  style={{
+    width: 60,
+    height: 60,
+    borderRadius: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  }}
+>
+  <TouchableOpacity   
+  style={{
+    width: 60,
+    height: 60,
+    borderRadius: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  }}>
+    <Image
+      source={require("../assets/images/cd.png")}
+      style={{
+        width: 50,
+        height: 50,
+      }}
+      resizeMode="contain"
+    />
+  </TouchableOpacity>
+</BlurView>
+</View>
+
+
+
+
+</ImageBackground>
+  </View>
   );
 };
 
 export default Meditation;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  text: {
-    fontSize: 20,
-    color: '#333',
-  },
+  overlay: {
+  flex: 1,
+  backgroundColor: "rgba(0, 0, 0, 0.30)", // dark overlay
+},
 });

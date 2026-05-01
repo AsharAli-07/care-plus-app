@@ -15,12 +15,19 @@ export default function BottomTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-          tabBarActiveTintColor: "#045d33",   // focused icon color
-    tabBarInactiveTintColor: "#045d33", 
-      tabBarStyle: {
-      height: 40,
-      backgroundColor: '#e9fff4',
-    },
+          tabBarActiveTintColor: "#fff",   // focused icon color
+    tabBarInactiveTintColor: "#fff", 
+   tabBarStyle: {
+  position: "absolute",   // ✅ important
+  height: 40,
+  backgroundColor: "#004927ff",
+  borderRadius: 12,       // ✅ radius here
+  overflow: "hidden",     // ✅ required for clipping
+  borderTopWidth: 0,      // remove default line
+  elevation: 10,          // Android shadow
+  margin: 20,
+  
+},
 
         tabBarIcon: ({ color, size, focused }) => {
           switch (route.name) {

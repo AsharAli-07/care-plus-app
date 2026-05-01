@@ -6,43 +6,33 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,  Image,
-  Linking, TextInput, ImageBackground
+  Linking, TextInput, ImageBackground, Modal
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
-import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
 import YoutubePlayer from "react-native-youtube-iframe";
 
-type SleepItem =
-  | { type: "audio"; thumbnail: string; title: string; audioUrl: string }
-  | { type: "youtube"; videoId: string; title: string };
+import { BlurView } from 'expo-blur';
+
+type SleepItem = {
+  thumbnail: string;
+  title: string;
+  audioUrl: string;
+};
 
 const sleepItems: SleepItem[] = [
   {
-    type: "audio",
     thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=400&h=300",
     title: "Ocean Waves",
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
   },
   {
-    type: "audio",
     thumbnail: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?fit=crop&w=400&h=300",
     title: "Soft Piano",
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
   },
   {
-    type: "youtube",
-    videoId: "5qap5aO4i9A",
-    title: "Lofi Sleep Music",
-  },
-  {
-    type: "youtube",
-    videoId: "DWcJFNfaw9c",
-    title: "Rainforest Relaxation",
-  },
-  {
-    type: "audio",
     thumbnail: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?fit=crop&w=400&h=300",
     title: "Forest Sounds",
     audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
@@ -81,6 +71,7 @@ const [currentAudio, setCurrentAudio] = useState<string | null>(null);
 const [isPlaying, setIsPlaying] = useState(false);
    const soundRef = useRef<Audio.Sound | null>(null);
    const slideAnim = useRef(new Animated.Value(100)).current; 
+   const [currentItem, setCurrentItem] = useState<any>(null);
 
    useEffect(() => {
   if (currentAudio) {
@@ -207,7 +198,7 @@ const CircleChart = ({ value }: { value: number }) => {
 
         {/* Progress circle */}
         <Circle
-          stroke="#045d33"
+          stroke="#004927ff"
           fill="none"
           cx={size / 2}
           cy={size / 2}
@@ -233,10 +224,30 @@ const CircleChart = ({ value }: { value: number }) => {
     </View>
   );
 };
+const rotateAnim = useRef(new Animated.Value(0)).current;
+const [modalVisible, setModalVisible] = useState(false);
 
+useEffect(() => {
+  if (isPlaying) {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      })
+    ).start();
+  } else {
+    rotateAnim.stopAnimation();
+  }
+}, [isPlaying]);
+
+const spin = rotateAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: ["0deg", "360deg"],
+});
 
 const questions = [
-  "How many hours did you sleep last night?",
+  "How many hours did you sleep today?",
   "Do you feel stressed today?",
   "Did you eat properly today?",
   "How is your mood right now?",
@@ -376,24 +387,28 @@ const videoOpacity = videoAnim;
 
   return (
     
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1}}>
 <ImageBackground
   source={require("../assets/images/home-bg.jpg")}
-  style={{ height: "100%", width: "100%" }}
+  style={{ height: "100%", width: "100%"}}
   resizeMode="cover"
 >
+ 
     <ScrollView
       showsVerticalScrollIndicator={false}
       style={styles.overlay}
     >
       
       <View style={styles.InnerCard}>
+        
+
+        
       <View style={styles.topSection}>
         <Text style={styles.headerText}>Quote of the day</Text>
         <Text style={styles.topText}>"Do the best you can until you know better"</Text>
       </View>
 
-<View style={styles.chatBox}>
+<BlurView intensity={50} tint="prominent" style={styles.chatBox}>
   <View style={styles.textWrapper}>
     <Text style={styles.chatText}>Hello, Good Morning</Text>
 
@@ -437,7 +452,10 @@ const videoOpacity = videoAnim;
       </TouchableOpacity>
     </Animated.View>
   )}
-</View>
+</BlurView>
+
+
+<BlurView intensity={50} tint="prominent" style={{  marginBottom: 20, borderRadius: 12}} >
 
 <TouchableOpacity style={styles.largeBox}>
 
@@ -463,12 +481,18 @@ const videoOpacity = videoAnim;
     </View>
 
   </View>
+
+
    <View style={styles.row}>
     <Text style={styles.checkText}>Check</Text>
   <Ionicons name="arrow-forward" size={20} color="#fff" />
    </View>
 </TouchableOpacity>
 
+</BlurView>
+
+
+<BlurView intensity={50} tint="prominent" style={{  marginBottom: 20, borderRadius: 12}} >
 <TouchableOpacity style={styles.chartBox}>
 
  <View style={styles.firstRow}>
@@ -498,43 +522,36 @@ const videoOpacity = videoAnim;
   <Ionicons name="arrow-forward" size={20} color="#fff" />
    </View>
 </TouchableOpacity>
+</BlurView>
 
 
 <View style={{ marginBottom: 20 }}>
             <Text style={styles.sectionHeading}>Sleep Suggestions</Text>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {sleepItems.map((item, index) => (
-             <TouchableOpacity
-  key={index}
-  style={styles.carouselItem}
-  onPress={() => {
-    if (item.type === "youtube") {
-      Linking.openURL(`https://www.youtube.com/watch?v=${item.videoId}`);
-    } else {
-      playAudio(item.audioUrl); 
-    }
-  }}
->
-                <Image
-                  source={{
-                    uri:
-                      item.type === "audio"
-                        ? item.thumbnail
-                        : `https://img.youtube.com/vi/${item.videoId}/0.jpg`,
-                  }}
-                  style={styles.thumbnail}
-                />
-                <Text style={styles.itemTitle}>{item.title}</Text>
-              </TouchableOpacity>
-            ))}
+             {sleepItems.map((item, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            style={styles.carouselItem}
+                            onPress={() => {
+  setCurrentItem(item);
+  playAudio(item.audioUrl);
+}}
+                          >
+                            <Image
+                              source={{ uri: item.thumbnail }}
+                              style={styles.thumbnail}
+                            />
+                            <Text style={styles.itemTitle}>{item.title}</Text>
+                          </TouchableOpacity>
+                        ))}
           </ScrollView>
 
 </View>
 
 
 
-<View style={styles.healthCard}>
+  <BlurView intensity={50} tint="prominent" style={styles.healthCard}>
   {/* Title */}
   <Text style={styles.cardTitle}>Questions of the Day</Text>
 
@@ -551,7 +568,7 @@ const videoOpacity = videoAnim;
     });
 
     return (
-      <View key={index} style={styles.questionBox}>
+      <BlurView intensity={10} tint="dark" key={index} style={styles.questionBox}>
 
         {/* Question Button */}
         <TouchableOpacity onPress={() => toggleQuestion(index)}>
@@ -568,7 +585,7 @@ const videoOpacity = videoAnim;
           />
         </Animated.View>
 
-      </View>
+      </BlurView>
     );
   })}
 
@@ -583,19 +600,20 @@ const videoOpacity = videoAnim;
       <Text style={styles.resultText}>{result}</Text>
     </View>
   )}
-</View>
+ </BlurView>
 
 
 
-<View style={{marginBottom: 20}}>
+<View>
   <Text style={styles.sectionHeading}>Motivational Suggestion</Text>
 
   {videos.map((item, index) => (
+    
     <TouchableOpacity
       key={index}
-      style={styles.videoCard}
       onPress={() => openVideo(item.videoId)}
     >
+      <BlurView intensity={50} tint="prominent" style={styles.videoCard}>
       <Image
         source={{
           uri: `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`,
@@ -603,7 +621,9 @@ const videoOpacity = videoAnim;
         style={styles.videoThumb}
       />
       <Text style={styles.videoTitle}>{item.title}</Text>
+      </BlurView>
     </TouchableOpacity>
+    
   ))}
 
   {/* PLAYER */}
@@ -640,17 +660,17 @@ const videoOpacity = videoAnim;
 
 <View style={styles.circleRow}>
 
-  <View style={styles.circleBox}>
+ <BlurView intensity={50} tint="prominent" style={styles.circleBox}>
     <Ionicons name="heart" size={20} color="#fff" />
-  </View>
+  </BlurView>
 
-  <View style={styles.circleBox}>
+  <BlurView intensity={50} tint="prominent" style={styles.circleBox}>
     <Ionicons name="moon" size={20} color="#fff" />
-  </View>
+  </BlurView>
 
-  <View style={styles.circleBox}>
+  <BlurView intensity={50} tint="prominent" style={styles.circleBox}>
     <Ionicons name="leaf" size={20} color="#fff" />
-  </View>
+  </BlurView>
 
 </View>
 
@@ -661,9 +681,12 @@ const videoOpacity = videoAnim;
 </View>
 
     </ScrollView>
+      <View style={styles.header}>
+    <Ionicons name="notifications" size={20} color="#fff" />
+  </View>
 
 
-          {currentAudio && (
+          {/* {currentAudio && (
             <Animated.View
  style={[
   {
@@ -672,14 +695,7 @@ const videoOpacity = videoAnim;
   },
 ]}
 >
-<LinearGradient
-  colors={[
-    "rgba(4,93,52,1)",
-    "rgba(4,93,52,0.90)",
-    "rgba(4,93,52,0.80)",
-   "rgba(4,93,52,0.90)",
-     "rgba(4,93,52,1)",
-  ]}
+<View
   style={[
   styles.bottomPlayer,
   {
@@ -688,38 +704,154 @@ const videoOpacity = videoAnim;
   },
 ]}
 >
+  
 
-<View style={styles.playerControls}>
+<View style={styles.playerControls}> */}
 
   {/* ⏪ 5 sec backward */}
-  <TouchableOpacity onPress={backward}>
+  {/* <TouchableOpacity onPress={backward}>
     <Ionicons name="play-back" size={20} color="#fff" />
-  </TouchableOpacity>
+  </TouchableOpacity> */}
 
   {/* ▶️ / ⏸ Play-Pause */}
-  <TouchableOpacity onPress={() => playAudio(currentAudio)}>
+  {/* <TouchableOpacity onPress={() => playAudio(currentAudio)}>
     <Ionicons
       name={isPlaying ? "pause" : "play"}
       size={20}
       color="#fff"
     />
-  </TouchableOpacity>
+  </TouchableOpacity> */}
 
   {/* ⏩ 5 sec forward */}
-  <TouchableOpacity onPress={forward}>
+  {/* <TouchableOpacity onPress={forward}>
     <Ionicons name="play-forward" size={20} color="#fff" />
-  </TouchableOpacity>
+  </TouchableOpacity> */}
 
   {/* ⏹ Stop */}
-  <TouchableOpacity onPress={stopAudio}>
+  {/* <TouchableOpacity onPress={stopAudio}>
     <Ionicons name="stop" size={20} color="#fff" />
-  </TouchableOpacity>
+  </TouchableOpacity> */}
 
-</View>
+{/* </View>
 
- </LinearGradient>
+ </View>
  </Animated.View>
 
+)} */}
+
+
+{currentAudio && (
+  <>
+  
+    {/* FLOATING CD */}
+    <Animated.View
+      style={[
+        styles.floatingPlayer,
+        {
+          transform: [
+            { translateY: slideAnim },
+            { rotate: spin },
+          ],
+          opacity,
+        },
+      ]}
+    >
+      <BlurView
+        intensity={50}
+        tint="prominent"
+        style={styles.cdBlur}
+      >
+        <TouchableOpacity
+          style={styles.cdButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Image
+            source={require("../assets/images/cd.png")}
+            style={styles.cdImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </BlurView>
+    </Animated.View>
+
+    {/* MODAL */}
+    <Modal
+      visible={modalVisible}
+      transparent
+      animationType="fade"
+    >
+     
+
+        <BlurView
+          intensity={50}
+          tint="prominent"
+          style={styles.modalBox}
+        >
+
+          {/* CD IMAGE */}
+  <Image
+  source={{
+    uri: currentItem?.thumbnail,
+  }}
+  style={[
+    styles.audioThumbnail
+  ]}
+/>
+
+        <Text style={styles.nowPlaying}>
+  {currentItem?.title || "Now Playing"}
+</Text>
+
+          {/* CONTROLS */}
+          <View style={styles.playerControls}>
+
+            <TouchableOpacity onPress={backward}>
+              <Ionicons
+                name="play-back"
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => playAudio(currentAudio)}
+            >
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={forward}>
+              <Ionicons
+                name="play-forward"
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+
+            {/* <TouchableOpacity onPress={stopAudio}>
+              <Ionicons
+                name="stop"
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity> */}
+
+          </View>
+
+          
+
+
+        </BlurView>
+        <TouchableOpacity onPress={()=> setModalVisible(false)} style={{}}>
+            <Text style={styles.topText}>Back</Text>
+          </TouchableOpacity>
+
+    </Modal>
+
+  </>
 )}
     </ImageBackground>
     </View>
@@ -734,7 +866,7 @@ const styles = StyleSheet.create({
   topSection: {
    
     alignItems: "center",
-    height: 70
+marginBottom: 20
   },
 
   headerText: {
@@ -750,6 +882,8 @@ const styles = StyleSheet.create({
 
 InnerCard: {
   padding: 20,
+  paddingTop: 70,
+  paddingBottom: 80,
   overflow: "hidden",   // 👈 VERY IMPORTANT
 },
   bottomBg: {
@@ -762,27 +896,20 @@ InnerCard: {
   height: "100%",
 },
 
-  text: {
-    fontSize: 12,
-    marginBottom: 20,
-    color: "#045d33",
-    fontFamily: "Poppins_400Regular",
-  },
+
     sectionHeading: {
-    fontSize: 14,
+    fontSize: 20,
     marginBottom: 20,
     color: "#fff",
     fontFamily: "Poppins_500Medium",
   },
   largeBox: {
-  height: 160,
-   backgroundColor: "rgba(255, 255, 255, 0.20)",
+    height: 160,
   borderRadius: 12,
   justifyContent: "space-between",
-  marginBottom: 20,
   elevation: 3,
   paddingTop: 15,
-  paddingBottom: 15
+  paddingBottom: 15,
 },
 
 rowInside: {
@@ -835,7 +962,7 @@ checkText: {
   
 },
  chatBox: {
-   backgroundColor: "rgba(255, 255, 255, 0.20)",
+   backgroundColor: "rgba(255, 255, 255, 0.10)",
   borderRadius: 12,
   marginBottom: 20,
   elevation: 3,
@@ -881,7 +1008,7 @@ startBtnInner: {
   flexDirection: "row",         // horizontal layout
   alignItems: "center",         // vertically center
   justifyContent: "space-between", // pushes text left and arrow right
-   backgroundColor: "rgba(255, 255, 255, 0.20)",
+   backgroundColor: "rgba(255, 255, 255, 0.10)",
   width: '100%',           // optional: ensures button isn’t too small
 },
 textWrapper: {
@@ -897,27 +1024,28 @@ textWrapper: {
   thumbnail: { width: "100%", height: 120, borderRadius: 12, },
   itemTitle: { textAlign: "center", marginTop: 5, color: '#fff' },
 
-bottomPlayer: {
-  position: "absolute",
-  bottom: 20,
-  left: 20,
-  right: 20,
-  padding: 10,
-  borderRadius: 12,
-  elevation: 10,
-},
+// bottomPlayer: {
+//   position: "absolute",
+//   bottom: 80,
+//   left: 20,
+//   right: 20,
+//   padding: 10,
+//   borderRadius: 12,
+//   elevation: 10,
+//   backgroundColor: '#004927ff'
+// },
 
 
-playerControls: {
-  flexDirection: "row",
-  justifyContent: "space-around",
-  alignItems: "center",
-},
+// playerControls: {
+//   flexDirection: "row",
+//   justifyContent: "space-around",
+//   alignItems: "center",
+// },
 
-control: {
-  color: "#fff",
-  fontSize: 12,
-},
+// control: {
+//   color: "#fff",
+//   fontSize: 12,
+// },
 chartHeading: {
   paddingTop: 5,
   fontSize: 8,
@@ -933,10 +1061,9 @@ chartText: {
 },
   chartBox: {
   height: 160,
-   backgroundColor: "rgba(255, 255, 255, 0.20)",
   borderRadius: 12,
   justifyContent: "space-between",
-  marginBottom: 20,
+
   elevation: 3,
   paddingTop: 15,
   paddingBottom: 15
@@ -962,14 +1089,13 @@ chartLastCol: {
 },
 
 healthCard: {
-   backgroundColor: "rgba(255, 255, 255, 0.20)",
   borderRadius: 12,
   padding: 15,
   marginBottom: 20,
 },
 
 cardTitle: {
-  fontSize: 14,
+  fontSize: 20,
     color: "#fff",
     fontFamily: "Poppins_500Medium",
      marginBottom: 15,
@@ -979,10 +1105,11 @@ progressText: {
   color: "#ffffffff",
   fontSize: 12,
   marginBottom: 15,
+  fontFamily: 'Poppins_400Regular'
 },
 
 questionBox: {
-  backgroundColor: "rgba(255,255,255,0.12)",
+  backgroundColor: "rgba(255,255,255,0.05)",
   borderRadius: 12,
   padding: 10,
   marginBottom: 15,
@@ -991,6 +1118,7 @@ questionBox: {
 questionText: {
   color: "#fff",
   fontSize: 12,
+    fontFamily: 'Poppins_400Regular'
 },
 
 input: {
@@ -998,12 +1126,13 @@ input: {
   borderRadius: 12,
   padding: 10,
   fontSize: 12,
-  color: "#000",
-  marginTop: 15
+  color: "#004927ff",
+  marginTop: 15,
+  fontFamily: 'Poppins_400Regular'
 },
 
 resultBtn: {
-  backgroundColor: "#045d33",
+  backgroundColor: "#004927ff",
   padding: 10,
   borderRadius: 12,
   alignItems: "center",
@@ -1017,7 +1146,7 @@ resultBtnText: {
 
 resultBox: {
   marginTop: 10,
-  backgroundColor: "rgba(255,255,255,0.20)",
+  backgroundColor: "rgba(255,255,255,0.10)",
   padding: 10,
   borderRadius: 12,
 },
@@ -1027,13 +1156,9 @@ resultText: {
   fontSize: 13,
 },
 
-
-
-
 videoCard: {
   flexDirection: "row",
-  backgroundColor: "rgba(255,255,255,0.20)",
-  padding: 15,
+  
   borderRadius: 12,
   marginBottom: 15,
   alignItems: "center",
@@ -1041,8 +1166,8 @@ videoCard: {
 },
 
 videoThumb: {
-  width: 65,
-  height: 35,
+  width: 70,
+  height: 38,
   borderRadius: 7,
   marginRight: 10,
 },
@@ -1059,12 +1184,13 @@ playerBox: {
   borderRadius: 12,
   overflow: "hidden",
   backgroundColor: "#000",
+  marginBottom: 20
 },
 
 closeBtn: {
   padding: 10,
   alignItems: "center",
-  backgroundColor: "rgba(255,255,255,0.20)",
+  backgroundColor: "rgba(255,255,255,0.10)",
 },
 
 circleRow: {
@@ -1075,10 +1201,10 @@ circleRow: {
 },
 
 circleBox: {
-  width: 50,
-  height: 50,
+  width: 40,
+  height: 40,
   borderRadius: 30,
-  backgroundColor: "rgba(255, 255, 255, 0.20)",
+  backgroundColor: "rgba(255, 255, 255, 0.10)",
   justifyContent: "center",
   alignItems: "center",
 
@@ -1090,8 +1216,86 @@ circleBox: {
 },
 overlay: {
   flex: 1,
-  backgroundColor: "rgba(0, 0, 0, 0.30)", // dark overlay
 },
+header: {
+  position: "absolute",
+right: 20,
+top: 20,
+width: 40,
+  height: 40,
+  backgroundColor: "#004927ff",
+
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+
+  padding: 15,
+  borderRadius: 12,
+alignSelf: 'flex-end',
+  zIndex: 10,
+  elevation: 10, 
+},
+
+floatingPlayer: {
+  position: "absolute",
+  bottom: 80,
+  right: 20,
+},
+
+cdBlur: {
+  width: 60,
+  height: 60,
+  borderRadius: 40,
+  justifyContent: "center",
+  alignItems: "center",
+  overflow: "hidden",
+},
+
+cdButton: {
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+cdImage: {
+  width: 45,
+  height: 45,
+},
+
+
+
+modalBox: {
+  width: "100%",
+  height: '100%',
+  borderRadius: 12,
+  padding: 20,
+  alignItems: "center",
+  justifyContent: 'center',
+  overflow: "hidden",
+},
+
+audioThumbnail: {
+  width: 150,
+  height: 150,
+  borderRadius: 100,
+  marginBottom: 25,
+},
+
+nowPlaying: {
+  color: "#fff",
+  fontSize: 20,
+  marginBottom: 20,
+  fontFamily: "Poppins_500Medium",
+},
+
+playerControls: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "75%",
+ 
+},
+
+
 });
 
 
