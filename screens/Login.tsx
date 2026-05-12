@@ -25,7 +25,7 @@ const Login = ({ navigation }: any) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const BASE_URL = "http://192.168.100.207:5000";
+  const BASE_URL = "http://192.168.1.19:5000";
 
   // ======================
   // 🔐 LOGIN
@@ -95,25 +95,33 @@ const Login = ({ navigation }: any) => {
             source={require('../assets/images/logo.png')}
             style={styles.logo}
           />
-
-          <View style={styles.card}>
+<Text style={styles.label}>
+                            Email
+                          </Text>
+          
+            
             <TextInput
               placeholder="Email"
+              placeholderTextColor="#b3b3b3ff"
               style={styles.input}
               value={email}
               onChangeText={setEmail}
             />
-          </View>
-
-          <View style={styles.card}>
+          
+<Text style={styles.label}>
+                            Password
+                          </Text>
+          
+            
             <TextInput
               placeholder="Password"
+              placeholderTextColor="#b3b3b3ff"
               secureTextEntry
               style={styles.input}
               value={password}
               onChangeText={setPassword}
             />
-          </View>
+        
 
           <TouchableOpacity onPress={() => navigation.navigate('Help')}>
             <Text style={styles.helpText}>Need Help?</Text>
@@ -165,20 +173,25 @@ logo: {
   height: 150,
 },
 
-card: {
-  width: "100%",
-  backgroundColor: "#fff",
-  borderRadius: 12,
-  marginBottom: 15,
-  padding: 10,
-  elevation: 5,
-},
 
-input: {
-  fontSize: 12,
-  color: "#004927ff",
-  fontFamily: "Poppins_400Regular",
-},
+label: {
+    color: "#fff",
+    marginBottom: 8,
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    alignSelf: 'flex-start'
+  },
+
+  input: {
+    color: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 15,
+    width: "100%",
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
 
 loginButton: {
   backgroundColor: "#004927ff",

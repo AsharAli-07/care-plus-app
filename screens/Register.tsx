@@ -10,19 +10,69 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { Alert } from "react-native";
 
 import { BlurView } from "expo-blur";
 import Start from "./Start";
 
 const { width } = Dimensions.get("window");
 
+
+
 const Register = ({ navigation }: any) =>{
+
+
+  const registerUser = async () => {
+
+  if (
+    !name ||
+    !email ||
+    !phone ||
+    !password ||
+    !confirmPassword
+  ) {
+    Alert.alert("Please fill all fields");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    Alert.alert("Passwords do not match");
+    return;
+  }
+
+  try {
+
+    const response = await axios.post(
+      "http://192.168.1.19:5000/register",
+      {
+        name,
+        email,
+        password,
+        phone_number: phone
+      }
+    );
+
+    console.log(response.data);
+
+    Done();
+
+  } catch (error: any) {
+
+    console.log(error?.response?.data);
+
+    Alert.alert(
+      "Error",
+      error?.response?.data?.message ||
+      "Registration failed"
+    );
+  }
+};
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Step 1
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [age, setAge] = useState("");
   const [phone, setPhone] = useState("");
 
   // Step 2
@@ -53,6 +103,8 @@ const Register = ({ navigation }: any) =>{
     }).start();
   };
 
+
+  
   return (
     <ImageBackground
       source={require("../assets/images/home-bg.jpg")}
@@ -79,10 +131,39 @@ const Register = ({ navigation }: any) =>{
         <Text style={styles.description}>
                       Create your Care Plus account and start your wellness journey.
                     </Text>
-     <TextInput placeholder="Full Name" style={styles.input} />
-      <TextInput placeholder="Email" style={styles.input} />
-      <TextInput placeholder="Age" style={styles.input} />
-      <TextInput placeholder="Phone" style={styles.input} />
+                    <Text style={styles.label}>
+                                    Full Name
+                                  </Text>
+                    
+     <TextInput
+  placeholder="Full Name"
+  placeholderTextColor="#b3b3b3ff"
+  style={styles.input}
+  value={name}
+  onChangeText={setName}
+/>
+<Text style={styles.label}>
+                Email
+              </Text>
+
+<TextInput
+  placeholder="Email"
+  placeholderTextColor="#b3b3b3ff"
+  style={styles.input}
+  value={email}
+  onChangeText={setEmail}
+/>
+<Text style={styles.label}>
+                Phone Number
+              </Text>
+
+<TextInput
+  placeholder="Phone"
+  placeholderTextColor="#b3b3b3ff"
+  style={styles.input}
+  value={phone}
+  onChangeText={setPhone}
+/>
 
       <TouchableOpacity style={styles.button} onPress={goNext}>
         <Text style={styles.buttonText}>Next</Text>
@@ -95,10 +176,30 @@ const Register = ({ navigation }: any) =>{
         <Text style={styles.description}>
                       Create your password inorder to set reset.
                     </Text>
-    <TextInput placeholder="Password" secureTextEntry style={styles.input} />
-      <TextInput placeholder="Confirm Password" secureTextEntry style={styles.input} />
+                    <Text style={styles.label}>
+                                    Set password
+                                  </Text>
+  <TextInput
+  placeholder="Password"
+    placeholderTextColor="#b3b3b3ff"
+  secureTextEntry
+  style={styles.input}
+  value={password}
+  onChangeText={setPassword}
+/>
+<Text style={styles.label}>
+                Confirm Password
+              </Text>
+<TextInput
+  placeholder="Confirm Password"
+    placeholderTextColor="#b3b3b3ff"
+  secureTextEntry
+  style={styles.input}
+  value={confirmPassword}
+  onChangeText={setConfirmPassword}
+/>
 
-      <TouchableOpacity style={styles.button} onPress={Done}>
+      <TouchableOpacity style={styles.button} onPress={registerUser}>
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
 
@@ -183,15 +284,24 @@ slider: {
   flexDirection: "row",
   width: width * 2,
 },
-
+label: {
+    color: "#fff",
+    marginBottom: 8,
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    alignSelf: 'flex-start'
+  },
 
 
   input: {
-    backgroundColor: "#fff",
+    color: '#fff',
     borderRadius: 12,
     padding: 10,
     marginBottom: 15,
     width: "100%",
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
 
   button: {
@@ -201,10 +311,13 @@ slider: {
   alignItems: "center",
   width: "100%",
   marginTop: 15,
+
   },
 
   buttonText: {
     color: "#fff",
+      fontSize: 12,
+  fontFamily: 'Poppins_400Regular'
   },
 
   backText: {

@@ -60,9 +60,12 @@ onScroll={Animated.event(
  <Text style={styles.description}>
 Enter your email, and we will send an OTP to your email to reset your password.
 </Text>
+<Text style={styles.label}>
+                Email
+              </Text>
             <TextInput
               placeholder="Email"
-              placeholderTextColor="#999"
+              placeholderTextColor="#b3b3b3ff"
               style={styles.input}
             />
 
@@ -73,24 +76,6 @@ Enter your email, and we will send an OTP to your email to reset your password.
 
 
 
-
-          {/* FORGOT EMAIL */}
-          <BlurView intensity={50} tint="prominent" style={styles.card}>
-            <Text style={styles.cardTitle}>Forgot Email?</Text>
-
-   <Text style={styles.description}>
-We’ll help you recover your registered email using your phone number.
-</Text>
-            <TextInput
-              placeholder="Phone"
-              placeholderTextColor="#999"
-              style={styles.input}
-            />
-
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>Recover Email</Text>
-            </TouchableOpacity>
-          </BlurView>
 
 
 
@@ -118,7 +103,7 @@ We’ll help you recover your registered email using your phone number.
 
 
 <View style={styles.dotContainer}>
-  {[0, 1, 2].map((_, index) => {
+  {[0, 1].map((_, index) => {
 
     const inputRange = [
       (index - 1) * width,
@@ -146,15 +131,6 @@ We’ll help you recover your registered email using your phone number.
           {
             width: animatedWidth,
             opacity,
-            transform: [
-              {
-                scale: scrollX.interpolate({
-                  inputRange,
-                  outputRange: [1, 1, 1],
-                  extrapolate: "clamp",
-                }),
-              },
-            ],
           },
         ]}
       />
@@ -215,13 +191,20 @@ card: {
     lineHeight: 22,
     fontFamily: "Poppins_400Regular",
   },
+  label: {
+    color: "#fff",
+    marginBottom: 8,
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    alignSelf: 'flex-start'
+  },
 
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.15)",
   borderRadius: 12,
   padding: 10,
   fontSize: 12,
-  color: "#004927ff",
+  color: "#fff",
   fontFamily: 'Poppins_400Regular'
   },
 

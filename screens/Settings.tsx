@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ImageBackground,
   Image,
+  ScrollView,
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,35 +13,44 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { BlurView } from 'expo-blur';
 
-const BASE_URL = "192.168.100.207:5000";
+const BASE_URL = "http://192.168.1.19:5000";
 
 const Settings = ({ navigation }: any) => {
+  
 
   const [user, setUser] = useState<any>(null);
 
   // -------------------------
   // GET USER FROM API
   // -------------------------
-  useEffect(() => {
-    loadUser();
-  }, []);
+useEffect(() => {
 
-  const loadUser = async () => {
+  const unsubscribe = navigation.addListener("focus", async () => {
+
     try {
+
       const token = await AsyncStorage.getItem("token");
 
       const res = await axios.get(`${BASE_URL}/me`, {
         headers: {
-          Authorization: token,
+          Authorization: `Bearer ${token}`,
         },
       });
 
       setUser(res.data);
 
     } catch (err) {
-      console.log("Load user error:", err);
+      console.log(err);
     }
-  };
+
+  });
+
+  return unsubscribe;
+
+}, [navigation]);
+
+
+ 
 
   // -------------------------
   // LOGOUT
@@ -57,12 +67,18 @@ const Settings = ({ navigation }: any) => {
         style={{ height: "100%", width: "100%" }}
         resizeMode="cover"
       >
-        <View style={styles.overlay}>
+
+        <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.overlay}
+            >
 
           {/* PROFILE */}
           <View style={styles.profileCard}>
             <Image
-              source={require("../assets/images/profile.png")}
+              source={{
+  uri: `${BASE_URL}/${user?.profile_image}`
+}}
               style={styles.profileImage}
             />
 
@@ -73,7 +89,7 @@ const Settings = ({ navigation }: any) => {
             <Text style={styles.userEmail}>
               {user?.email || ""}
             </Text>
-            <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 10, borderRadius: 12 }}>
+            <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 10, borderRadius: 12 }} onPress={()=>navigation.navigate('Profile')}>
               <Text style={{fontFamily: 'Poppins_400Regular', fontSize: 12, color: '#fff'}}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -81,27 +97,60 @@ const Settings = ({ navigation }: any) => {
           {/* SETTINGS */}
           <View>
 
-            <SettingItem
-              icon="person-outline"
-              title="Account"
-              onPress={() => navigation.navigate("Account")}
-            />
 
-            <SettingItem icon="notifications-outline" title="Notifications" />
-            <SettingItem icon="lock-closed-outline" title="Privacy" />
-            <SettingItem icon="moon-outline" title="Dark Mode" />
-            <SettingItem icon="help-circle-outline" title="Help & Support" />
+<SettingItem
+  icon="shield-checkmark-outline"
+  title="Privacy & Security"
+  onPress={() => navigation.navigate("PrivacySecurity")}
+/>
 
-            <SettingItem
-              icon="log-out-outline"
-              title="Logout"
-              isDanger
-              onPress={handleLogout}
-            />
+<SettingItem
+  icon="notifications-outline"
+  title="Notifications"
+  onPress={() => navigation.navigate("Notifications")}
+/>
+
+<SettingItem
+  icon="heart-outline"
+  title="Wellness Preferences"
+  onPress={() => navigation.navigate("Wellness")}
+/>
+
+<SettingItem
+  icon="medkit-outline"
+  title="Emergency Support"
+  onPress={() => navigation.navigate("Emergency")}
+/>
+
+<SettingItem
+  icon="help-circle-outline"
+  title="Help & Support"
+  onPress={() => navigation.navigate("Help")}
+/>
+
+<SettingItem
+  icon="information-circle-outline"
+  title="About Care Plus"
+  onPress={() => navigation.navigate("About")}
+/>
+
+<SettingItem
+  icon="log-out-outline"
+  title="Logout"
+  isDanger
+  onPress={handleLogout}
+/>
 
           </View>
 
-        </View>
+        </ScrollView>
+
+
+
+
+
+
+
       </ImageBackground>
     </View>
   );
@@ -151,7 +200,8 @@ const SettingItem = ({ icon, title, isDanger, onPress }: any) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    padding: 20
+    padding: 20,
+    paddingBottom: 80
   },
 
   profileCard: {

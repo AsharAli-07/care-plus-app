@@ -8,12 +8,18 @@ import {
   Animated,  Image,
   Linking, TextInput, ImageBackground, Modal
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import Svg, { Circle } from "react-native-svg";
 import YoutubePlayer from "react-native-youtube-iframe";
 
 import { BlurView } from 'expo-blur';
+
+
+
+
 
 type SleepItem = {
   thumbnail: string;
@@ -42,30 +48,43 @@ const sleepItems: SleepItem[] = [
 
 
 export default function Home({ navigation }: any) {
-  const [selected, setSelected] = useState(false);
+
+  
+
+  
+
   // Animated values
   const textOpacity = useRef(new Animated.Value(1)).current;
   const emojiOpacity = useRef(new Animated.Value(1)).current;
-  const responseOpacity = useRef(new Animated.Value(0)).current;
-  const startBtnOpacity = useRef(new Animated.Value(0)).current;
-
-  const handleEmojiPress = () => {
-    setSelected(true);
-
-    // Fade out text & emoji
-    Animated.parallel([
-      Animated.timing(textOpacity, { toValue: 0, duration: 2000, useNativeDriver: true }),
-      Animated.timing(emojiOpacity, { toValue: 0, duration: 2000, useNativeDriver: true }),
-    ]).start(() => {
-      // Fade in response & start button
-      Animated.parallel([
-        Animated.timing(responseOpacity, { toValue: 1, duration: 2000, useNativeDriver: true }),
-        Animated.timing(startBtnOpacity, { toValue: 1, duration: 2000, useNativeDriver: true }),
-      ]).start();
-    });
+  const responseOpacity = useRef(new Animated.Value(1)).current;
+  const startBtnOpacity = useRef(new Animated.Value(1)).current;
 
 
-  };
+  const [selected, setSelected] = useState(false);
+const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+const handleEmojiPress = async (item: string) => {
+  try {
+    setSelectedEmoji(item);
+    setSelected(true); // 🔥 THIS triggers UI change immediately
+
+    const token = await AsyncStorage.getItem("token");
+
+    await axios.post(
+      "http://192.168.1.19:5000/mood",
+      {
+        mood_emoji: item,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+  } catch (err) {
+    console.log(err);
+  }
+};
 
 const [currentAudio, setCurrentAudio] = useState<string | null>(null);
 const [isPlaying, setIsPlaying] = useState(false);
@@ -228,17 +247,29 @@ const rotateAnim = useRef(new Animated.Value(0)).current;
 const [modalVisible, setModalVisible] = useState(false);
 
 useEffect(() => {
+  let rotateLoop: Animated.CompositeAnimation;
+
   if (isPlaying) {
-    Animated.loop(
+    rotateAnim.setValue(0);
+
+    rotateLoop = Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
-        duration: 4000,
+        duration: 3500,
         useNativeDriver: true,
       })
-    ).start();
+    );
+
+    rotateLoop.start();
   } else {
     rotateAnim.stopAnimation();
   }
+
+  return () => {
+    if (rotateLoop) {
+      rotateLoop.stop();
+    }
+  };
 }, [isPlaying]);
 
 const spin = rotateAnim.interpolate({
@@ -420,27 +451,27 @@ const videoOpacity = videoAnim;
 
     {selected && (
       <Animated.Text style={[styles.chatText, { opacity: responseOpacity }]}>
-        Thanks for your response
+        Thanks for your response {selectedEmoji}
       </Animated.Text>
     )}
   </View>
 
-  {/* Emoji row stays outside the wrapper */}
+  {/* Emoji row */}
   {!selected && (
     <Animated.View style={[styles.emojiRow, { opacity: emojiOpacity }]}>
-      {["😄", "🙂", "😐", "😕", "😔"].map((emoji, index) => (
+      {["😄", "🙂", "😐", "😕", "😔"].map((item, index) => (
         <TouchableOpacity
           key={index}
-          onPress={handleEmojiPress}
+          onPress={() => handleEmojiPress(item)}
           style={styles.emojiButton}
         >
-          <Text style={styles.emoji}>{emoji}</Text>
+          <Text style={styles.emoji}>{item}</Text>
         </TouchableOpacity>
       ))}
     </Animated.View>
   )}
 
-  {/* Start conversation button stays outside the wrapper */}
+  {/* After selection */}
   {selected && (
     <Animated.View style={[styles.startBtn, { opacity: startBtnOpacity }]}>
       <TouchableOpacity
@@ -765,9 +796,14 @@ const videoOpacity = videoAnim;
           style={styles.cdButton}
           onPress={() => setModalVisible(true)}
         >
-          <Image
+          <Animated.Image
             source={require("../assets/images/cd.png")}
-            style={styles.cdImage}
+              style={[
+    styles.cdImage,
+    {
+      transform: [{ rotate: spin }],
+    },
+  ]}
             resizeMode="contain"
           />
         </TouchableOpacity>
@@ -843,11 +879,11 @@ const videoOpacity = videoAnim;
 
           
 
-
-        </BlurView>
-        <TouchableOpacity onPress={()=> setModalVisible(false)} style={{}}>
+<TouchableOpacity onPress={()=> setModalVisible(false)} style={{marginTop: '100%'}}>
             <Text style={styles.topText}>Back</Text>
           </TouchableOpacity>
+        </BlurView>
+        
 
     </Modal>
 
@@ -1008,7 +1044,7 @@ startBtnInner: {
   flexDirection: "row",         // horizontal layout
   alignItems: "center",         // vertically center
   justifyContent: "space-between", // pushes text left and arrow right
-   backgroundColor: "rgba(255, 255, 255, 0.10)",
+
   width: '100%',           // optional: ensures button isn’t too small
 },
 textWrapper: {

@@ -1,100 +1,12 @@
-// require("dotenv").config();
-// const express = require("express");
-// const cors = require("cors");
 
-// const app = express();
-
-// app.use(cors());
-// app.use(express.json());
-
-// const PORT = process.env.PORT || 3001;
-
-// function extractText(data) {
-//   if (typeof data.output_text === "string" && data.output_text.trim()) {
-//     return data.output_text.trim();
-//   }
-
-//   const parts = [];
-
-//   for (const item of data.output || []) {
-//     if (item.type === "message") {
-//       for (const content of item.content || []) {
-//         if (content.type === "output_text" && content.text) {
-//           parts.push(content.text);
-//         }
-//       }
-//     }
-//   }
-
-//   return parts.join("\n").trim();
-// }
-
-// app.post("/chat", async (req, res) => {
-//   try {
-//     const { messages } = req.body;
-
-//     if (!Array.isArray(messages)) {
-//       return res.status(400).json({
-//         error: "messages must be an array",
-//       });
-//     }
-
-//     const instructions = `
-// You are a calm, supportive AI wellness companion.
-// Rules:
-// - Keep replies short and clear.
-// - Be warm and gentle.
-// - Ask simple follow-up questions when helpful.
-// - Do not claim to be a licensed therapist.
-// - Do not provide medical diagnosis.
-// - If the user mentions self-harm, suicide, or immediate danger, encourage them to contact local emergency services or a crisis hotline immediately.
-//     `.trim();
-
-//     const response = await fetch("https://api.openai.com/v1/responses", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-//       },
-//       body: JSON.stringify({
-//         model: "gpt-4.1-mini",
-//         instructions,
-//         input: messages.map((m) => ({
-//           role: m.sender === "user" ? "user" : "assistant",
-//           content: m.text,
-//         })),
-//         max_output_tokens: 200
-//       }),
-//     });
-
-//     const data = await response.json();
-//     console.log("OPENAI RAW RESPONSE:", JSON.stringify(data, null, 2));
-
-//     if (!response.ok) {
-//       return res.status(response.status).json({
-//         error: data?.error?.message || "OpenAI request failed",
-//       });
-//     }
-
-//     const reply = extractText(data) || "I’m here with you.";
-
-//     return res.json({ reply });
-//   } catch (error) {
-//     console.error("SERVER ERROR:", error);
-//     return res.status(500).json({
-//       error: error?.message || "Internal server error",
-//     });
-//   }
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`API server running on http://localhost:${PORT}`);
-// });
 const express = require("express");
 const mysql = require("mysql2");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const multer = require("multer");
+const fs = require("fs");
+
 
 const app = express();
 
@@ -116,19 +28,42 @@ db.connect((err) => {
   else console.log("MYSQL CONNECTED");
 });
 
+
+const path = require("path");
+
+// serve static assets folder
+app.use("/assets", express.static(path.join(__dirname, "assets")));
+
 // =====================
-// FORMAT DATE HELPER
+// MULTER STORAGE
 // =====================
-const formatDate = (date) => {
-  if (!date) return null;
-  return new Date(date).toISOString().split("T")[0];
-};
+
+if (!fs.existsSync("./assets/uploads")) {
+  fs.mkdirSync("./assets/uploads", { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./assets/uploads");
+  },
+
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      Date.now() + "-" + file.originalname
+    );
+  },
+});
+
+const upload = multer({ storage });
 
 // =====================
 // REGISTER
 // =====================
 app.post("/register", async (req, res) => {
-  const { name, email, password, phone_number, birthdate } = req.body;
+const defaultProfile = "assets/images/profile.png";
+
+  const { name, email, password, phone_number } = req.body;
 
   const check = "SELECT * FROM users WHERE email = ?";
 
@@ -142,13 +77,13 @@ app.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const sql = `
-      INSERT INTO users (name, email, password, phone_number, birthdate)
+      INSERT INTO users (name, email, password, phone_number, profile_image)
       VALUES (?, ?, ?, ?, ?)
     `;
 
     db.query(
       sql,
-      [name, email, hashedPassword, phone_number, birthdate],
+      [name, email, hashedPassword, phone_number, defaultProfile],
       (err) => {
         if (err) {
           console.log(err);
@@ -162,7 +97,7 @@ app.post("/register", async (req, res) => {
 });
 
 // =====================
-// LOGIN (FIXED)
+// LOGIN 
 // =====================
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
@@ -188,16 +123,16 @@ app.post("/login", (req, res) => {
       expiresIn: "7d",
     });
 
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone_number: user.phone_number,
-        birthdate: formatDate(user.birthdate), // 🔥 FIX HERE
-      },
-    });
+res.json({
+  token,
+  user: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone_number: user.phone_number,
+    profile_image: user.profile_image, // ✅ ADD THIS
+  },
+});
   });
 });
 
@@ -223,11 +158,11 @@ const authMiddleware = (req, res, next) => {
 };
 
 // =====================
-// GET USER (FIXED)
+// GET USER
 // =====================
 app.get("/me", authMiddleware, (req, res) => {
   const sql = `
-    SELECT id, name, email, phone_number, birthdate, created_at
+    SELECT id, name, email, phone_number, created_at, profile_image
     FROM users
     WHERE id = ?
   `;
@@ -235,39 +170,159 @@ app.get("/me", authMiddleware, (req, res) => {
   db.query(sql, [req.userId], (err, result) => {
     if (err) return res.status(500).json({ message: "Server error" });
 
+    if (!result || result.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const user = result[0];
 
-    res.json({
-      ...user,
-      birthdate: formatDate(user.birthdate), // 🔥 FIX HERE
-    });
+    res.json(user);
   });
 });
 
-// =====================
-// UPDATE PROFILE (FIXED)
-// =====================
-app.put("/update-profile", authMiddleware, (req, res) => {
-  const { name, email, phone_number, birthdate } = req.body;
 
-  const sql = `
-    UPDATE users
-    SET name = ?, email = ?, phone_number = ?, birthdate = ?
-    WHERE id = ?
-  `;
 
-  db.query(
-    sql,
-    [name, email, phone_number, birthdate, req.userId],
-    (err) => {
+
+// =====================
+// UPDATE PROFILE
+// =====================
+app.put(
+  "/update-profile",
+  authMiddleware,
+  upload.single("profile_image"),
+  (req, res) => {
+
+    const { name, email, phone_number } = req.body;
+
+    // STEP 1: GET OLD IMAGE
+    const getOld = "SELECT profile_image FROM users WHERE id = ?";
+
+    db.query(getOld, [req.userId], (err, result) => {
       if (err) {
-        console.log("UPDATE ERROR:", err);
-        return res.status(500).json({ message: "Update failed" });
+        console.log(err);
+        return res.status(500).json({ message: "Error fetching old image" });
       }
 
-      res.json({ message: "Profile updated successfully" });
-    }
+      const oldImage = result[0]?.profile_image;
+
+      // STEP 2: HANDLE NEW IMAGE
+      let newImage = oldImage;
+
+      if (req.file) {
+
+        newImage = `assets/uploads/${req.file.filename}`;
+
+        // STEP 3: DELETE OLD FILE (ONLY IF IT'S UPLOADED FILE, NOT DEFAULT)
+        if (oldImage && oldImage.includes("/uploads/")) {
+
+  const filename = oldImage.split("/uploads/")[1];
+
+  const oldPath = path.join(
+    __dirname,
+    "assets",
+    "uploads",
+    filename
   );
+
+  fs.unlink(oldPath, (err) => {
+    if (err) {
+      console.log("Old image delete error:", err.message);
+    } else {
+      console.log("Old image deleted:", oldPath);
+    }
+  });
+}
+      }
+
+      // STEP 4: UPDATE USER
+      const sql = `
+        UPDATE users
+        SET name = ?, email = ?, phone_number = ?, profile_image = ?
+        WHERE id = ?
+      `;
+
+      db.query(
+        sql,
+        [name, email, phone_number, newImage, req.userId],
+        (err) => {
+          if (err) {
+            console.log(err);
+            return res.status(500).json({ message: "Update failed" });
+          }
+
+          res.json({
+            message: "Profile updated successfully",
+            profile_image: newImage,
+          });
+        }
+      );
+    });
+  }
+);
+
+
+
+// =====================
+// Change Password
+// =====================
+app.put("/change-password", authMiddleware, async (req, res) => {
+  const { newPassword, confirmPassword } = req.body;
+
+  if (!newPassword || !confirmPassword) {
+    return res.status(400).json({ message: "Fields required" });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  try {
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    db.query(
+      "UPDATE users SET password = ? WHERE id = ?",
+      [hashed, req.userId],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Error updating password" });
+        }
+
+        res.json({ message: "Password updated successfully" });
+      }
+    );
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+app.post("/mood", authMiddleware, (req, res) => {
+  const { mood_emoji } = req.body;
+
+  const moodMap = {
+    "😄": "Happy",
+    "🙂": "Good",
+    "😐": "Neutral",
+    "😕": "Sad",
+    "😔": "Very Sad",
+  };
+
+  const mood_text = moodMap[mood_emoji] || "Unknown";
+
+  const sql = `
+    INSERT INTO moods (user_id, mood_emoji, mood_text)
+    VALUES (?, ?, ?)
+  `;
+
+  db.query(sql, [req.userId, mood_emoji, mood_text], (err) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Error saving mood" });
+    }
+
+    res.json({ message: "Mood saved successfully" });
+  });
 });
 
 // =====================
