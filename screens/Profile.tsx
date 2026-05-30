@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { BASE_URL } from '../api';
 
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,9 +19,10 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://192.168.1.19:5000";
 
 const Profile = () => {
+
+  const [privacyMode, setPrivacyMode] = useState(false);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -35,28 +37,30 @@ const Profile = () => {
     loadUser();
   }, []);
 
-  const loadUser = async () => {
-    try {
+const loadUser = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
 
-      const token = await AsyncStorage.getItem("token");
+    const res = await axios.get(`${BASE_URL}/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const res = await axios.get(`${BASE_URL}/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    setName(res.data.name);
+    setPhone(res.data.phone_number);
+    setEmail(res.data.email);
 
-      setName(res.data.name);
-      setPhone(res.data.phone_number);
-      setEmail(res.data.email);
-      setProfileImage(
-  `${BASE_URL}/${res.data.profile_image}`
-);
+    setProfileImage(
+      `${BASE_URL}/${res.data.profile_image}`
+    );
 
-    } catch (error) {
-      console.log("LOAD USER ERROR:", error);
-    }
-  };
+    setPrivacyMode(res.data.privacy_mode);
+
+  } catch (error) {
+    console.log("LOAD USER ERROR:", error);
+  }
+};
 
   // =========================
   // PICK IMAGE
@@ -140,6 +144,12 @@ console.log(profileImage);
     }
   };
 
+
+  const mask = (value: string) => {
+  return privacyMode ? "••••••••" : value;
+};
+
+
   return (
     <ImageBackground
       source={require("../assets/images/home-bg.jpg")}
@@ -165,10 +175,14 @@ console.log(profileImage);
             {/* PROFILE IMAGE */}
             <View style={styles.imageWrapper}>
 
-              <Image
-                source={{ uri: profileImage }}
-                style={styles.profileImage}
-              />
+<Image
+  source={
+    privacyMode
+      ? require("../assets/images/profile.png")
+      : { uri: profileImage }
+  }
+  style={styles.profileImage}
+/>
 
               <TouchableOpacity
                 style={styles.editImageBtn}
@@ -194,11 +208,12 @@ console.log(profileImage);
               </Text>
 
               <TextInput
-                value={name}
+                value={mask(name)}
                 onChangeText={setName}
                 placeholder="Enter name"
                   placeholderTextColor="#b3b3b3ff"
                 style={styles.input}
+                editable={!privacyMode}
               />
             </View>
 
@@ -209,11 +224,13 @@ console.log(profileImage);
               </Text>
 
               <TextInput
-                value={email}
+                value={mask(email)}
                 onChangeText={setEmail}
                 placeholder="Email"
                   placeholderTextColor="#b3b3b3ff"
                 style={styles.input}
+                selectTextOnFocus={false}
+                editable={!privacyMode}
               />
             </View>
 
@@ -224,12 +241,13 @@ console.log(profileImage);
               </Text>
 
               <TextInput
-                value={phone}
+                value={mask(phone)}
                 onChangeText={setPhone}
                 placeholder="Phone Number"
                   placeholderTextColor="#b3b3b3ff"
                 keyboardType="phone-pad"
                 style={styles.input}
+                editable={!privacyMode}
               />
             </View>
 

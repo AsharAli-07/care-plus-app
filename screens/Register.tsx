@@ -15,6 +15,7 @@ import { Alert } from "react-native";
 
 import { BlurView } from "expo-blur";
 import Start from "./Start";
+import { BASE_URL } from '../api';
 
 const { width } = Dimensions.get("window");
 
@@ -44,7 +45,7 @@ const Register = ({ navigation }: any) =>{
   try {
 
     const response = await axios.post(
-      "http://192.168.1.19:5000/register",
+      `${BASE_URL}/register`,
       {
         name,
         email,

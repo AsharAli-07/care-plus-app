@@ -13,6 +13,7 @@ import { BlurView } from 'expo-blur';
 
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL } from '../api';
 
 
 
@@ -24,8 +25,6 @@ const Login = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const BASE_URL = "http://192.168.1.19:5000";
 
   // ======================
   // 🔐 LOGIN

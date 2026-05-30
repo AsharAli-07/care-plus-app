@@ -11,6 +11,7 @@ import {
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
+import { BASE_URL } from '../api';
 
 const ChangePassword = ({ navigation }: any) => {
   const [newPassword, setNewPassword] = useState("");
@@ -31,7 +32,7 @@ const ChangePassword = ({ navigation }: any) => {
       const token = await AsyncStorage.getItem("token");
 
       const res = await axios.put(
-        "http://192.168.1.19:5000/change-password",
+        `${BASE_URL}/change-password`,
         {
           newPassword,
           confirmPassword,

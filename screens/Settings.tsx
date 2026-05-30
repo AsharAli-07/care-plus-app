@@ -6,18 +6,19 @@ import {
   ImageBackground,
   Image,
   ScrollView,
-  TouchableOpacity,
+  TouchableOpacity, Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { BlurView } from 'expo-blur';
+import { BASE_URL } from '../api';
 
-const BASE_URL = "http://192.168.1.19:5000";
 
 const Settings = ({ navigation }: any) => {
-  
 
+
+const [privacyMode, setPrivacyMode] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   // -------------------------
@@ -75,20 +76,22 @@ useEffect(() => {
 
           {/* PROFILE */}
           <View style={styles.profileCard}>
-            <Image
-              source={{
-  uri: `${BASE_URL}/${user?.profile_image}`
-}}
-              style={styles.profileImage}
-            />
+<Image
+  source={
+    user?.privacy_mode
+      ? require("../assets/images/profile.png")
+      : { uri: `${BASE_URL}/${user?.profile_image}` }
+  }
+  style={styles.profileImage}
+/>
 
-            <Text style={styles.userName}>
-              {user?.name || "Loading..."}
-            </Text>
+<Text style={styles.userName}>
+  {user?.privacy_mode ? "Anonymous User" : user?.name || "Loading..."}
+</Text>
 
-            <Text style={styles.userEmail}>
-              {user?.email || ""}
-            </Text>
+<Text style={styles.userEmail}>
+  {user?.privacy_mode ? "Hidden for privacy" : user?.email || ""}
+</Text>
             <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 10, borderRadius: 12 }} onPress={()=>navigation.navigate('Profile')}>
               <Text style={{fontFamily: 'Poppins_400Regular', fontSize: 12, color: '#fff'}}>Edit Profile</Text>
             </TouchableOpacity>

@@ -6,20 +6,80 @@ import {
   ImageBackground,
   Image,
   ScrollView,
-  TouchableOpacity,
+  TouchableOpacity, Alert
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { BlurView } from 'expo-blur';
+import { Ionicons } from "@expo/vector-icons";
 
+import { BlurView } from 'expo-blur';
+import { BASE_URL } from '../api';
 
 const PrivacySecurity = ({ navigation }: any) => {
   
 
 
 
- 
+const handleDeleteAccount = () => {
+  Alert.alert(
+    "Delete Account",
+    "This will permanently delete your account, moods, and personal data. This action cannot be undone.",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete Account",
+        style: "destructive",
+        onPress: async () => {
+          try {
+
+            const token = await AsyncStorage.getItem("token");
+
+            const res = await axios.delete(
+              `${BASE_URL}/delete-account`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            Alert.alert(
+              "Account Deleted",
+              res.data.message,
+              [
+                {
+                  text: "OK",
+                  onPress: async () => {
+
+                    await AsyncStorage.removeItem("token");
+
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: "Login" }],
+                    });
+
+                  },
+                },
+              ]
+            );
+
+          } catch (err) {
+            console.log(err);
+
+            Alert.alert(
+              "Error",
+              "Failed to delete account"
+            );
+          }
+        },
+      },
+    ]
+  );
+};
 
 
  
@@ -44,13 +104,18 @@ const PrivacySecurity = ({ navigation }: any) => {
 
   <SettingItem icon="key-outline" title="Change Password" onPress={() => navigation.navigate("ChangePassword")}/>
 
-  <SettingItem icon="heart-outline" title="Mood History Privacy" />
+  <SettingItem icon="heart-outline" title="Mood History Privacy" onPress={() => navigation.navigate("MoodHistory")}/>
 
-  <SettingItem icon="document-text-outline" title="Anonymous Journal Mode" />
+  <SettingItem icon="document-text-outline" title="Anonymous Journal Mode" onPress={() => navigation.navigate("Privacy")}/>
 
   <SettingItem icon="download-outline" title="Download My Data" />
 
-  <SettingItem icon="trash-outline" title="Delete Account" isDanger />
+  <SettingItem
+  icon="trash-outline"
+  title="Delete My Account"
+  isDanger
+  onPress={handleDeleteAccount}
+/>
 
           </View>
 
@@ -112,7 +177,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     padding: 20,
-    paddingBottom: 80
+  
   },
 
 

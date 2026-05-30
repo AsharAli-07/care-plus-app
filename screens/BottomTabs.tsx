@@ -7,6 +7,7 @@ import Therapy from "./Therapy";
 import Peace from "./Peace";
 import Meditation from "./Meditation";
 import Settings from "./Settings";
+import HomeDrawer from "./HomeDrawer";
 
 const Tab = createBottomTabNavigator();
 
@@ -88,7 +89,7 @@ export default function BottomTabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={Home} />
+      <Tab.Screen name="Home" component={HomeDrawer} />
       <Tab.Screen name="Therapy" component={Therapy} />
       <Tab.Screen name="Peace" component={Peace} />
       <Tab.Screen name="Meditation" component={Meditation} />
