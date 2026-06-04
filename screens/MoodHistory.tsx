@@ -208,13 +208,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     
+    
   },
 
   heading: {
     fontSize: 20,
     color: "#fff",
-    marginBottom: 20,
     fontFamily: "Poppins_500Medium",
+    textAlign: 'center',
+    marginVertical: 20
   },
 
   card: {
@@ -226,19 +228,19 @@ const styles = StyleSheet.create({
   },
 
   emoji: {
-    fontSize: 32,
+    fontSize: 35,
     marginRight: 15,
   },
 
   moodText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: "Poppins_500Medium",
   },
 
   date: {
     color: "#ddd",
-    fontSize: 10,
+    fontSize: 12,
     marginTop: 5,
     fontFamily: "Poppins_400Regular",
   },
@@ -249,25 +251,26 @@ const styles = StyleSheet.create({
   borderRadius: 12,
   alignItems: "center",
   marginTop: 10,
-  marginBottom: 40,
+  marginBottom: 20,
 },
 
 loadMoreText: {
   color: "#fff",
   fontFamily: "Poppins_400Regular",
+  fontSize: 12
 },
 
 emptyBox: {
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  marginTop: 50,
+
 },
 
 emptyText: {
   color: "#fff",
   fontSize: 20,
   fontFamily: "Poppins_500Medium",
-  opacity: 0.7,
+  opacity: 0.8,
 },
 });

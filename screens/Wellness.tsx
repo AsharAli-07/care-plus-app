@@ -240,7 +240,7 @@ const updatePreference = async (key: string, value: any) => {
           <PreferenceItem
             icon="moon-outline"
             title="Night Wellness Mode"
-            description="Reduce late-night notifications"
+            description="No late-night notifications"
             value={preferences.night_mode}
             onValueChange={(v: boolean) =>
               updatePreference("night_mode", v)
@@ -330,14 +330,16 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     paddingHorizontal: 20,
+     paddingBottom: 5
   },
 
   heading: {
-    fontSize: 22,
+    fontSize: 20,
     color: "#fff",
     marginBottom: 20,
     alignSelf: "center",
     fontFamily: "Poppins_500Medium",
+    marginTop: 20,
   },
 
   card: {
@@ -367,7 +369,7 @@ const styles = StyleSheet.create({
 
   description: {
     color: "#ccc",
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
     fontFamily: "Poppins_400Regular",
   },

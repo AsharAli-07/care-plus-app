@@ -20,6 +20,6 @@ export const FooterQuickActions: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  circleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  circleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" , marginTop: 5},
   circleBox: { width: 40, height: 40, borderRadius: 30, backgroundColor: "rgba(255, 255, 255, 0.10)", justifyContent: "center", alignItems: "center", elevation: 5, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 5 },
 });

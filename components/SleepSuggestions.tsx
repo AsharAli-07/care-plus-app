@@ -33,7 +33,7 @@ export const SleepSuggestions: React.FC<SleepSuggestionsProps> = ({ items, onSel
 };
 
 const styles = StyleSheet.create({
-  sectionHeading: { fontSize: 20, marginBottom: 20, color: "#fff", fontFamily: "Poppins_500Medium" },
+  sectionHeading: { fontSize: 20, marginBottom: 15, color: "#fff", fontFamily: "Poppins_500Medium" },
   carouselItem: { width: 250, marginRight: 10 },
   thumbnail: { width: "100%", height: 120, borderRadius: 12 },
   itemTitle: { textAlign: "center", marginTop: 5, color: "#fff" },

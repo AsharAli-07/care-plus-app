@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     height: 400,
-    borderRadius: 20,
+    borderRadius: 12,
     padding: 22,
     justifyContent: "center",
     alignItems: "center",
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 22,
     color: "#fff",
-    marginBottom: 18,
+    marginBottom: 15,
     textAlign: "center",
     fontFamily: "Poppins_500Medium",
   },
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   description: {
     color: "#ddd",
     textAlign: "center",
-    marginBottom: 25,
+    marginBottom: 15,
     fontSize: 13,
     lineHeight: 22,
     fontFamily: "Poppins_400Regular",
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     width: "100%",
-    marginTop: 10,
+  
   },
 
   buttonText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Poppins_500Medium",
   },
 

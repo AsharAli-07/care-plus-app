@@ -169,7 +169,7 @@ card: {
   height: 320,
   borderRadius: 12,
   overflow: "hidden",
-  padding: 25,
+  padding: 15,
   marginHorizontal: 10,
   justifyContent: "center",
   alignSelf: "center",
@@ -179,14 +179,14 @@ card: {
     color: "#fff",
     fontSize: 20,
     textAlign: "center",
-    marginBottom: 25,
+    marginBottom: 15,
     fontFamily: "Poppins_500Medium",
   },
 
   description: {
     color: "#ddd",
     textAlign: "center",
-    marginBottom: 25,
+    marginBottom: 15,
     fontSize: 12,
     lineHeight: 22,
     fontFamily: "Poppins_400Regular",
@@ -205,7 +205,8 @@ card: {
   padding: 10,
   fontSize: 12,
   color: "#fff",
-  fontFamily: 'Poppins_400Regular'
+  fontFamily: 'Poppins_400Regular',
+  marginBottom: 15,
   },
 
   button: {
@@ -214,7 +215,7 @@ card: {
   borderRadius: 12,
   alignItems: "center",
   width: "100%",
-  marginTop: 15,
+  
   },
 
   buttonText: {
@@ -226,7 +227,7 @@ dotContainer: {
   flexDirection: "row",
   justifyContent: "center",
   alignItems: "center",
-  marginTop: 25,
+ 
 },
 
 dot: {

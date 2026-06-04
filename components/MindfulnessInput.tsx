@@ -6,22 +6,45 @@ type MindfulnessInputProps = {
   onChange: (minutes: number) => void;
 };
 
-export const MindfulnessInput: React.FC<MindfulnessInputProps> = ({ value, onChange }) => (
+export const MindfulnessInput: React.FC<MindfulnessInputProps> = ({
+  value,
+  onChange,
+}) => (
   <View style={styles.container}>
-    <Text style={styles.section}>🧘 Mindfulness (Minutes)</Text>
+    <Text style={styles.section}>🧘 Mindfulness</Text>
+
     <TextInput
-      placeholder="Minutes spent meditating"
-      placeholderTextColor="#94a3b8"
+      placeholder="Enter meditation minutes"
+      placeholderTextColor="#ffffffff"
       keyboardType="numeric"
       value={value === 0 ? "" : value.toString()}
-      onChangeText={(v) => onChange(Number(v.replace(/[^0-9]/g, "")))}
+      onChangeText={(v) =>
+        onChange(Number(v.replace(/[^0-9]/g, "")))
+      }
       style={styles.input}
     />
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 16 },
-  section: { color: "#e2e8f0", fontSize: 16, marginBottom: 10, fontWeight: "600" },
-  input: { backgroundColor: "#111827", padding: 14, borderRadius: 12, color: "#fff", fontSize: 15 },
+  container: {
+    marginBottom: 20,
+  },
+
+  section: {
+    color: "#fff",
+    fontSize: 20,
+    marginBottom: 15,
+    fontFamily: "Poppins_500Medium",
+  },
+
+  input: {
+    width: "100%",
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+  },
 });

@@ -181,16 +181,18 @@ label: {
     alignSelf: 'flex-start'
   },
 
-  input: {
-    color: '#fff',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 15,
-    width: "100%",
-    fontSize: 12,
-    fontFamily: 'Poppins_400Regular',
-    backgroundColor: "rgba(255,255,255,0.15)",
-  },
+input: {
+  width: "100%",
+  padding: 10,
+  marginBottom: 15,
+
+  borderRadius: 12,
+  backgroundColor: "rgba(255,255,255,0.08)",
+
+  color: "#fff",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
+},
 
 loginButton: {
   backgroundColor: "#004927ff",

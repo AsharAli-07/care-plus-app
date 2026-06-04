@@ -17,6 +17,10 @@ import MoodHistory from './screens/MoodHistory';
 import Privacy from './screens/Privacy';
 import NotificationSettings from './screens/NotificationSettings';
 import Wellness from './screens/Wellness'; 
+import Emergency from './screens/Emergency';
+import EmergencyContacts from './screens/EmergencyContacts';
+import About from "./screens/About";
+import WellnessTracker from './screens/WellnessTracker';
 
 import { 
   useFonts,  
@@ -40,7 +44,11 @@ export type RootStackParamList = {
   MoodHistory: undefined;
   Privacy: undefined;
   Notifications: undefined;
+  Wellness: undefined;
   WellnessTracker: { targetSection?: string } | undefined; 
+  Emergency: undefined;
+  EmergencyContacts: undefined;
+  About: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -79,17 +87,15 @@ useEffect(() => {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+{/* <Stack.Navigator screenOptions={{ headerShown: false }}> */}
+<Stack.Navigator >
+
         {/* Auth & Setup Stack */}
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Start" component={Start} />
         <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="Onboarding" component={Onboarding} />
-        
-        {/* Core App Shell Layout */}
         <Stack.Screen name="BottomTabs" component={BottomTabs} />
-        
-        {/* Internal Core Management Screens */}
         <Stack.Screen name="Help" component={HelpScreen} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="PrivacySecurity" component={PrivacySecurity} />
@@ -97,9 +103,11 @@ useEffect(() => {
         <Stack.Screen name="MoodHistory" component={MoodHistory} />
         <Stack.Screen name="Privacy" component={Privacy} />
         <Stack.Screen name="Notifications" component={NotificationSettings} />
-        
-        {/* Mapping Tracker Dashboard screen */}
-        <Stack.Screen name="WellnessTracker" component={Wellness} />
+        <Stack.Screen name="Wellness" component={Wellness} />
+        <Stack.Screen name="WellnessTracker" component={WellnessTracker} />
+        <Stack.Screen name="Emergency" component={Emergency} />
+        <Stack.Screen name="EmergencyContacts" component={EmergencyContacts} />
+        <Stack.Screen name="About" component={About} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   desc: {
     fontSize: 12,
     color: "#fff",
-    marginBottom: 25,
+    marginBottom: 15,
     fontFamily: "Poppins_400Regular",
     lineHeight: 18,
   },

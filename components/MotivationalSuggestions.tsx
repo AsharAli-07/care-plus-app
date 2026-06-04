@@ -61,7 +61,7 @@ export const MotivationalSuggestions: React.FC<MotivationalSuggestionsProps> = (
 };
 
 const styles = StyleSheet.create({
-  sectionHeading: { fontSize: 20, marginBottom: 20, color: "#fff", fontFamily: "Poppins_500Medium" },
+  sectionHeading: { fontSize: 20, marginBottom: 15, color: "#fff", fontFamily: "Poppins_500Medium" },
   videoCard: { flexDirection: "row", borderRadius: 12, marginBottom: 15, alignItems: "center", elevation: 2 },
   videoThumb: { width: 70, height: 38, borderRadius: 7, marginRight: 10 },
   videoTitle: { fontSize: 12, color: "#ffffffff", flex: 1, fontFamily: "Poppins_400Regular" },

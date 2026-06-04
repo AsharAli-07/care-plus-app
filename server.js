@@ -1,3 +1,7 @@
+const blockedAt = require('blocked-at');
+blockedAt((details) => {
+  console.log('BLOCKED BY:', details.stack);
+}, { threshold: 100 }); // Logs anything that blocks for more than 100ms
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -608,6 +612,58 @@ app.put("/wellness-preferences", authMiddleware, async (req, res) => {
   }
 });
 
+async function checkAchievements(userId, data) {
+  console.log("DEBUG: Engine started for user", userId, "with data", data);
+  try {
+    const [streakResult] = await db.execute("SELECT current_streak FROM wellness_streaks WHERE user_id = ?", [userId]);
+    const streak = parseInt(streakResult[0]?.current_streak) || 0;
+    
+    const water = parseFloat(data.water) || 0;
+    const sleep = parseFloat(data.sleep) || 0;
+    const meditation = parseInt(data.meditation) || 0;
+
+    console.log("DEBUG: Values - Streak:", streak, "Water:", water, "Sleep:", sleep, "Med:", meditation);
+
+    const achievements = [
+      { title: "7 Day Streak", condition: streak >= 7, desc: "Maintained wellness tracking for 7 days" },
+      { title: "30 Day Master", condition: streak >= 30, desc: "Maintained wellness consistency for 30 days" },
+      { title: "Hydration Hero", condition: water >= 3.0, desc: "Drank 3L of water in one day" },
+      { title: "Deep Sleeper", condition: sleep >= 8, desc: "Achieved 8+ hours of sleep" },
+      { title: "Zen Master", condition: meditation >= 20, desc: "Completed 20 mins of meditation" }
+    ];
+
+    for (const ach of achievements) {
+      console.log("DEBUG: Checking condition for", ach.title, ":", ach.condition);
+      if (ach.condition) {
+        await unlockAchievement(userId, ach.title, ach.desc);
+      }
+    }
+  } catch (err) {
+    console.error("DEBUG: CRITICAL ERROR in checkAchievements:", err);
+  }
+}
+
+async function unlockAchievement(userId, title, description) {
+  console.log("DEBUG: Attempting to insert into DB:", title);
+  try {
+    // Force a simpler check
+    const [existing] = await db.execute("SELECT id FROM achievements WHERE user_id = ? AND title = ?", [userId, title]);
+    
+    if (existing.length > 0) {
+      console.log("DEBUG: Achievement already exists, skipping:", title);
+      return;
+    }
+
+    await db.execute(
+      "INSERT INTO achievements (user_id, title, description) VALUES (?, ?, ?)",
+      [userId, title, description]
+    );
+    console.log("DEBUG: SQL INSERT successful for:", title);
+  } catch (err) {
+    console.error("DEBUG: SQL INSERT FAILED for", title, ":", err);
+  }
+}
+
 // ==========================================
 // DAILY QUOTE ENDPOINT (INTEGRATED FOR MYSQL)
 // ==========================================
@@ -673,6 +729,7 @@ app.post("/wellness-log", authMiddleware, async (req, res) => {
   const user_id = req.userId;
   const log_date = new Date().toISOString().split("T")[0];
 
+  // 1. Calculate Score Logic (Your original logic)
   let calculatedScore = 0;
 
   const sleep = parseFloat(sleep_hours) || 0;
@@ -704,6 +761,7 @@ app.post("/wellness-log", authMiddleware, async (req, res) => {
 
   if (calculatedScore > 100) calculatedScore = 100;
 
+  // 2. SQL Query
   const sql = `
     INSERT INTO wellness_logs (
       user_id, log_date, sleep_hours, water_intake, meals_count,
@@ -725,12 +783,19 @@ app.post("/wellness-log", authMiddleware, async (req, res) => {
     meditation, stress, anxiety, energy, calculatedScore
   ];
 
+  // 3. Execution & Achievement Trigger
   try {
     await db.execute(sql, params);
 
     await updateUserStreak(req.userId);
     await saveWellnessHistory(req.userId, calculatedScore);
-    await checkAchievements(req.userId);
+    
+    // Pass the raw data object here so the engine doesn't need to re-query the DB
+    await checkAchievements(req.userId, { 
+        sleep: sleep, 
+        water: waterLiters, 
+        meditation: meditation 
+    });
 
     res.json({ message: "Saved successfully", score: calculatedScore });
   } catch (err) {
@@ -785,34 +850,6 @@ async function updateUserStreak(userId) {
 
     const updSql = "UPDATE wellness_streaks SET current_streak = ?, longest_streak = ?, last_active_date = ? WHERE user_id = ?";
     await db.execute(updSql, [current, longest, todayString, userId]);
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function unlockAchievement(userId, title, description) {
-  try {
-    const [result] = await db.execute("SELECT id FROM achievements WHERE user_id = ? AND title = ?", [userId, title]);
-    if (result.length > 0) return;
-
-    await db.execute("INSERT INTO achievements (user_id, title, description) VALUES (?, ?, ?)", [userId, title, description]);
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function checkAchievements(userId) {
-  try {
-    const [result] = await db.execute("SELECT * FROM wellness_streaks WHERE user_id = ?", [userId]);
-    if (result.length === 0) return;
-
-    const streak = result[0];
-    if (streak.current_streak >= 7) {
-      await unlockAchievement(userId, "7 Day Streak", "Completed wellness tracking for 7 days");
-    }
-    if (streak.current_streak >= 30) {
-      await unlockAchievement(userId, "30 Day Wellness Master", "Maintained wellness consistency for 30 days");
-    }
   } catch (err) {
     console.error(err);
   }
@@ -921,6 +958,47 @@ app.get("/logs/:userId", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Logs fetching error" });
   }
+});
+
+// GET all contacts
+// POST: Add contact (with 5 limit)
+app.post("/favourite-contact", authMiddleware, (req, res) => {
+  const { name, phone, relationship } = req.body;
+  db.query("SELECT COUNT(*) AS total FROM favourite_contacts WHERE user_id = ?", [req.userId], (err, result) => {
+    if (err) return res.status(500).json(err);
+    if (result[0].total >= 5) return res.status(400).json({ message: "Maximum 5 emergency contacts allowed" });
+    db.query("INSERT INTO favourite_contacts (user_id, name, phone, relationship) VALUES (?, ?, ?, ?)", 
+    [req.userId, name, phone, relationship], (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Contact saved successfully" });
+    });
+  });
+});
+
+// GET: Fetch all contacts
+app.get("/favourite-contact", authMiddleware, (req, res) => {
+  db.query("SELECT * FROM favourite_contacts WHERE user_id = ? ORDER BY created_at DESC", [req.userId], (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.json(result);
+  });
+});
+
+// PUT: Update contact
+app.put("/favourite-contact/:id", authMiddleware, (req, res) => {
+  const { name, phone, relationship } = req.body;
+  db.query("UPDATE favourite_contacts SET name=?, phone=?, relationship=? WHERE id=? AND user_id=?", 
+  [name, phone, relationship, req.params.id, req.userId], (err) => {
+    if (err) return res.status(500).json(err);
+    res.json({ message: "Contact updated successfully" });
+  });
+});
+
+// DELETE: Remove contact
+app.delete("/favourite-contact/:id", authMiddleware, (req, res) => {
+  db.query("DELETE FROM favourite_contacts WHERE id=? AND user_id=?", [req.params.id, req.userId], (err) => {
+    if (err) return res.status(500).json(err);
+    res.json({ message: "Contact deleted successfully" });
+  });
 });
 
 app.listen(5000, "0.0.0.0", () => {

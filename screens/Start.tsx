@@ -97,7 +97,7 @@ export default function Start({ navigation }: any) {
   }}
    resizeMode="cover"
  >
-<View style={{  backgroundColor: "rgba(0, 0, 0, 0.20)",
+<View style={{ padding: 20,
  justifyContent: "center",   // ✅ vertical center
   alignItems: "center",       // ✅ horizontal center
     flex: 1,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 20,
-    width: "80%",
+    width: "100%",
   },
 
   btnText: {

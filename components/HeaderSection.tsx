@@ -103,8 +103,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  topSection: { alignItems: "center", marginBottom: 20,marginTop: 50, paddingHorizontal: 20 },
-  headerText: { fontSize: 24, color: "#fff", fontFamily: "Poppins_500Medium" },
+  topSection: { alignItems: "center", marginBottom: 20,marginTop: 60, paddingHorizontal: 20 },
+  headerText: { fontSize: 20, color: "#fff", fontFamily: "Poppins_500Medium" },
   topText: { fontSize: 12, color: "#fff", fontFamily: "Poppins_400Regular", textAlign: "center", marginTop: 4 },
   header: { position: "absolute", right: 20, left: 20, height: 45, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 10, elevation: 10 },
   headericonbg: { backgroundColor: "#004927ff", padding: 8, borderRadius: 12 },

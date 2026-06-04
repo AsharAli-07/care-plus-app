@@ -281,6 +281,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 5
     
   },
 
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
 
   description: {
     color: "#ccc",
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 3,
     width: "90%",
     fontFamily: "Poppins_400Regular",

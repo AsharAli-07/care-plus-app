@@ -174,7 +174,9 @@ console.log(profileImage);
 
             {/* PROFILE IMAGE */}
             <View style={styles.imageWrapper}>
-
+            <Text style={styles.heading}>
+              Edit Profile
+            </Text>
 <Image
   source={
     privacyMode
@@ -197,9 +199,7 @@ console.log(profileImage);
 
             </View>
 
-            <Text style={styles.heading}>
-              Edit Profile
-            </Text>
+
 
             {/* NAME */}
             <View style={styles.inputWrapper}>
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 20,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 15,
     fontFamily: "Poppins_500Medium",
     
   },

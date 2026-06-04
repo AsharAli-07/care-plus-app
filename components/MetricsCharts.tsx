@@ -20,7 +20,7 @@ export const MetricsCharts: React.FC<MetricsChartsProps> = ({
   onCheck,
 }) => {
   return (
-    <BlurView intensity={50} tint="prominent" style={{ marginBottom: 20, borderRadius: 12 }}>
+    <BlurView intensity={50} tint="prominent" style={{ marginBottom:20, borderRadius: 12 }}>
       <TouchableOpacity style={styles.chartBox} onPress={onCheck}>
         <View style={styles.firstRow}>
           <Text style={styles.checkText}>Status: {status}</Text>

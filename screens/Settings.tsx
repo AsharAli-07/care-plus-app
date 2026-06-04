@@ -92,7 +92,7 @@ useEffect(() => {
 <Text style={styles.userEmail}>
   {user?.privacy_mode ? "Hidden for privacy" : user?.email || ""}
 </Text>
-            <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 10, borderRadius: 12 }} onPress={()=>navigation.navigate('Profile')}>
+            <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 15, borderRadius: 12 }} onPress={()=>navigation.navigate('Profile')}>
               <Text style={{fontFamily: 'Poppins_400Regular', fontSize: 12, color: '#fff'}}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -123,12 +123,6 @@ useEffect(() => {
   icon="medkit-outline"
   title="Emergency Support"
   onPress={() => navigation.navigate("Emergency")}
-/>
-
-<SettingItem
-  icon="help-circle-outline"
-  title="Help & Support"
-  onPress={() => navigation.navigate("Help")}
 />
 
 <SettingItem

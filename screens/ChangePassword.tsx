@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,67 +11,115 @@ import {
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
-import { BASE_URL } from '../api';
+import { BASE_URL } from "../api";
 
 const ChangePassword = ({ navigation }: any) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+    const [privacyMode, setPrivacyMode] = useState(false);
 
-  const changePassword = async () => {
-    if (!newPassword || !confirmPassword) {
-      Alert.alert("Please fill all fields");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Passwords do not match");
-      return;
-    }
-
-    try {
-      const token = await AsyncStorage.getItem("token");
-
-      const res = await axios.put(
-        `${BASE_URL}/change-password`,
-        {
-          newPassword,
-          confirmPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      Alert.alert("Success", res.data.message);
-
-      setNewPassword("");
-      setConfirmPassword("");
-
-      navigation.goBack();
-
-    } catch (err: any) {
-      Alert.alert(
-        "Error",
-        err?.response?.data?.message || "Something went wrong"
-      );
-    }
+  // 🔒 Password validation: 8+ chars + number
+  const isValidPassword = (password: string) => {
+    return /^(?=.*[0-9]).{8,}$/.test(password);
   };
 
+const changePassword = async () => {
+  setError("");
+
+  // Privacy mode enabled
+  if (privacyMode) {
+    setError("Password changes are disabled while Privacy Mode is enabled");
+    return;
+  }
+
+  if (!newPassword || !confirmPassword) {
+    setError("Please fill all fields");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setError("Passwords do not match");
+    return;
+  }
+
+  if (!isValidPassword(newPassword)) {
+    setError(
+      "Password must be at least 8 characters and include 1 number"
+    );
+    return;
+  }
+
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    const res = await axios.put(
+      `${BASE_URL}/change-password`,
+      {
+        newPassword,
+        confirmPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    Alert.alert("Success", res.data.message);
+
+    setNewPassword("");
+    setConfirmPassword("");
+
+    navigation.goBack();
+  } catch (err: any) {
+    setError(
+      err?.response?.data?.message || "Something went wrong"
+    );
+  }
+};
+const loadUser = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    const res = await axios.get(`${BASE_URL}/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+
+    setPrivacyMode(res.data.privacy_mode);
+
+  } catch (error) {
+    console.log("LOAD USER ERROR:", error);
+  }
+};
+
+  useEffect(() => {
+    loadUser();
+  }, []);
   return (
     <ImageBackground
       source={require("../assets/images/home-bg.jpg")}
       style={styles.background}
+      resizeMode="cover"
     >
       <View style={styles.overlay}>
 
         <BlurView intensity={50} tint="prominent" style={styles.card}>
 
           <Text style={styles.heading}>Change Password</Text>
-<Text style={styles.label}>
-                            New Password
-                          </Text>
+
+          {/* ERROR MESSAGE */}
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : null}
+
+
+
+          {/* NEW PASSWORD */}
+          <Text style={styles.label}>New Password</Text>
           <TextInput
             placeholder="New Password"
             placeholderTextColor="#999"
@@ -79,10 +127,11 @@ const ChangePassword = ({ navigation }: any) => {
             value={newPassword}
             onChangeText={setNewPassword}
             style={styles.input}
+            editable={!privacyMode}
           />
-<Text style={styles.label}>
-                            Confirm Password
-                          </Text>
+
+          {/* CONFIRM PASSWORD */}
+          <Text style={styles.label}>Confirm Password</Text>
           <TextInput
             placeholder="Confirm Password"
             placeholderTextColor="#999"
@@ -90,9 +139,14 @@ const ChangePassword = ({ navigation }: any) => {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             style={styles.input}
+            editable={!privacyMode}
           />
 
-          <TouchableOpacity style={styles.button} onPress={changePassword}>
+          {/* BUTTON */}
+          <TouchableOpacity
+            style={styles.button}
+            onPress={changePassword}
+          >
             <Text style={styles.buttonText}>Update Password</Text>
           </TouchableOpacity>
 
@@ -108,45 +162,49 @@ export default ChangePassword;
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    height: "100%", 
-    width: "100%"
   },
- overlay: {
+
+  overlay: {
     flex: 1,
     padding: 20,
-    paddingBottom: 80,
-    justifyContent: 'center'
+    justifyContent: "center",
   },
+
   card: {
     padding: 20,
     borderRadius: 12,
-    
   },
+
   heading: {
     fontSize: 20,
     color: "#fff",
-    marginBottom: 20,
+    marginBottom: 15,
     textAlign: "center",
-    fontFamily: 'Poppins_500Medium'
+    fontFamily: "Poppins_500Medium",
   },
+
   label: {
     color: "#fff",
     marginBottom: 8,
     fontSize: 12,
     fontFamily: "Poppins_500Medium",
-    alignSelf: 'flex-start'
   },
+
   input: {
     width: "100%",
     padding: 10,
     borderRadius: 12,
     paddingHorizontal: 15,
-    backgroundColor: "rgba(255,255,255,0.15)",
+
+    backgroundColor: "rgba(255,255,255,0.08)",
+
     color: "#fff",
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+
     marginBottom: 15,
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 12
   },
+
   button: {
     backgroundColor: "#004927",
     padding: 10,
@@ -154,9 +212,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+
   buttonText: {
     color: "#fff",
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 12
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+  },
+
+  errorText: {
+    color: "#ff4d4d",
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+    marginBottom: 15,
+    textAlign:'center'
   },
 });
