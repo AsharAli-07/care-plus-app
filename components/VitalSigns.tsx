@@ -19,7 +19,7 @@ export const VitalSigns: React.FC<VitalSignsProps> = ({
   onCheck,
 }) => {
   return (
-    <BlurView intensity={50} tint="prominent" style={{ marginBottom: 20, borderRadius: 12 }}>
+    <BlurView intensity={50} tint="dark" style={{ marginBottom: 20, borderRadius: 12,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1, }}>
       <TouchableOpacity style={styles.largeBox} onPress={onCheck}>
         <View style={styles.firstRow}>
           <Text style={styles.checkText}>Status: {status}</Text>

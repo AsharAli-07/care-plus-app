@@ -23,10 +23,12 @@ export default function BottomTabs() {
   height: 40,
   backgroundColor: "#004927ff",
   borderRadius: 12,       // ✅ radius here
-  overflow: "hidden",     // ✅ required for clipping
-  borderTopWidth: 0,      // remove default line
-  elevation: 10,          // Android shadow
+  overflow: "hidden",     // ✅ required for clipping     // remove default line
+  elevation: 6,          // Android shadow
   margin: 20,
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14,
   
 },
 

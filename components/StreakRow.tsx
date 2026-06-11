@@ -4,12 +4,12 @@ import { BlurView } from "expo-blur";
 
 export const StreakRow = ({ current, longest }: any) => (
   <View style={styles.row}>
-    <BlurView intensity={40} tint="prominent" style={styles.card}>
+    <BlurView intensity={40} tint="dark" style={styles.card}>
   <Text style={styles.emoji}>🔥</Text>
   <Text style={styles.number}>{current}</Text>
   <Text style={styles.label}>Current Streak</Text>
 </BlurView>
-   <BlurView intensity={40} tint="prominent" style={styles.card}>
+   <BlurView intensity={40} tint="dark" style={styles.card}>
   <Text style={styles.emoji}>🏆</Text>
   <Text style={styles.number}>{longest}</Text>
   <Text style={styles.label}>Longest Streak</Text>
@@ -28,6 +28,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     alignItems: "center",
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   emoji: {

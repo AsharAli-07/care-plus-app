@@ -27,7 +27,7 @@ export const InfoSections = ({ data }: any) => {
       {/* AI INSIGHTS */}
       <Text style={styles.sectionTitle}>AI Insights</Text>
 
-      <BlurView intensity={50} tint="prominent" style={styles.card}>
+      <BlurView intensity={50} tint="dark" style={styles.card}>
         <Text style={styles.text}>
           • Wellness Score: {data?.score || 0}/100
         </Text>
@@ -50,12 +50,12 @@ export const InfoSections = ({ data }: any) => {
 
       {data?.recommendations?.length > 0 ? (
         data.recommendations.map((item: string, index: number) => (
-          <BlurView intensity={50} tint="prominent" key={index} style={styles.card}>
+          <BlurView intensity={50} tint="dark" key={index} style={styles.card}>
             <Text style={styles.text}>💡  {item}</Text>
           </BlurView>
         ))
       ) : (
-       <BlurView intensity={50} tint="prominent" style={styles.card}>
+       <BlurView intensity={50} tint="dark" style={styles.card}>
           <Text style={styles.text}>
             Keep up the great work ✨
           </Text>
@@ -70,7 +70,7 @@ export const InfoSections = ({ data }: any) => {
           const earned = isEarned(goal.title);
 
           return (
-            <BlurView intensity={50} tint="prominent"
+            <BlurView intensity={50} tint="dark"
               key={index}
               style={[
                 styles.achCard,
@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     marginBottom: 15,
+        borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   text: {
@@ -126,12 +127,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     alignItems: "center",
+        borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   achEarned: {
 
     borderWidth: 1,
-    borderColor: "#004927",
+    borderColor: "#4ade80",
   },
 
   achLocked: {

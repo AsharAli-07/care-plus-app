@@ -22,7 +22,7 @@ export const DailyQuestions: React.FC<DailyQuestionsProps> = ({
   onGetResult,
 }) => {
   return (
-    <BlurView intensity={50} tint="prominent" style={styles.healthCard}>
+    <BlurView intensity={50} tint="dark" style={styles.healthCard}>
       <Text style={styles.cardTitle}>Questions of the Day</Text>
       <Text style={styles.progressText}>
         {answers.filter((a) => a !== "").length} / {questions.length} answered
@@ -35,7 +35,7 @@ export const DailyQuestions: React.FC<DailyQuestionsProps> = ({
         });
 
         return (
-          <BlurView intensity={10} tint="dark" key={index} style={styles.questionBox}>
+          <View key={index} style={styles.questionBox}>
             <TouchableOpacity onPress={() => onToggleQuestion(index)}>
               <Text style={styles.questionText}>{q}</Text>
             </TouchableOpacity>
@@ -48,7 +48,7 @@ export const DailyQuestions: React.FC<DailyQuestionsProps> = ({
                 style={styles.input}
               />
             </Animated.View>
-          </BlurView>
+          </View>
         );
       })}
 
@@ -66,14 +66,14 @@ export const DailyQuestions: React.FC<DailyQuestionsProps> = ({
 };
 
 const styles = StyleSheet.create({
-  healthCard: { borderRadius: 12, padding: 15, marginBottom: 20 },
+  healthCard: { borderRadius: 12, padding: 15, marginBottom: 20,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1 },
   cardTitle: { fontSize: 20, color: "#fff", fontFamily: "Poppins_500Medium", marginBottom: 15 },
   progressText: { color: "#ffffffff", fontSize: 12, marginBottom: 15, fontFamily: "Poppins_400Regular" },
-  questionBox: { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 10, marginBottom: 15 },
+  questionBox: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 12, padding: 10, marginBottom: 15,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1 },
   questionText: { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular" },
   input: { backgroundColor: "#fff", borderRadius: 12, padding: 10, fontSize: 12, color: "#004927ff", marginTop: 15, fontFamily: "Poppins_400Regular" },
-  resultBtn: { backgroundColor: "#004927ff", padding: 10, borderRadius: 12, alignItems: "center" },
+  resultBtn: { backgroundColor: "#004927ff", padding: 10, borderRadius: 12, alignItems: "center",  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1 },
   resultBtnText: { color: "#ffffffff", fontSize: 12, fontFamily: "Poppins_400Regular" },
-  resultBox: { marginTop: 10, backgroundColor: "rgba(255,255,255,0.10)", padding: 10, borderRadius: 12 },
+  resultBox: { marginTop: 10, backgroundColor: "rgba(255,255,255,0.08)", padding: 10, borderRadius: 12 },
   resultText: { color: "#fff", fontSize: 13 },
 });

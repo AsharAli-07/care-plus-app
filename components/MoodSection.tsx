@@ -25,7 +25,7 @@ export const MoodSection: React.FC<MoodSectionProps> = ({
   onStartConversation,
 }) => {
   return (
-    <BlurView intensity={50} tint="prominent" style={styles.chatBox}>
+    <BlurView intensity={50} tint="dark" style={styles.chatBox}>
       <View style={styles.textWrapper}>
         <Text style={styles.chatText}>Hello, Good Morning</Text>
         {!selected ? (
@@ -62,7 +62,7 @@ export const MoodSection: React.FC<MoodSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  chatBox: { backgroundColor: "rgba(255, 255, 255, 0.10)", borderRadius: 12, marginBottom: 20, padding: 15 },
+  chatBox: { borderRadius: 12, marginBottom: 20, padding: 15,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1, },
   textWrapper: { paddingBottom: 15 },
   chatText: { fontSize: 12, color: "#fff", fontFamily: "Poppins_400Regular", marginBottom: 5 },
   emojiRow: { flexDirection: "row", justifyContent: "space-between" },

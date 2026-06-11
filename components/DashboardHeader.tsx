@@ -11,7 +11,7 @@ export const DashboardHeader = ({ data, moodEmoji, moodText, onMoodPress }: any)
   };
 
   return (
-    <BlurView intensity={50} tint="prominent" style={styles.headerCard}>
+    <BlurView intensity={50} tint="dark" style={styles.headerCard}>
       <Text style={styles.title}>AI Wellness Dashboard</Text>
       <Text style={styles.score}>{data?.score || 0}/100</Text>
       <Text style={styles.status}>{getStatus(data?.score || 0)}</Text>
@@ -44,6 +44,7 @@ headerCard: {
   alignItems: "center",
   marginBottom: 20,
   overflow: "hidden",
+  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
 },
 
   title: {

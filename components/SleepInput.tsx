@@ -11,7 +11,7 @@ export const SleepInput: React.FC<SleepInputProps> = ({
   onChange,
 }) => (
   <View style={styles.container}>
-    <Text style={styles.section}>💤 Sleep Hours</Text>
+    <Text style={styles.section}>Sleep Hours</Text>
 
     <TextInput
       placeholder="Enter sleep hours"
@@ -43,10 +43,11 @@ const styles = StyleSheet.create({
   padding: 10,
 
   borderRadius: 12,
-  backgroundColor: "rgba(255,255,255,0.08)",
+  backgroundColor: "#1f2820e1",
 
   color: "#fff",
   fontSize: 12,
   fontFamily: "Poppins_400Regular",
+  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 });

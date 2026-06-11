@@ -4,10 +4,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  ImageBackground, View
+  ImageBackground, View, StatusBar
 } from "react-native";
 import { Audio } from "expo-av";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+
 
 export default function Start({ navigation }: any) {
   const soundRef = useRef<Audio.Sound | null>(null);
@@ -90,6 +92,8 @@ export default function Start({ navigation }: any) {
   }, []);
 
   return (
+        <View style={{ flex: 1, backgroundColor: "#050f09" }}>
+          <StatusBar barStyle="light-content" />
  <ImageBackground
    source={require("../assets/images/home-bg.jpg")}
    style={{ height: "100%", width: "100%",
@@ -97,6 +101,11 @@ export default function Start({ navigation }: any) {
   }}
    resizeMode="cover"
  >
+         <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
 <View style={{ padding: 20,
  justifyContent: "center",   // ✅ vertical center
   alignItems: "center",       // ✅ horizontal center
@@ -123,6 +132,7 @@ export default function Start({ navigation }: any) {
 
 </View>
     </ImageBackground>
+    </View>
   );
 }
 
@@ -137,7 +147,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontFamily: "Poppins_500Medium",
   },
-
+  glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
   btn: {
     backgroundColor: "#004927ff",
     padding: 10,
@@ -145,6 +164,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
     width: "100%",
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+         shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   btnText: {

@@ -87,8 +87,8 @@ useEffect(() => {
 
   return (
     <NavigationContainer ref={navigationRef}>
-{/* <Stack.Navigator screenOptions={{ headerShown: false }}> */}
-<Stack.Navigator >
+<Stack.Navigator screenOptions={{ headerShown: false }}>
+{/* <Stack.Navigator > */}
 
         {/* Auth & Setup Stack */}
         <Stack.Screen name="Login" component={Login} />

@@ -14,9 +14,9 @@ export const HydrationTracker: React.FC<HydrationTrackerProps> = ({
   onRemove,
 }) => (
   <View style={{ marginBottom: 20 }}>
-    <Text style={styles.section}>💧 Hydration Tracker</Text>
+    <Text style={styles.section}>Hydration Tracker</Text>
 
-    <BlurView intensity={50} tint="prominent" style={styles.container}>
+    <BlurView intensity={50} tint="dark" style={styles.container}>
       <View style={styles.row}>
         <TouchableOpacity onPress={onRemove} style={styles.btn}>
           <Text style={styles.btnText}>− 250ml</Text>
@@ -39,6 +39,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     overflow: "hidden",
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
     
   },
 
@@ -61,6 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minWidth: 90,
     alignItems: "center",
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   btnText: {

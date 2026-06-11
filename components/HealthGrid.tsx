@@ -4,10 +4,10 @@ import { BlurView } from "expo-blur";
 
 export const HealthGrid = ({ data }: any) => (
   <View style={styles.grid}>
-    <BlurView style={styles.card}><Text style={styles.cardEmoji}>💤</Text><Text style={styles.cardTitle}>Sleep</Text><Text style={styles.cardValue}>{data?.sleep_hours || 0} hrs</Text></BlurView>
-    <BlurView style={styles.card}><Text style={styles.cardEmoji}>💧</Text><Text style={styles.cardTitle}>Water</Text><Text style={styles.cardValue}>{data?.water_intake || 0} L</Text></BlurView>
-    <BlurView style={styles.card}><Text style={styles.cardEmoji}>🍽</Text><Text style={styles.cardTitle}>Meals</Text><Text style={styles.cardValue}>{data?.meals_count || 0}/3</Text></BlurView>
-    <BlurView style={styles.card}><Text style={styles.cardEmoji}>🧘</Text><Text style={styles.cardTitle}>Meditation</Text><Text style={styles.cardValue}>{data?.meditation_minutes || 0} min</Text></BlurView>
+     <BlurView intensity={40} tint="dark" style={styles.card}><Text style={styles.cardEmoji}>💤</Text><Text style={styles.cardTitle}>Sleep</Text><Text style={styles.cardValue}>{data?.sleep_hours || 0} hrs</Text></BlurView>
+     <BlurView intensity={40} tint="dark" style={styles.card}><Text style={styles.cardEmoji}>💧</Text><Text style={styles.cardTitle}>Water</Text><Text style={styles.cardValue}>{data?.water_intake || 0} L</Text></BlurView>
+     <BlurView intensity={40} tint="dark" style={styles.card}><Text style={styles.cardEmoji}>🍽</Text><Text style={styles.cardTitle}>Meals</Text><Text style={styles.cardValue}>{data?.meals_count || 0}/3</Text></BlurView>
+     <BlurView intensity={40} tint="dark" style={styles.card}><Text style={styles.cardEmoji}>🧘</Text><Text style={styles.cardTitle}>Meditation</Text><Text style={styles.cardValue}>{data?.meditation_minutes || 0} min</Text></BlurView>
   </View>
 );
 
@@ -25,6 +25,7 @@ card: {
   borderRadius: 12,
   marginBottom: 15,
   overflow: "hidden",
+      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
 },
 
   cardEmoji: {

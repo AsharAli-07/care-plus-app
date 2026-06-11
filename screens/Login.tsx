@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Text,
   ImageBackground,
-  ActivityIndicator,
+  ActivityIndicator, StatusBar
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-
+import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from '../api';
@@ -81,14 +81,21 @@ const Login = ({ navigation }: any) => {
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: "#050f09" }}>
+      <StatusBar barStyle="light-content" />
     <ImageBackground
       source={require("../assets/images/home-bg.jpg")}
       style={{ height: "100%", width: "100%" }}
       resizeMode="cover"
     >
+       <LinearGradient
+                colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.glowTop} />
       <View style={styles.centerWrapper}>
 
-        <BlurView intensity={50} tint="prominent" style={styles.cardWrapper}>
+        <BlurView intensity={50} tint="dark" style={styles.cardWrapper}>
 
           <Image
             source={require('../assets/images/logo.png')}
@@ -142,6 +149,7 @@ const Login = ({ navigation }: any) => {
 
       </View>
     </ImageBackground>
+    </View>
   );
 };
 
@@ -150,7 +158,16 @@ const styles = StyleSheet.create({
   container: {
   flex: 1,
 },
-
+  glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
 centerWrapper: {
   flex: 1,
   justifyContent: "center",   // ✅ vertical center
@@ -165,6 +182,7 @@ cardWrapper: {
   paddingLeft: 20,
   borderRadius: 12,
   alignItems: "center",
+  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
 },
 
 logo: {
@@ -201,12 +219,16 @@ loginButton: {
   alignItems: "center",
   width: "100%",
   marginTop: 15,
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
 },
 
 loginButtonText: {
   color: "#fff",
   fontSize: 12,
-  fontFamily: 'Poppins_400Regular'
+  fontFamily: 'Poppins_400Regular',
+ 
 },
 
 helpText: {

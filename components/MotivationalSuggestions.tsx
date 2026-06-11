@@ -1,11 +1,21 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image, Animated, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
-import YoutubePlayer from "react-native-youtube-iframe";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Animated,
+  StyleSheet,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 type VideoItem = {
   title: string;
   videoId: string;
+  category?: string;
+  duration?: string;
 };
 
 type MotivationalSuggestionsProps = {
@@ -20,51 +30,181 @@ type MotivationalSuggestionsProps = {
 export const MotivationalSuggestions: React.FC<MotivationalSuggestionsProps> = ({
   videos,
   selectedVideo,
-  videoOpacity,
-  videoTranslate,
   onOpenVideo,
-  onCloseVideo,
 }) => {
   return (
-    <View>
-      <Text style={styles.sectionHeading}>Motivational Suggestion</Text>
-      {videos.map((item, index) => (
-        <TouchableOpacity key={index} onPress={() => onOpenVideo(item.videoId)}>
-          <BlurView intensity={50} tint="prominent" style={styles.videoCard}>
-            <Image
-              source={{ uri: `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg` }}
-              style={styles.videoThumb}
-            />
-            <Text style={styles.videoTitle}>{item.title}</Text>
-          </BlurView>
-        </TouchableOpacity>
-      ))}
+    <View style={{ marginBottom: 20 }}>
+      <Text style={styles.sectionHeading}>Motivational Suggestions</Text>
 
-      {selectedVideo && (
-        <Animated.View
-          style={[
-            styles.playerBox,
-            {
-              opacity: videoOpacity,
-              transform: [{ translateY: videoTranslate }],
-            },
-          ]}
-        >
-          <YoutubePlayer key={selectedVideo} height={162} play={true} videoId={selectedVideo} />
-          <TouchableOpacity onPress={onCloseVideo} style={styles.closeBtn}>
-            <Text style={{ color: "#fff", fontFamily: "Poppins_400Regular" }}>✖ Close</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {videos.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            activeOpacity={0.8}
+            onPress={() => onOpenVideo(item.videoId)}
+            style={styles.videoCard}
+          >
+            {/* Thumbnail */}
+            <View style={styles.videoThumbWrap}>
+              <Image
+                source={{
+                  uri: `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`,
+                }}
+                style={styles.videoThumb}
+              />
+              {/* Gradient overlay — matches Peace page exactly */}
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.7)"]}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Play circle — matches Peace page exactly */}
+              <View style={styles.videoPlayBtn}>
+                <View style={[
+                  styles.videoPlayCircle,
+                  selectedVideo === item.videoId && styles.videoPlayCircleActive,
+                ]}>
+                  <Ionicons name="play" size={16} color="#4ade80" />
+                </View>
+              </View>
+              {/* Duration badge — matches Peace page exactly */}
+              {item.duration && (
+                <View style={styles.videoDurBadge}>
+                  <Text style={styles.videoDurText}>{item.duration}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Info block — matches Peace page exactly */}
+            <View style={styles.videoCardInfo}>
+              <Text style={styles.videoCardTitle} numberOfLines={2}>
+                {item.title}
+              </Text>
+              {item.category && (
+                <View style={styles.videoCatPill}>
+                  <Text style={styles.videoCatText}>{item.category}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Active indicator dot */}
+            {selectedVideo === item.videoId && (
+              <View style={styles.activeDot} />
+            )}
           </TouchableOpacity>
-        </Animated.View>
-      )}
+        ))}
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  sectionHeading: { fontSize: 20, marginBottom: 15, color: "#fff", fontFamily: "Poppins_500Medium" },
-  videoCard: { flexDirection: "row", borderRadius: 12, marginBottom: 15, alignItems: "center", elevation: 2 },
-  videoThumb: { width: 70, height: 38, borderRadius: 7, marginRight: 10 },
-  videoTitle: { fontSize: 12, color: "#ffffffff", flex: 1, fontFamily: "Poppins_400Regular" },
-  playerBox: { borderRadius: 12, overflow: "hidden", backgroundColor: "#000", marginBottom: 20 },
-  closeBtn: { padding: 10, alignItems: "center", backgroundColor: "rgba(255,255,255,0.10)" },
+  sectionHeading: {
+    fontSize: 20,
+    marginBottom: 15,
+    color: "#fff",
+    fontFamily: "Poppins_500Medium",
+  },
+  scrollContent: {
+    paddingRight: 4,
+  },
+
+  // Card — same width/radius pattern as Peace's videoCardHalf but sized for horizontal scroll
+  videoCard: {
+    width: 200,
+    marginRight: 15,
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+  },
+
+  // Thumbnail block — identical to Peace page
+  videoThumbWrap: {
+    position: "relative",
+  },
+  videoThumb: {
+    width: "100%",
+    height: 110,
+    resizeMode: "cover",
+  },
+  videoPlayBtn: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  videoPlayCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,73,39,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+  },
+  videoPlayCircleActive: {
+    backgroundColor: "rgba(0,73,39,1)",
+    borderColor: "#4ade80",
+  },
+  videoDurBadge: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  videoDurText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Poppins_400Regular",
+  },
+
+  // Info block — identical to Peace page
+  videoCardInfo: {
+    padding: 10,
+  },
+  videoCardTitle: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+    lineHeight: 17,
+  },
+  videoCatPill: {
+    marginTop: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: "rgba(0,73,39,0.4)",
+  },
+  videoCatText: {
+    color: "#4ade80",
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    fontFamily: "Poppins_500Medium",
+  },
+
+  // Active dot
+  activeDot: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#4ade80",
+  },
 });

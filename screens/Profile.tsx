@@ -168,7 +168,7 @@ console.log(profileImage);
           {/* PROFILE CARD */}
           <BlurView
             intensity={50}
-            tint="prominent"
+            tint="dark"
             style={styles.card}
           >
 
@@ -193,7 +193,7 @@ console.log(profileImage);
                 <Ionicons
                   name="camera"
                   size={18}
-                  color="#fff"
+                  color="#4ade80"
                 />
               </TouchableOpacity>
 
@@ -290,7 +290,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     padding: 20,
-    marginTop: 40,
+    marginTop: 50,
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
   },
 
   imageWrapper: {
@@ -302,8 +303,8 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 100,
-    borderWidth: 2,
-    borderColor: "#fff",
+    borderWidth: 1,
+    borderColor: "rgba(74,222,128,0.3)",
   },
 
   editImageBtn: {
@@ -316,6 +317,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#045d33",
     justifyContent: "center",
     alignItems: "center",
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   heading: {
@@ -354,6 +356,7 @@ const styles = StyleSheet.create({
   alignItems: "center",
   width: "100%",
   marginTop: 15,
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   buttonText: {

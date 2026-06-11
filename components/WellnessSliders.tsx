@@ -24,13 +24,13 @@ export const WellnessSliders: React.FC<WellnessSlidersProps> = ({
     <View style={styles.wrapper}>
 
       {/* MAIN HEADING */}
-      <Text style={styles.mainTitle}>🧠 Mental Wellness</Text>
+      <Text style={styles.mainTitle}>Mental Wellness</Text>
 
-      <BlurView intensity={50} tint="prominent" style={styles.container}>
+      <BlurView intensity={50} tint="dark" style={styles.container}>
 
         {/* STRESS */}
         <Text style={styles.section}>
-          😰 Stress Level ({stressLevel}/10)
+        Stress Level ({stressLevel}/10)
         </Text>
         <Slider
           minimumValue={0}
@@ -39,14 +39,14 @@ export const WellnessSliders: React.FC<WellnessSlidersProps> = ({
           value={stressLevel}
           onValueChange={setStressLevel}
           minimumTrackTintColor="#ef4444"
-          maximumTrackTintColor="#334155"
+          maximumTrackTintColor="#1f2820e1"
            thumbTintColor="#ef4444"
 
         />
 
         {/* ANXIETY */}
         <Text style={[styles.section, { marginTop: 15 }]}>
-          😟 Anxiety Level ({anxietyLevel}/10)
+        Anxiety Level ({anxietyLevel}/10)
         </Text>
         <Slider
           minimumValue={0}
@@ -55,13 +55,13 @@ export const WellnessSliders: React.FC<WellnessSlidersProps> = ({
           value={anxietyLevel}
           onValueChange={setAnxietyLevel}
           minimumTrackTintColor="#f97316"
-          maximumTrackTintColor="#334155"
+          maximumTrackTintColor="#1f2820e1"
            thumbTintColor="#f97316"
         />
 
         {/* ENERGY */}
      <Text style={[styles.section, { marginTop: 15 }]}>
-          🔋 Energy Level ({energyLevel}/10)
+        Energy Level ({energyLevel}/10)
         </Text>
         <Slider
           minimumValue={0}
@@ -69,9 +69,9 @@ export const WellnessSliders: React.FC<WellnessSlidersProps> = ({
           step={1}
           value={energyLevel}
           onValueChange={setEnergyLevel}
-          minimumTrackTintColor="#22c55e"
-          maximumTrackTintColor="#334155"
-            thumbTintColor="#22c55e"
+          minimumTrackTintColor="#4ade80"
+          maximumTrackTintColor="#1f2820e1"
+            thumbTintColor="#4ade80"
         />
 
       </BlurView>
@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     overflow: "hidden",
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
   },
 
   section: {
