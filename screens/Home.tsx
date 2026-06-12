@@ -411,13 +411,13 @@ export default function Home({ navigation }: any) {
         <ScrollView showsVerticalScrollIndicator={false} style={styles.overlay}>
           <View style={styles.InnerCard}>
             {/* 1. Shared Header Controls Panel Section */}
-            {/* <HeaderSection
+            <HeaderSection
               navigation={navigation}
               hasUnread={hasUnread}
               showDropdown={showDropdown}
               notifications={notifications}
               onToggleNotifications={handleToggleNotifications}
-            /> */}
+            />
 
             {/* 2. Personalized Check-In Selection Block */}
             <MoodSection

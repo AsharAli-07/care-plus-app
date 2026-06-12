@@ -70,11 +70,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     marginBottom: 15,
     alignItems: "center",
-    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+    
   },
 
   mealActive: {
     backgroundColor: "#004927ff",
+           shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   mealText: {

@@ -1,24 +1,30 @@
 const blockedAt = require('blocked-at');
 blockedAt((details) => {
   console.log('BLOCKED BY:', details.stack);
-}, { threshold: 100 }); // Logs anything that blocks for more than 100ms
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
-const cron = require("node-cron");
-const mysql = require("mysql2/promise");
+}, { threshold: 100 });
+
+require('dotenv').config();
+
+const express    = require("express");
+const bcrypt     = require("bcryptjs");
+const jwt        = require("jsonwebtoken");
+const cors       = require("cors");
+const fs         = require("fs");
+const path       = require("path");
+const axios      = require("axios");
+const cron       = require("node-cron");
+const mysql      = require("mysql2/promise");
+const multer     = require("multer");
+const FormData   = require("form-data");
+const Anthropic  = require("@anthropic-ai/sdk");
+
+// ── Anthropic client (initialized once) ──────────────────────────────────────
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
-
-// serve static assets folder
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
 let db;
@@ -45,16 +51,15 @@ if (!fs.existsSync("./assets/uploads")) {
   fs.mkdirSync("./assets/uploads", { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "./assets/uploads");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => { cb(null, "./assets/uploads"); },
+  filename:    (req, file, cb) => { cb(null, Date.now() + "-" + file.originalname); },
 });
 
-const upload = multer({ storage });
+const upload       = multer({ storage: diskStorage });          // profile images → disk
+const uploadMemory = multer({ storage: multer.memoryStorage() }); // audio → memory
+
+
 
 // =====================
 // AUTH MIDDLEWARE
@@ -999,6 +1004,368 @@ app.delete("/favourite-contact/:id", authMiddleware, (req, res) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Contact deleted successfully" });
   });
+});
+
+app.post("/api/meditation/update-minutes", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { log_date, meditation_minutes } = req.body;
+
+    if (!log_date || meditation_minutes == null) {
+      return res.status(400).json({
+        message: "log_date and meditation_minutes are required",
+      });
+    }
+
+    await db.execute(
+      `INSERT INTO wellness_logs (user_id, log_date, meditation_minutes)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       meditation_minutes = meditation_minutes + VALUES(meditation_minutes)`,
+      [userId, log_date, meditation_minutes]
+    );
+
+    res.json({
+      message: "Meditation updated successfully",
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ─── GET: today's score + previous best (for GameScoreHeader) ────────────────
+app.get("/api/game-scores", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const today  = new Date().toISOString().split("T")[0];
+
+    // Today's row
+    const [todayRows] = await db.execute(
+      `SELECT memory, stroop, sequence, tapstar, reverse, gratitude
+       FROM game_scores
+       WHERE user_id = ? AND log_date = ?`,
+      [userId, today]
+    );
+
+    // Previous best across all past days (not today)
+    const [prevRows] = await db.execute(
+      `SELECT
+         MAX(memory)    AS memory,
+         MAX(stroop)    AS stroop,
+         MAX(sequence)  AS sequence,
+         MAX(tapstar)   AS tapstar,
+         MAX(reverse)   AS reverse,
+         MAX(gratitude) AS gratitude
+       FROM game_scores
+       WHERE user_id = ? AND log_date < ?`,
+      [userId, today]
+    );
+
+    res.json({
+      today:    todayRows[0]  ?? {},
+      previous: prevRows[0]   ?? {},
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+// ─── POST: save/update score for a game (upsert, keeps highest for the day) ──
+app.post("/api/game-scores", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { game, score, log_date } = req.body;
+
+    const VALID_GAMES = ["memory", "stroop", "sequence", "tapstar", "reverse", "gratitude"];
+
+    if (!game || !VALID_GAMES.includes(game)) {
+      return res.status(400).json({ message: "Invalid or missing game key" });
+    }
+    if (score == null || !log_date) {
+      return res.status(400).json({ message: "score and log_date are required" });
+    }
+
+    // Insert row for the day if not exists, then update only if new score is higher
+    await db.execute(
+      `INSERT INTO game_scores (user_id, log_date, ${game})
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         ${game} = GREATEST(${game}, VALUES(${game}))`,
+      [userId, log_date, score]
+    );
+
+    // Return the updated today row so frontend can reflect immediately
+    const [rows] = await db.execute(
+      `SELECT memory, stroop, sequence, tapstar, reverse, gratitude
+       FROM game_scores
+       WHERE user_id = ? AND log_date = ?`,
+      [userId, log_date]
+    );
+
+    res.json({ message: "Score saved", today: rows[0] ?? {} });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/therapy/sessions/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT *
+       FROM therapy_sessions
+       WHERE user_id = ?
+       ORDER BY session_date ASC`,
+      [userId]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+app.post("/therapy/book", async (req, res) => {
+  try {
+    const {
+      user_id,
+      therapist_id,
+      therapist_name,
+      title,
+      session_type,
+      session_date,
+      session_time,
+      notes
+    } = req.body;
+
+    const [result] = await db.query(
+      `INSERT INTO therapy_sessions
+      (
+        user_id,
+        therapist_id,
+        therapist_name,
+        title,
+        session_type,
+        session_date,
+        session_time,
+        status,
+        notes
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        user_id,
+        therapist_id || null,
+        therapist_name,
+        title,
+        session_type,
+        session_date,
+        session_time,
+        "upcoming",
+        notes || null
+      ]
+    );
+
+    res.json({
+      success: true,
+      sessionId: result.insertId
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Booking Failed" });
+  }
+});
+
+app.post("/therapy/chat-log", async (req, res) => {
+  try {
+    const {
+      user_id,
+      session_id,
+      message_count,
+      summary
+    } = req.body;
+
+    await db.query(
+      `INSERT INTO therapy_chat_logs
+      (
+        user_id,
+        session_id,
+        message_count,
+        summary
+      )
+      VALUES (?, ?, ?, ?)`,
+      [
+        user_id,
+        session_id,
+        message_count,
+        summary
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: "Chat Logged"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error" });
+  }
+});
+
+app.post("/therapy/voice-log", async (req, res) => {
+  try {
+
+    const {
+      user_id,
+      session_id,
+      exchange_count
+    } = req.body;
+
+    await db.query(
+      `INSERT INTO therapy_voice_logs
+      (
+        user_id,
+        session_id,
+        exchange_count
+      )
+      VALUES (?, ?, ?)`,
+      [
+        user_id,
+        session_id,
+        exchange_count
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: "Voice Log Saved"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error" });
+  }
+});
+
+app.put("/therapy/session-status/:id", async (req, res) => {
+  try {
+
+    const { id } = req.params;
+    const { status } = req.body;
+
+    await db.query(
+      `UPDATE therapy_sessions
+       SET status = ?
+       WHERE id = ?`,
+      [status, id]
+    );
+
+    res.json({
+      success: true,
+      message: "Status Updated"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error" });
+  }
+});
+
+// ─── CHAT THERAPY ──────────────────────────────────────────────────────────────
+app.post("/api/therapy/chat", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { messages, session } = req.body;
+
+    const [wellnessRows] = await db.execute(
+      `SELECT * FROM wellness_logs WHERE user_id = ? AND log_date = CURDATE() LIMIT 1`,
+      [userId]
+    );
+    // FIXED: was "mood_entries", your table is "moods"
+    const [moodRows] = await db.execute(
+      `SELECT * FROM moods WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
+      [userId]
+    );
+    const [userRows] = await db.execute(
+      `SELECT name, privacy_mode FROM users WHERE id = ?`,
+      [userId]
+    );
+
+    const wellness = wellnessRows[0] || null;
+    const mood     = moodRows[0]     || null;
+    const user     = userRows[0]     || null;
+    const name = user?.privacy_mode ? "the user" : user?.name?.split(" ")[0] || "the user";
+
+    const systemPrompt = `You are Sera, a compassionate AI therapy companion inside the Care Plus mental health app.
+
+USER CONTEXT:
+- Name: ${name}
+- Mood: ${mood ? `${mood.mood_emoji} ${mood.mood_text}` : "Not logged today"}
+- Sleep: ${wellness?.sleep_hours ?? "?"}h | Water: ${wellness?.water_intake ?? "?"}L | Meditation: ${wellness?.meditation_minutes ?? "?"}m
+- Stress: ${wellness?.stress_level ?? "?"}/5 | Anxiety: ${wellness?.anxiety_level ?? "?"}/5 | Energy: ${wellness?.energy_level ?? "?"}/5
+- Wellness score: ${wellness?.score ?? "?"}/100
+${session ? `- Session context: "${session.title}" with ${session.therapist_name}` : ""}
+
+RULES:
+1. Be warm, empathetic, non-judgmental. Never clinical or cold.
+2. Use their data naturally — don't list it robotically.
+3. If stress or anxiety > 3, prioritise grounding techniques.
+4. If mood is Sad or Very Sad, validate emotionally before any advice.
+5. Keep responses to 2–4 sentences unless user asks for more.
+6. Never diagnose or prescribe. Recommend professional help for serious concerns.
+7. If user seems in crisis: "Please contact a crisis helpline or emergency services immediately."
+8. End with a gentle question or short grounding suggestion.`;
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 500,
+      system: systemPrompt,
+      messages,
+    });
+
+    res.json({ reply: response.content[0].text });
+  } catch (error) {
+    console.log("Chat therapy error:", error);
+    res.status(500).json({ message: "Sera is unavailable right now. Please try again." });
+  }
+});
+
+
+
+app.post("/api/therapy/transcribe", authMiddleware, uploadMemory.single("audio"), async (req, res) => {
+  try {
+    const form = new FormData();
+    form.append("file", req.file.buffer, {
+      filename: "audio.m4a",
+      contentType: req.file.mimetype || "audio/m4a",
+    });
+    form.append("model", "whisper-large-v3");
+    form.append("language", "en");
+
+    const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        ...form.getHeaders(),
+      },
+      body: form,
+    });
+
+    const data = await response.json();
+    res.json({ transcript: data.text || "" });
+  } catch (error) {
+    console.log("Transcription error:", error);
+    res.status(500).json({ message: "Transcription failed" });
+  }
 });
 
 app.listen(5000, "0.0.0.0", () => {

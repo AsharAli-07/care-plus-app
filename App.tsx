@@ -21,6 +21,9 @@ import Emergency from './screens/Emergency';
 import EmergencyContacts from './screens/EmergencyContacts';
 import About from "./screens/About";
 import WellnessTracker from './screens/WellnessTracker';
+import BookSession from './components/BookSession';
+import VoiceTherapy from './components/VoiceTherapy';
+import ChatTherapy from './components/ChatTherapy';
 
 import { 
   useFonts,  
@@ -49,6 +52,9 @@ export type RootStackParamList = {
   Emergency: undefined;
   EmergencyContacts: undefined;
   About: undefined;
+  ChatTherapy: undefined;
+  VoiceTherapy: undefined;
+  BookSession: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -108,6 +114,12 @@ useEffect(() => {
         <Stack.Screen name="Emergency" component={Emergency} />
         <Stack.Screen name="EmergencyContacts" component={EmergencyContacts} />
         <Stack.Screen name="About" component={About} />
+        <Stack.Screen name="ChatTherapy" component={ChatTherapy} />
+        <Stack.Screen name="VoiceTherapy" component={VoiceTherapy} />
+        <Stack.Screen name="BookSession" component={BookSession} />
+
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );

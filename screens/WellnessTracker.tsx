@@ -247,7 +247,9 @@ const styles = StyleSheet.create({
   width: "100%",
   marginTop: 10,
   marginBottom: 80,
-  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
+  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+         shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   saveText: {
