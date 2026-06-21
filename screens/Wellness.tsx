@@ -6,9 +6,9 @@ import {
   ImageBackground,
   ScrollView,
   TouchableOpacity,
-  Switch,
+  Switch, StatusBar
 } from "react-native";
-
+import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { BlurView } from "expo-blur";
@@ -116,12 +116,19 @@ const updatePreference = async (key: string, value: any) => {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay}>
+ <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+           <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ height: "100%", width: "100%" }}
+        resizeMode="cover"
+      >
+   <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
+                <View style={styles.overlay}>
 
         <ScrollView showsVerticalScrollIndicator={false}>
 
@@ -130,7 +137,7 @@ const updatePreference = async (key: string, value: any) => {
           </Text>
 
           {/* SLEEP GOAL */}
-          <BlurView intensity={50} tint="prominent" style={styles.card}>
+          <BlurView intensity={50} tint="dark" style={styles.card}>
             <View style={styles.row}>
 
               <View>
@@ -158,7 +165,7 @@ const updatePreference = async (key: string, value: any) => {
           </BlurView>
 
           {/* WATER GOAL */}
-          <BlurView intensity={50} tint="prominent" style={styles.card}>
+          <BlurView intensity={50} tint="dark" style={styles.card}>
             <View style={styles.row}>
 
               <View>
@@ -251,6 +258,8 @@ const updatePreference = async (key: string, value: any) => {
 
       </View>
     </ImageBackground>
+      </View>
+
   );
 };
 
@@ -271,7 +280,7 @@ const PreferenceItem = ({
   return (
     <BlurView
       intensity={50}
-      tint="prominent"
+      tint="dark"
       style={styles.card}
     >
 
@@ -347,6 +356,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 15,
     padding: 15,
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   row: {
@@ -354,7 +366,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-
+          glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
   leftSide: {
     flexDirection: "row",
     alignItems: "center",
@@ -379,6 +400,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 10,
+    
   },
 
   optionText: {

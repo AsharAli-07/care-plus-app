@@ -1,108 +1,59 @@
 import React from "react";
-import { Text, StyleSheet, View } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
 import { BlurView } from "expo-blur";
 
-type WellnessSlidersProps = {
-  stressLevel: number;
-  setStressLevel: (val: number) => void;
-  anxietyLevel: number;
-  setAnxietyLevel: (val: number) => void;
-  energyLevel: number;
-  setEnergyLevel: (val: number) => void;
+type Props = {
+  stressLevel: number;  setStressLevel: (v: number) => void;
+  anxietyLevel: number; setAnxietyLevel: (v: number) => void;
+  energyLevel: number;  setEnergyLevel: (v: number) => void;
 };
 
-export const WellnessSliders: React.FC<WellnessSlidersProps> = ({
-  stressLevel,
-  setStressLevel,
-  anxietyLevel,
-  setAnxietyLevel,
-  energyLevel,
-  setEnergyLevel,
-}) => {
+const SliderRow = ({ label, value, onChange, color, invert }: any) => {
+  const score = invert ? 10 - value : value;
+  const statusColor = score >= 7 ? "#4ade80" : score >= 4 ? "#facc15" : "#f87171";
   return (
-    <View style={styles.wrapper}>
-
-      {/* MAIN HEADING */}
-      <Text style={styles.mainTitle}>Mental Wellness</Text>
-
-      <BlurView intensity={50} tint="dark" style={styles.container}>
-
-        {/* STRESS */}
-        <Text style={styles.section}>
-        Stress Level ({stressLevel}/10)
-        </Text>
-        <Slider
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          value={stressLevel}
-          onValueChange={setStressLevel}
-          minimumTrackTintColor="#ef4444"
-          maximumTrackTintColor="#1f2820e1"
-           thumbTintColor="#ef4444"
-
-        />
-
-        {/* ANXIETY */}
-        <Text style={[styles.section, { marginTop: 15 }]}>
-        Anxiety Level ({anxietyLevel}/10)
-        </Text>
-        <Slider
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          value={anxietyLevel}
-          onValueChange={setAnxietyLevel}
-          minimumTrackTintColor="#f97316"
-          maximumTrackTintColor="#1f2820e1"
-           thumbTintColor="#f97316"
-        />
-
-        {/* ENERGY */}
-     <Text style={[styles.section, { marginTop: 15 }]}>
-        Energy Level ({energyLevel}/10)
-        </Text>
-        <Slider
-          minimumValue={0}
-          maximumValue={10}
-          step={1}
-          value={energyLevel}
-          onValueChange={setEnergyLevel}
-          minimumTrackTintColor="#4ade80"
-          maximumTrackTintColor="#1f2820e1"
-            thumbTintColor="#4ade80"
-        />
-
-      </BlurView>
+    <View style={sl.row}>
+      <View style={sl.labelRow}>
+        <Text style={sl.label}>{label}</Text>
+        <View style={[sl.pill, { backgroundColor: statusColor + "20", borderColor: statusColor + "60" }]}>
+          <Text style={[sl.pillTxt, { color: statusColor }]}>{value}/10</Text>
+        </View>
+      </View>
+      <Slider
+        minimumValue={0} maximumValue={10} step={1}
+        value={value} onValueChange={onChange}
+        minimumTrackTintColor={color}
+        maximumTrackTintColor="rgba(255,255,255,0.08)"
+        thumbTintColor={color}
+        style={{ height: 32 }}
+      />
+      <View style={sl.ticks}>
+        {[0,2,4,6,8,10].map(t => (
+          <Text key={t} style={sl.tick}>{t}</Text>
+        ))}
+      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: 15,
-  },
+export const WellnessSliders: React.FC<Props> = ({
+  stressLevel, setStressLevel, anxietyLevel, setAnxietyLevel, energyLevel, setEnergyLevel,
+}) => (
+  <BlurView intensity={40} tint="dark" style={sl.card}>
+    <SliderRow label="😤 Stress Level"  value={stressLevel}  onChange={setStressLevel}  color="#f87171" invert />
+    <SliderRow label="😰 Anxiety Level" value={anxietyLevel} onChange={setAnxietyLevel} color="#fb923c" invert />
+    <SliderRow label="⚡ Energy Level"  value={energyLevel}  onChange={setEnergyLevel}  color="#4ade80" />
+  </BlurView>
+);
 
-  mainTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontFamily: "Poppins_600SemiBold",
-    marginBottom: 15,
-  },
-
-  container: {
-    padding: 15,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
-  },
-
-  section: {
-    color: "#fff",
-    fontSize: 12,
-   
-    marginBottom: 8,
-    fontFamily: "Poppins_400Regular",
-  },
+const sl = StyleSheet.create({
+  card:     { borderRadius: 16, padding: 16, marginBottom: 14, borderColor: "rgba(248,113,113,0.25)", borderWidth: 1, overflow: "hidden" },
+  row:      { marginBottom: 16 },
+  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  label:    { color: "#ccc", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  pill:     { paddingHorizontal: 10, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
+  pillTxt:  { fontSize: 10, fontFamily: "Poppins_600SemiBold" },
+  ticks:    { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 },
+  tick:     { color: "#555", fontSize: 9, fontFamily: "Poppins_400Regular" },
 });

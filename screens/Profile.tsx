@@ -291,7 +291,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     padding: 20,
     marginTop: 50,
-     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+        borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   imageWrapper: {
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 12,
     padding: 10,
     color: "#fff",
@@ -356,7 +358,9 @@ const styles = StyleSheet.create({
   alignItems: "center",
   width: "100%",
   marginTop: 15,
-   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
+         borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   buttonText: {

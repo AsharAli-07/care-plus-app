@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   Alert,
   StyleSheet,
-  ImageBackground,
+  ImageBackground, StatusBar
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { BASE_URL } from "../api";
+import { LinearGradient } from "expo-linear-gradient";
 
 const ChangePassword = ({ navigation }: any) => {
   const [newPassword, setNewPassword] = useState("");
@@ -100,14 +101,21 @@ const loadUser = async () => {
     loadUser();
   }, []);
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay}>
+    <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+           <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ height: "100%", width: "100%" }}
+        resizeMode="cover"
+      >
+   <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
+                <View style={styles.overlay}>
 
-        <BlurView intensity={50} tint="prominent" style={styles.card}>
+        <BlurView intensity={50} tint="dark" style={styles.card}>
 
           <Text style={styles.heading}>Change Password</Text>
 
@@ -151,9 +159,10 @@ const loadUser = async () => {
           </TouchableOpacity>
 
         </BlurView>
-
+        </View>
+</ImageBackground>
       </View>
-    </ImageBackground>
+    
   );
 };
 
@@ -173,6 +182,9 @@ const styles = StyleSheet.create({
   card: {
     padding: 20,
     borderRadius: 12,
+      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   heading: {
@@ -196,7 +208,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 15,
 
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#1f2820e1",
 
     color: "#fff",
     fontSize: 12,
@@ -211,6 +223,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 10,
+      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   buttonText: {
@@ -225,5 +240,15 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     marginBottom: 15,
     textAlign:'center'
+  },
+          glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
   },
 });

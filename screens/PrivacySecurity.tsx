@@ -4,15 +4,13 @@ import {
   Text,
   StyleSheet,
   ImageBackground,
-  Image,
-  ScrollView,
-  TouchableOpacity, Alert
-} from "react-native";
 
+  TouchableOpacity, Alert, StatusBar 
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { Ionicons } from "@expo/vector-icons";
-
 import { BlurView } from 'expo-blur';
 import { BASE_URL } from '../api';
 
@@ -85,13 +83,18 @@ const handleDeleteAccount = () => {
  
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1,backgroundColor: "#050f09" }}>
+           <StatusBar barStyle="light-content" />
       <ImageBackground
         source={require("../assets/images/home-bg.jpg")}
         style={{ height: "100%", width: "100%" }}
         resizeMode="cover"
       >
-
+   <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
        
 
           {/* SETTINGS */}
@@ -139,7 +142,7 @@ export default PrivacySecurity;
 
 const SettingItem = ({ icon, title, isDanger, onPress }: any) => {
   return (
-    <BlurView intensity={50} tint="prominent" style={styles.itemRow}>
+    <BlurView intensity={50} tint="dark" style={styles.itemRow}>
 
       <TouchableOpacity onPress={onPress} style={styles.touchRow}>
 
@@ -196,6 +199,9 @@ itemRow: {
   borderRadius: 12,
   marginBottom: 15,
   overflow: "hidden",
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
 },
 
   leftRow: {
@@ -215,5 +221,15 @@ itemRow: {
     marginLeft: 10,
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
+  },
+        glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
   },
 });

@@ -34,6 +34,29 @@ import {
 } from "@expo-google-fonts/poppins";
 
 // 1. STRONGLY TYPED NAVIGATION STRATEGY
+// export type RootStackParamList = {
+//   Login: undefined;
+//   Start: undefined;
+//   Register: undefined;
+//   Onboarding: undefined;
+//   BottomTabs: undefined;
+//   Help: undefined;
+//   Profile: undefined;
+//   PrivacySecurity: undefined;
+//   ChangePassword: undefined;
+//   MoodHistory: undefined;
+//   Privacy: undefined;
+//   Notifications: undefined;
+//   Wellness: undefined;
+//   WellnessTracker: { targetSection?: string } | undefined; 
+//   Emergency: undefined;
+//   EmergencyContacts: undefined;
+//   About: undefined;
+//   ChatTherapy: undefined;
+//   VoiceTherapy: undefined;
+//   BookSession: undefined;
+// };
+
 export type RootStackParamList = {
   Login: undefined;
   Start: undefined;
@@ -48,13 +71,15 @@ export type RootStackParamList = {
   Privacy: undefined;
   Notifications: undefined;
   Wellness: undefined;
-  WellnessTracker: { targetSection?: string } | undefined; 
+  WellnessTracker: { targetSection?: string } | undefined;
   Emergency: undefined;
   EmergencyContacts: undefined;
   About: undefined;
   ChatTherapy: undefined;
   VoiceTherapy: undefined;
   BookSession: undefined;
+  Dashboard: undefined;
+  Meditation: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

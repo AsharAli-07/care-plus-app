@@ -45,10 +45,12 @@ const styles = StyleSheet.create({
 
   withMargin: {
     marginBottom: 15,
+     backgroundColor: "rgba(255,255,255,0.08)",
   },
 
   noMargin: {
     marginBottom: 0,
+     backgroundColor: "rgba(255,255,255,0.08)",
   },
 
   text: {

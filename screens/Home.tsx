@@ -23,7 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import YoutubePlayer from "react-native-youtube-iframe";
 
 // 📦 Modular Interface Elements Imports
-import { HeaderSection } from "../components/HeaderSection";
+import { HeaderSection, NotificationOverlay } from "../components/HeaderSection";
 import { MoodSection } from "../components/MoodSection";
 import { VitalSigns } from "../components/VitalSigns";
 import { MetricsCharts } from "../components/MetricsCharts";
@@ -31,6 +31,10 @@ import { SleepSuggestions } from "../components/SleepSuggestions";
 import { DailyQuestions } from "../components/DailyQuestions";
 import { MotivationalSuggestions } from "../components/MotivationalSuggestions";
 import { FooterQuickActions } from "../components/FooterQuickActions";
+
+
+
+
 
 type SleepItem = { thumbnail: string; title: string; audioUrl: string };
 type AudioItem = {
@@ -394,6 +398,46 @@ export default function Home({ navigation }: any) {
     }
   };
 
+
+const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: string) => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    const res = await axios.get(`${BASE_URL}/therapy/sessions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const sessions: any[] = res.data || [];
+ 
+    // Find the matching upcoming session by title
+    const match = sessions.find(
+      (s) =>
+        s.title === sessionTitle &&
+        (s.status === "upcoming" || s.status === "active")
+    );
+ 
+    // Also fetch user for context
+    const userRes = await axios.get(`${BASE_URL}/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const user = userRes.data;
+ 
+    if (match) {
+      if (match.session_type === "voice") {
+        navigation.navigate("VoiceTherapy", { session: match, user });
+      } else {
+        navigation.navigate("ChatTherapy", { session: match, user });
+      }
+    } else {
+      // No exact match — navigate to Therapy tab so user can find their session
+      navigation.navigate("Therapy");
+    }
+  } catch (err) {
+    console.log("Session navigate error:", err);
+    navigation.navigate("Therapy");
+  }
+};
+
+
+
   return (
     <View style={{ flex: 1, backgroundColor: "#050f09" }}>
       <StatusBar barStyle="light-content" />
@@ -485,7 +529,104 @@ export default function Home({ navigation }: any) {
             <FooterQuickActions />
           </View>
         </ScrollView>
-
+    {/* ── Notification Overlay (outside ScrollView so it never scrolls) ── */}
+<NotificationOverlay
+  visible={showDropdown}
+  notifications={
+    notifications.length === 0
+      ? [
+          {
+            id: "welcome-back",
+            title: "Welcome Back!",
+            message:
+              "We're glad to see you again. Check out your daily wellness goals.",
+            read_status: 0,
+          },
+        ]
+      : notifications
+  }
+  onClose={handleToggleNotifications}
+  onNotificationPress={(n) => {
+    handleToggleNotifications(); // close dropdown first
+ 
+    const title: string = n.title || "";
+    const message: string = n.message || "";
+ 
+    // ── Therapy / session notifications → navigate to the correct chat ──
+    if (
+      title.includes("Session Reminder") ||
+      title.includes("Session Starting") ||
+      title.includes("Session Booked") ||
+      title.includes("Session Starting Soon") ||
+      title.includes("Session Starting Now") ||
+      title.includes("Session Complete") ||
+      title.includes("Voice Session Complete")
+    ) {
+      // Extract session title from the notification message if present
+      // Message format: `Your Chat/Voice session "TITLE" ...`
+      const titleMatch = message.match(/"([^"]+)"/);
+      const sessionTitle = titleMatch ? titleMatch[1] : null;
+ 
+      if (sessionTitle) {
+        fetchSessionAndNavigate(sessionTitle);
+      } else {
+        navigation.navigate("Therapy");
+      }
+      return;
+    }
+ 
+    // ── Wellness notifications → Wellness Tracker ──
+    if (
+      title.includes("Hydration") ||
+      title.includes("Sleep") ||
+      title.includes("Mood Check") ||
+      title.includes("Meal") ||
+      title.includes("Wellness Log") ||
+      title.includes("Wellness Support")
+    ) {
+      navigation.navigate("WellnessTracker");
+      return;
+    }
+ 
+    // ── Meditation / mind notifications ──
+    if (
+      title.includes("Mind Reset") ||
+      title.includes("Meditation") ||
+      title.includes("Journal") ||
+      title.includes("Breathing")
+    ) {
+      navigation.navigate("Meditation");
+      return;
+    }
+ 
+    // ── Achievement notifications → Dashboard ──
+    if (title.includes("Achievement") || title.includes("Streak")) {
+      navigation.navigate("Dashboard");
+      return;
+    }
+ 
+    // ── Health alert notifications → Health Monitoring screen ──
+    if (
+      title.includes("Heart Rate") ||
+      title.includes("SpO₂") ||
+      title.includes("Temperature") ||
+      title.includes("Stress Detected") ||
+      title.includes("Anxiety Alert")
+    ) {
+      // Navigate to therapy chat for immediate support on health alerts
+      navigation.navigate("Therapy");
+      return;
+    }
+ 
+    // ── Motivation quotes → Home (already here) ──
+    if (title.includes("Motivation") || title.includes("Daily")) {
+      return; // stay on Home
+    }
+ 
+    // ── Fallback ──
+    navigation.navigate("Therapy");
+  }}
+/>
         {/* 9. MiniPlayer */}
         {currentTrack && (
           <Animated.View

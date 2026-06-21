@@ -7,8 +7,9 @@ import {
   Text,
   ImageBackground,
   Dimensions, 
-  Animated
+  Animated, StatusBar
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { BlurView } from 'expo-blur';
 
@@ -21,12 +22,19 @@ const HelpScreen = ({ navigation }: any) => {
 
   const [activeIndex, setActiveIndex] = useState(0);
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay}>
+   <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+            <StatusBar barStyle="light-content" />
+       <ImageBackground
+         source={require("../assets/images/home-bg.jpg")}
+         style={{ height: "100%", width: "100%" }}
+         resizeMode="cover"
+       >
+    <LinearGradient
+                   colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                   style={StyleSheet.absoluteFill}
+                 />
+                 <View style={styles.glowTop} />
+                 <View style={styles.overlay}>
 
    <Animated.ScrollView
   horizontal
@@ -55,7 +63,7 @@ onScroll={Animated.event(
 
 
           {/* FORGOT PASSWORD */}
-          <BlurView intensity={50} tint="prominent" style={styles.card}>
+          <BlurView intensity={50} tint="dark" style={styles.card}>
             <Text style={styles.cardTitle}>Forgot Password?</Text>
  <Text style={styles.description}>
 Enter your email, and we will send an OTP to your email to reset your password.
@@ -85,7 +93,7 @@ Enter your email, and we will send an OTP to your email to reset your password.
 
 
            {/* REGISTER */}
-          <BlurView intensity={50} tint="prominent" style={styles.card}>
+          <BlurView intensity={50} tint="dark" style={styles.card}>
             <Text style={styles.cardTitle}>Register Yourself</Text>
 
             <Text style={styles.description}>
@@ -140,6 +148,8 @@ Enter your email, and we will send an OTP to your email to reset your password.
 
       </View>
     </ImageBackground>
+      </View>
+
   );
 };
 
@@ -173,6 +183,9 @@ card: {
   marginHorizontal: 10,
   justifyContent: "center",
   alignSelf: "center",
+        borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
 },
 
   cardTitle: {
@@ -215,6 +228,9 @@ card: {
   borderRadius: 12,
   alignItems: "center",
   width: "100%",
+        borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   
   },
 
@@ -242,4 +258,14 @@ activeDot: {
   backgroundColor: "#004927ff",
   width: 20,
 },
+            glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
 });

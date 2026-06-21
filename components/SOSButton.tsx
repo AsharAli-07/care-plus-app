@@ -35,8 +35,8 @@ const styles = StyleSheet.create({
   },
 
   btn: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     borderRadius: 35,
 
     backgroundColor: "rgba(255,0,0,0.7)",
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
 
   text: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: "Poppins_500Medium",
   },
 

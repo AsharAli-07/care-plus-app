@@ -261,7 +261,7 @@ const Therapy = ({ navigation }: any) => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.chipRow}>
                 {latestMood && (
-                  <Chip icon="happy-outline" label="Mood" value={`${latestMood.mood_emoji} ${latestMood.mood_text}`}
+                  <Chip icon="radio-button-off-outline" label="Mood" value={`${latestMood.mood_text}`}
                     alert={latestMood.mood_text === "Very Sad" || latestMood.mood_text === "Sad"} />
                 )}
                 <Chip icon="heart-outline" label="HR" value={`${sensor.heartRate} bpm`} alert={sensor.heartRate > 100} />

@@ -28,7 +28,7 @@ export default function EmergencyCard({ contact }: any) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+     backgroundColor: "rgba(255,255,255,0.08)",
     padding: 15,
     borderRadius: 12,
     marginBottom: 15

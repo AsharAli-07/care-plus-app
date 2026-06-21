@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ImageBackground,
-  ScrollView, TouchableOpacity
+  ScrollView, TouchableOpacity, StatusBar
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -12,6 +12,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { BlurView } from "expo-blur";
 import { BASE_URL } from '../api';
+import { LinearGradient } from "expo-linear-gradient";
+
 
 
 
@@ -121,12 +123,19 @@ if (moods.length === 0) {
   );
 }
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay}>
+ <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+           <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ height: "100%", width: "100%" }}
+        resizeMode="cover"
+      >
+   <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
+                <View style={styles.overlay}>
         <ScrollView
           showsVerticalScrollIndicator={false}
         >
@@ -141,7 +150,7 @@ if (moods.length === 0) {
     <BlurView
   key={index}
   intensity={50}
-  tint="prominent"
+  tint="dark"
   style={styles.card}
 >
 
@@ -188,9 +197,10 @@ if (moods.length === 0) {
 )}
 
         </ScrollView>
-
+        </View>
+</ImageBackground>
       </View>
-    </ImageBackground>
+    
   );
 };
 
@@ -225,6 +235,9 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     marginBottom: 15,
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   emoji: {
@@ -244,7 +257,16 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontFamily: "Poppins_400Regular",
   },
-
+          glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
   loadMoreBtn: {
   backgroundColor: "#004927",
   padding: 10,

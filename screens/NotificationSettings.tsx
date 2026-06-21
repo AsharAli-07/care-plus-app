@@ -5,8 +5,10 @@ import {
   StyleSheet,
   ImageBackground,
   Switch,
-  ScrollView,
+  ScrollView, StatusBar
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -147,11 +149,19 @@ const updateSetting = async (key: keyof SettingsType, value: boolean) => {
 
 
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={{ flex: 1 }}
-    >
-      <View style={styles.overlay}>
+   <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+             <StatusBar barStyle="light-content" />
+        <ImageBackground
+          source={require("../assets/images/home-bg.jpg")}
+          style={{ height: "100%", width: "100%" }}
+          resizeMode="cover"
+        >
+     <LinearGradient
+                    colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.glowTop} />
+                  <View style={styles.overlay}>
 
         <ScrollView showsVerticalScrollIndicator={false}>
 
@@ -226,6 +236,8 @@ const updateSetting = async (key: keyof SettingsType, value: boolean) => {
 
       </View>
     </ImageBackground>
+      </View>
+
   );
 };
 
@@ -241,7 +253,7 @@ const NotificationItem = ({
   return (
     <BlurView
       intensity={50}
-      tint="prominent"
+      tint="dark"
       style={styles.card}
     >
 
@@ -284,6 +296,16 @@ const styles = StyleSheet.create({
     paddingBottom: 5
     
   },
+            glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
 
   heading: {
     marginTop: 20,
@@ -300,6 +322,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     flexDirection: "row",
     alignItems: "center",
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   title: {

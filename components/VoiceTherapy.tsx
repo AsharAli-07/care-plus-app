@@ -1,57 +1,40 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ImageBackground, TouchableOpacity,
-  StatusBar, Animated, Platform, ScrollView, ActivityIndicator,
+  View, Text, StyleSheet, ImageBackground,
+  ScrollView, TouchableOpacity, Animated, StatusBar,
+  Platform, ActivityIndicator, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { Audio } from "expo-av";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { BASE_URL } from "../api";
 
-// ─── Anthropic API ─────────────────────────────────────────────────────────────
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-
-const callClaude = async (messages: { role: string; content: string }[], system: string) => {
-  const res = await fetch(ANTHROPIC_API, {
+// ─── Call Sera voice via backend — all user data loaded server-side ───────────
+const callSeraVoice = async (
+  messages: { role: string; content: string }[],
+  session: any,
+  token: string
+): Promise<string> => {
+  const response = await fetch(`${BASE_URL}/api/therapy/voice-chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system, messages }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ messages, session }),
   });
-  const data = await res.json();
-  return data.content?.[0]?.text || "I'm here with you. Take a breath.";
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.message || "Server error");
+  }
+  const data = await response.json();
+  return data.reply;
 };
 
-// ─── System prompt ─────────────────────────────────────────────────────────────
-const buildVoiceSystemPrompt = (user: any, wellness: any, sensor: any, mood: any, session: any) => {
-  const name = user?.privacy_mode ? "the user" : user?.name?.split(" ")[0] || "friend";
-  const w = wellness;
-  const s = sensor;
-  return `You are Sera, a warm and calming AI voice therapist inside the Care Plus mental health app.
-
-USER DATA:
-- Name: ${name}
-- Mood: ${mood ? `${mood.mood_emoji} ${mood.mood_text}` : "Not logged"}
-- Wellness today: ${w ? `Sleep ${w.sleep_hours}h, Water ${w.water_intake}L, Meditation ${w.meditation_minutes}m, Stress ${w.stress_level}/5, Energy ${w.energy_level}/5` : "No log"}
-- Biometrics: ${s ? `HR ${s.heartRate}bpm, SpO₂ ${s.spo2}%, Temp ${s.temperature}°C, HRV ${s.hrv}ms, Motion: ${s.motionStatus}` : "No sensor"}
-${session ? `- Booked session: "${session.title}" with ${session.therapist_name}` : "- General voice session"}
-
-VOICE THERAPY RULES:
-1. Speak in short, calm sentences — this is VOICE, not text. Maximum 3 sentences per response.
-2. Use breathing cues naturally: "breathe in… and out" when appropriate.
-3. If HR > 100, immediately guide a 4-7-8 breathing exercise.
-4. If stress > 3, use grounding: "Name 5 things you can see right now."
-5. If mood is sad/very sad, validate before any techniques.
-6. Never use markdown, bullet points, or lists — pure spoken language only.
-7. Speak as if you're sitting right next to the person.
-8. End each response with a question or a gentle instruction to keep them engaged.
-9. If crisis detected, say: "Please call emergency services or a crisis line right away. I'm with you."`;
-};
-
-// ─── Transcript item ───────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 interface TranscriptItem {
   id: string;
   role: "user" | "sera";
@@ -60,7 +43,9 @@ interface TranscriptItem {
 }
 
 // ─── Orbital ring animation ────────────────────────────────────────────────────
-const OrbitalRing = ({ size, delay, active }: { size: number; delay: number; active: boolean }) => {
+const OrbitalRing = ({ size, delay, active, color = "#38bdf8" }: {
+  size: number; delay: number; active: boolean; color?: string;
+}) => {
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -70,11 +55,11 @@ const OrbitalRing = ({ size, delay, active }: { size: number; delay: number; act
         Animated.sequence([
           Animated.delay(delay),
           Animated.parallel([
-            Animated.timing(scale, { toValue: 1.6, duration: 1400, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: 0.45, duration: 300, useNativeDriver: true }),
+            Animated.timing(scale, { toValue: 1.65, duration: 1500, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0.4, duration: 280, useNativeDriver: true }),
           ]),
           Animated.parallel([
-            Animated.timing(scale, { toValue: 1, duration: 1100, useNativeDriver: true }),
+            Animated.timing(scale, { toValue: 1, duration: 1220, useNativeDriver: true }),
             Animated.timing(opacity, { toValue: 0, duration: 900, useNativeDriver: true }),
           ]),
         ])
@@ -89,14 +74,9 @@ const OrbitalRing = ({ size, delay, active }: { size: number; delay: number; act
   return (
     <Animated.View
       style={{
-        position: "absolute",
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        borderWidth: 1.5,
-        borderColor: "#38bdf8",
-        transform: [{ scale }],
-        opacity,
+        position: "absolute", width: size, height: size,
+        borderRadius: size / 2, borderWidth: 1.5, borderColor: color,
+        transform: [{ scale }], opacity,
       }}
     />
   );
@@ -104,7 +84,7 @@ const OrbitalRing = ({ size, delay, active }: { size: number; delay: number; act
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 const VoiceTherapy = ({ navigation, route }: any) => {
-  const { user, wellness, sensor, latestMood, session } = route.params || {};
+  const { session } = route.params || {};
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
@@ -114,20 +94,27 @@ const VoiceTherapy = ({ navigation, route }: any) => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [currentPhase, setCurrentPhase] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
   const [simulatedInput, setSimulatedInput] = useState("");
-  const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<any>(null);
   const scrollRef = useRef<ScrollView>(null);
-  const systemPrompt = buildVoiceSystemPrompt(user, wellness, sensor, latestMood, session);
+  const tokenRef = useRef<string>("");
 
-  // Breathing animation for orb
+  useEffect(() => {
+    AsyncStorage.getItem("token").then(t => { tokenRef.current = t || ""; });
+    return () => {
+      Speech.stop();
+      clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Orb animations
   const orbScale = useRef(new Animated.Value(1)).current;
-  const orbGlow = useRef(new Animated.Value(0)).current;
+  const orbGlow  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const breathe = Animated.loop(
       Animated.sequence([
-        Animated.timing(orbScale, { toValue: isListening ? 1.12 : 1.03, duration: 1800, useNativeDriver: true }),
-        Animated.timing(orbScale, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(orbScale, { toValue: isListening ? 1.14 : 1.04, duration: 1900, useNativeDriver: true }),
+        Animated.timing(orbScale, { toValue: 1, duration: 1900, useNativeDriver: true }),
       ])
     );
     breathe.start();
@@ -135,172 +122,218 @@ const VoiceTherapy = ({ navigation, route }: any) => {
   }, [isListening]);
 
   useEffect(() => {
-    if (isSpeaking) {
-      Animated.timing(orbGlow, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-    } else {
-      Animated.timing(orbGlow, { toValue: 0, duration: 400, useNativeDriver: true }).start();
-    }
+    Animated.timing(orbGlow, { toValue: isSpeaking ? 1 : 0, duration: 400, useNativeDriver: true }).start();
   }, [isSpeaking]);
 
-  // Speak a response via TTS
-  const speakResponse = useCallback(async (text: string) => {
+  const scrollToEnd = useCallback(() => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+  }, []);
+
+  // TTS helper
+  const speakResponse = useCallback(async (text: string): Promise<void> => {
+    // Clean text for speech (remove any markdown artifacts)
+    const clean = text.replace(/\*\*/g, "").replace(/\*/g, "").replace(/\n/g, " ").trim();
     setIsSpeaking(true);
     setCurrentPhase("speaking");
-    return new Promise<void>((resolve) => {
-      Speech.speak(text, {
+    return new Promise((resolve) => {
+      Speech.speak(clean, {
         language: "en-US",
-        pitch: 1.0,
-        rate: 0.88,
+        pitch: 1.05,
+        rate: 0.85,
         onDone: () => { setIsSpeaking(false); setCurrentPhase("idle"); resolve(); },
         onError: () => { setIsSpeaking(false); setCurrentPhase("idle"); resolve(); },
       });
     });
   }, []);
 
-  // Start the session with an opening greeting
+  // Start session
   const startSession = async () => {
     setSessionActive(true);
     setCurrentPhase("thinking");
     setIsThinking(true);
     try {
-      const opening = await callClaude(
-        [{ role: "user", content: `Greet ${user?.privacy_mode ? "the user" : user?.name?.split(" ")[0] || "the user"} warmly for a voice therapy session. Be brief and calming — 2 sentences only. Ask one gentle open question.` }],
-        systemPrompt
+      const openingPrompt = session
+        ? `Greet the user for their booked voice session: "${session.title}". Mention you've checked their latest wellness data. Ask one warm opening question. Maximum 2 sentences, spoken style only.`
+        : `Introduce yourself as Sera for a voice therapy session. Mention you have their health data ready. Ask one gentle question about how they're feeling right now. Maximum 2 sentences, spoken style only.`;
+
+      const reply = await callSeraVoice(
+        [{ role: "user", content: openingPrompt }],
+        session,
+        tokenRef.current
       );
+
       const item: TranscriptItem = {
-        id: "0",
-        role: "sera",
-        text: opening,
+        id: "0", role: "sera", text: reply,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setTranscript([item]);
-      setConversationHistory([{ role: "assistant", content: opening }]);
+      setConversationHistory([{ role: "assistant", content: reply }]);
       setIsThinking(false);
-      await speakResponse(opening);
+      scrollToEnd();
+      await speakResponse(reply);
     } catch {
       setIsThinking(false);
-      setSessionActive(false);
+      const fallback = "Hi, I'm Sera. I'm here with you. How are you feeling right now?";
+      setTranscript([{
+        id: "0", role: "sera", text: fallback,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }]);
+      setConversationHistory([{ role: "assistant", content: fallback }]);
+      await speakResponse(fallback);
     }
   };
 
-  // ─── IMPORTANT: Expo Speech-to-Text requires expo-speech-recognition or a paid STT API.
-  // Here we simulate with a text input fallback that mimics voice input.
-  // Replace startRecording/stopRecording with actual STT when integrating.
-  const startRecording = async () => {
+  // Simulate listening start (replace with real STT when integrating expo-speech-recognition)
+  const startListening = () => {
     if (isSpeaking) { Speech.stop(); setIsSpeaking(false); }
     setIsListening(true);
     setCurrentPhase("listening");
     setRecordingTime(0);
-    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
   };
 
-  const stopRecordingAndProcess = async (manualText?: string) => {
+  // Process user speech (text comes from STT or simulated input)
+  const processUserSpeech = async (userText: string) => {
     clearInterval(timerRef.current);
     setIsListening(false);
     setCurrentPhase("thinking");
     setIsThinking(true);
 
-    // In production: replace manualText with actual STT transcript
-    const userText = manualText || simulatedInput || "I'm feeling a bit anxious today.";
-    setSimulatedInput("");
+    const trimmed = userText.trim();
+    if (!trimmed) {
+      setIsThinking(false);
+      setCurrentPhase("idle");
+      return;
+    }
 
     const userItem: TranscriptItem = {
-      id: Date.now().toString(),
-      role: "user",
-      text: userText,
+      id: Date.now().toString(), role: "user", text: trimmed,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
-    setTranscript((prev) => [...prev, userItem]);
+    setTranscript(prev => [...prev, userItem]);
 
-    const updatedHistory = [...conversationHistory, { role: "user", content: userText }];
+    const updatedHistory = [...conversationHistory, { role: "user", content: trimmed }];
     setConversationHistory(updatedHistory);
-
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    scrollToEnd();
 
     try {
-      const reply = await callClaude(updatedHistory, systemPrompt);
+      const reply = await callSeraVoice(updatedHistory, session, tokenRef.current);
       const seraItem: TranscriptItem = {
-        id: (Date.now() + 1).toString(),
-        role: "sera",
-        text: reply,
+        id: (Date.now() + 1).toString(), role: "sera", text: reply,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-      setTranscript((prev) => [...prev, seraItem]);
-      setConversationHistory((prev) => [...prev, { role: "assistant", content: reply }]);
+      setTranscript(prev => [...prev, seraItem]);
+      setConversationHistory(prev => [...prev, { role: "assistant", content: reply }]);
       setIsThinking(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      scrollToEnd();
       await speakResponse(reply);
     } catch {
       setIsThinking(false);
       setCurrentPhase("idle");
+      const errText = "I had a little trouble. Please try speaking again.";
+      await speakResponse(errText);
     }
+  };
+
+  const stopListening = () => {
+    // With real STT: this is where you'd stop recording and get the transcript
+    // For demo, we use the simulatedInput
+    const text = simulatedInput || "I've been feeling quite stressed lately and I'm not sleeping well.";
+    setSimulatedInput("");
+    processUserSpeech(text);
   };
 
   const endSession = async () => {
     Speech.stop();
     clearInterval(timerRef.current);
-    try {
-      const token = await AsyncStorage.getItem("token");
-      if (transcript.length > 1) {
-        await axios.post(`${BASE_URL}/therapy/voice-log`, {
-          session_id: session?.id || null,
-          exchange_count: Math.floor(transcript.length / 2),
-        }, { headers: { Authorization: `Bearer ${token}` } });
-      }
-    } catch { /* silently fail */ }
-    navigation.goBack();
+
+    if (transcript.length <= 1) {
+      navigation.goBack();
+      return;
+    }
+
+    Alert.alert(
+      "End Voice Session?",
+      "Your session will be saved.",
+      [
+        { text: "Continue", style: "cancel" },
+        {
+          text: "End Session",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("token");
+              await axios.post(
+                `${BASE_URL}/therapy/voice-log`,
+                {
+                  session_id: session?.id || null,
+                  exchange_count: Math.floor(transcript.length / 2),
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+            } catch { /* silent */ }
+            navigation.goBack();
+          },
+        },
+      ]
+    );
   };
 
   const phaseLabel = {
     idle: sessionActive ? "Tap mic to speak" : "Tap Start to begin",
-    listening: `Listening… ${recordingTime}s`,
+    listening: `Listening… ${recordingTime}s — tap Stop when done`,
     thinking: "Sera is thinking…",
     speaking: "Sera is speaking…",
   }[currentPhase];
 
-  const orbColor = isSpeaking ? "#38bdf8" : isListening ? "#4ade80" : "rgba(255,255,255,0.15)";
+  const orbColor = isSpeaking ? "#38bdf8" : isListening ? "#4ade80" : "rgba(255,255,255,0.12)";
+  const isActive = isSpeaking || isListening;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#050f09" }}>
+    <View style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
-      <ImageBackground source={require("../assets/images/home-bg.jpg")} style={{ flex: 1 }} resizeMode="cover">
-        <LinearGradient colors={["rgba(0,20,10,0.5)", "rgba(5,15,10,0.97)"]} style={StyleSheet.absoluteFill} />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ flex: 1, height: '100%', width: '100%' }}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={["rgba(0,20,10,0.5)", "rgba(5,15,10,0.97)"]}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.glowTop} />
         <View style={styles.glowBottom} />
 
-        {/* ── Header ── */}
-        <BlurView intensity={55} tint="dark" style={styles.header}>
+        {/* Header */}
+        <BlurView intensity={50} tint="dark" style={styles.header}>
           <TouchableOpacity onPress={endSession} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <View>
-            <Text style={styles.headerTitle}>Voice Therapy</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Voice Session</Text>
             <Text style={styles.headerSub}>
-              {session ? `Session with ${session.therapist_name}` : "with Sera · AI Companion"}
+              {session ? `"${session.title}"` : "with Sera · AI Companion"}
             </Text>
           </View>
           <View style={styles.liveChip}>
-            <View style={[styles.liveDot, { backgroundColor: sessionActive ? "#4ade80" : "#666" }]} />
-            <Text style={styles.liveText}>{sessionActive ? "Live" : "Idle"}</Text>
+            <View style={[styles.liveDot, { backgroundColor: sessionActive ? "#4ade80" : "#444" }]} />
+            <Text style={styles.liveText}>{sessionActive ? "Live" : "Ready"}</Text>
           </View>
         </BlurView>
 
-        {/* ── Central orb ── */}
+        {/* Central orb */}
         <View style={styles.orbContainer}>
-          {/* Orbital rings */}
-          <OrbitalRing size={180} delay={0} active={isSpeaking || isListening} />
-          <OrbitalRing size={220} delay={300} active={isSpeaking || isListening} />
-          <OrbitalRing size={260} delay={600} active={isSpeaking} />
+          <OrbitalRing size={180} delay={0}   active={isActive} color={isSpeaking ? "#38bdf8" : "#4ade80"} />
+          <OrbitalRing size={225} delay={300} active={isActive} color={isSpeaking ? "#38bdf8" : "#4ade80"} />
+          <OrbitalRing size={270} delay={600} active={isSpeaking} color="#38bdf8" />
 
-          {/* Main orb */}
           <Animated.View style={[styles.orbOuter, { transform: [{ scale: orbScale }] }]}>
             <LinearGradient
               colors={
                 isSpeaking
-                  ? ["rgba(56,189,248,0.3)", "rgba(0,40,65,0.8)"]
+                  ? ["rgba(56,189,248,0.35)", "rgba(0,40,65,0.85)"]
                   : isListening
-                  ? ["rgba(74,222,128,0.3)", "rgba(0,73,39,0.8)"]
-                  : ["rgba(255,255,255,0.08)", "rgba(255,255,255,0.03)"]
+                  ? ["rgba(74,222,128,0.35)", "rgba(0,73,39,0.85)"]
+                  : ["rgba(255,255,255,0.06)", "rgba(5,15,9,0.9)"]
               }
               style={styles.orbInner}
             >
@@ -309,81 +342,110 @@ const VoiceTherapy = ({ navigation, route }: any) => {
               ) : (
                 <Ionicons
                   name={isSpeaking ? "volume-high-outline" : isListening ? "mic" : "mic-outline"}
-                  size={42}
-                  color={isSpeaking ? "#38bdf8" : isListening ? "#4ade80" : "#666"}
+                  size={44}
+                  color={isSpeaking ? "#38bdf8" : isListening ? "#4ade80" : "#555"}
                 />
               )}
             </LinearGradient>
           </Animated.View>
         </View>
 
-        {/* ── Phase label ── */}
+        {/* Phase label */}
         <Text style={styles.phaseLabel}>{phaseLabel}</Text>
 
-        {/* ── Transcript ── */}
-        <ScrollView
+        {/* Transcript */}
+        {/* <ScrollView
           ref={scrollRef}
           style={styles.transcript}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 10 }}
           showsVerticalScrollIndicator={false}
         >
+          {transcript.length === 0 && (
+            <View style={styles.emptyTranscript}>
+              <Text style={styles.emptyTranscriptText}>
+                Conversation will appear here. Sera knows your wellness data and will personalise every response.
+              </Text>
+            </View>
+          )}
           {transcript.map((item) => (
-            <View key={item.id} style={[styles.transcriptItem, item.role === "user" && styles.transcriptUser]}>
-              <Text style={styles.transcriptRole}>{item.role === "sera" ? "Sera" : "You"} · {item.time}</Text>
+            <View
+              key={item.id}
+              style={[styles.transcriptItem, item.role === "user" && styles.transcriptUser]}
+            >
+              <Text style={styles.transcriptRole}>
+                {item.role === "sera" ? "✨ Sera" : "You"} · {item.time}
+              </Text>
               <Text style={styles.transcriptText}>{item.text}</Text>
             </View>
           ))}
-        </ScrollView>
+        </ScrollView> */}
 
-        {/* ── Controls ── */}
-        <BlurView intensity={60} tint="dark" style={styles.controls}>
+        {/* Controls */}
+        <BlurView intensity={50} tint="dark" style={styles.controls}>
           {!sessionActive ? (
-            <TouchableOpacity style={styles.startBtn} onPress={startSession} disabled={isThinking}>
+            <TouchableOpacity
+              style={[styles.startBtn, isThinking && { opacity: 0.6 }]}
+              onPress={startSession}
+              disabled={isThinking}
+            >
               {isThinking ? (
                 <ActivityIndicator color="#050f09" />
               ) : (
                 <>
-                  <Ionicons name="play" size={18} color="#050f09" />
-                  <Text style={styles.startBtnText}>Start Session</Text>
+                
+                  <Text style={styles.startBtnText}>Start Session with Sera</Text>
                 </>
               )}
             </TouchableOpacity>
           ) : (
             <View style={styles.activeControls}>
-              {/* Stop speaking */}
+              {/* Mute / pause Sera */}
               <TouchableOpacity
-                style={styles.controlBtn}
-                onPress={() => { Speech.stop(); setIsSpeaking(false); setCurrentPhase("idle"); }}
+                style={[styles.controlBtn, {backgroundColor: "#0ab5ff54"}]}
+                onPress={() => {
+                  Speech.stop();
+                  setIsSpeaking(false);
+                  setCurrentPhase("idle");
+                }}
               >
-                <Ionicons name="pause-outline" size={22} color="#fff" />
+               
+                <Text style={styles.controlBtnLabel}>Pause</Text>
               </TouchableOpacity>
 
-              {/* Main mic button */}
+              {/* Main mic */}
               <TouchableOpacity
                 style={[
                   styles.micBtn,
                   isListening && styles.micBtnActive,
-                  (isThinking || isSpeaking) && { opacity: 0.4 },
+                  (isThinking || isSpeaking) && { opacity: 0.35 },
                 ]}
-                onPress={isListening ? () => stopRecordingAndProcess() : startRecording}
+                onPress={isListening ? stopListening : startListening}
                 disabled={isThinking || isSpeaking}
               >
-                <Ionicons name={isListening ? "stop" : "mic"} size={28} color={isListening ? "#fff" : "#050f09"} />
+                <Ionicons
+                  name={isListening ? "stop-outline" : "mic-outline"}
+                  size={32}
+                  color={"#fff"}
+                />
               </TouchableOpacity>
 
               {/* End session */}
-              <TouchableOpacity style={styles.controlBtn} onPress={endSession}>
-                <Ionicons name="close-outline" size={22} color="#ff6b6b" />
+              <TouchableOpacity style={[styles.controlBtn, { borderColor: "rgba(255,107,107,0.3)", backgroundColor: "#f8383842" }]} onPress={endSession}>
+    
+                <Text style={[styles.controlBtnLabel, { color: "#fff" }]}>End</Text>
               </TouchableOpacity>
             </View>
           )}
         </BlurView>
 
-        {/* ── STT notice (remove when real STT is integrated) ── */}
-        {sessionActive && !isListening && currentPhase === "idle" && (
-          <BlurView intensity={40} tint="dark" style={styles.sttNotice}>
-            <Ionicons name="information-circle-outline" size={14} color="#888" />
-            <Text style={styles.sttNoticeText}>STT placeholder — tap mic, then submit a sample phrase below for demo</Text>
+        {/* STT placeholder notice */}
+        {sessionActive && currentPhase === "idle" && (
+          <BlurView intensity={35} tint="dark" style={styles.sttNotice}>
+            <Ionicons name="information-circle-outline" size={13} color="#555" />
+            <Text style={styles.sttNoticeText}>
+              Real-time STT: Integrate expo-speech-recognition or Groq Whisper for live transcription.
+              Demo mode uses a sample phrase when you tap Stop.
+            </Text>
           </BlurView>
         )}
       </ImageBackground>
@@ -394,38 +456,107 @@ const VoiceTherapy = ({ navigation, route }: any) => {
 export default VoiceTherapy;
 
 const styles = StyleSheet.create({
-  glowTop: { position: "absolute", top: -80, left: -60, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none" },
-  glowBottom: { position: "absolute", bottom: -60, right: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(0,40,65,0.35)", pointerEvents: "none" },
-
-  header: { flexDirection: "row", alignItems: "center", paddingTop: Platform.OS === "ios" ? 54 : 40, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: "rgba(74,222,128,0.1)", gap: 12 },
-  backBtn: { padding: 4 },
+  glowTop: {
+    position: "absolute", top: -80, left: -60,
+    width: 280, height: 280, borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none",
+  },
+  glowBottom: {
+    position: "absolute", bottom: -60, right: -60,
+    width: 220, height: 220, borderRadius: 110,
+    backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none",
+  },
+  header: {
+    flexDirection: "row", alignItems: "center",
+    paddingTop: Platform.OS === "ios" ? 54 : 10,
+    paddingBottom: 10, paddingHorizontal: 10,
+    borderBottomWidth: 1, borderBottomColor: "rgba(74,222,128,0.1)", gap: 12,
+  },
+  backBtn: { },
   headerTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15 },
-  headerSub: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 10 },
-  liveChip: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.06)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  headerSub: { color: "#666", fontFamily: "Poppins_400Regular", fontSize: 10, marginTop: 1 },
+  liveChip: {
+    marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
+  },
   liveDot: { width: 6, height: 6, borderRadius: 3 },
   liveText: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 10 },
 
-  orbContainer: { alignItems: "center", justifyContent: "center", height: 280, marginTop: 10 },
-  orbOuter: { width: 130, height: 130, borderRadius: 65, alignItems: "center", justifyContent: "center" },
-  orbInner: { width: 130, height: 130, borderRadius: 65, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)" },
+  orbContainer: { alignItems: "center", justifyContent: "center", height: 420, marginTop: 6 },
+  orbOuter: { width: 136, height: 136, borderRadius: 68, alignItems: "center", justifyContent: "center" },
+  orbInner: {
+    width: 136, height: 136, borderRadius: 68,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)",
+  },
 
-  phaseLabel: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 12, textAlign: "center", marginBottom: 12, letterSpacing: 0.5 },
+  phaseLabel: {
+    color: "#888", fontFamily: "Poppins_400Regular", fontSize: 12,
+    textAlign: "center", marginBottom: 14, letterSpacing: 0.4, paddingHorizontal: 30,
+  },
 
-  transcript: { flex: 1, maxHeight: 200 },
-  transcriptItem: { marginBottom: 10, padding: 12, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(56,189,248,0.12)" },
-  transcriptUser: { backgroundColor: "rgba(0,73,39,0.2)", borderColor: "rgba(74,222,128,0.12)" },
-  transcriptRole: { color: "#666", fontFamily: "Poppins_400Regular", fontSize: 9, marginBottom: 4, letterSpacing: 0.5 },
-  transcriptText: { color: "#ddd", fontFamily: "Poppins_400Regular", fontSize: 12, lineHeight: 18 },
+  transcript: { flex: 1, maxHeight: 190 },
+  emptyTranscript: {
+    padding: 16, borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", margin: 4,
+  },
+  emptyTranscriptText: { color: "#444", fontFamily: "Poppins_400Regular", fontSize: 11, textAlign: "center", lineHeight: 17 },
+  transcriptItem: {
+    marginBottom: 10, padding: 12, borderRadius: 12,
+    backgroundColor: "rgba(56,189,248,0.05)",
+    borderWidth: 1, borderColor: "rgba(56,189,248,0.12)",
+  },
+  transcriptUser: {
+    backgroundColor: "rgba(74,222,128,0.05)",
+    borderColor: "rgba(74,222,128,0.12)",
+  },
+  transcriptRole: {
+    color: "#555", fontFamily: "Poppins_400Regular",
+    fontSize: 9, marginBottom: 5, letterSpacing: 0.4,
+  },
+  transcriptText: { color: "#ddd", fontFamily: "Poppins_400Regular", fontSize: 12, lineHeight: 19 },
 
-  controls: { paddingHorizontal: 24, paddingVertical: 18, paddingBottom: Platform.OS === "ios" ? 38 : 18, borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)" },
-  startBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#4ade80", borderRadius: 14, paddingVertical: 14, gap: 8 },
-  startBtnText: { color: "#050f09", fontFamily: "Poppins_500Medium", fontSize: 15 },
+  controls: {
+    paddingHorizontal: 24, paddingVertical: 18,
+    paddingBottom: Platform.OS === "ios" ? 40 : 20,
+    borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)",
+  },
+  startBtn: {
+    backgroundColor: "#004927ff",
+  padding: 10,
+  alignItems: "center",
+  width: "100%",
+  marginTop: 15,
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, borderRadius: 50
+  },
+  startBtnText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 14 },
 
   activeControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  controlBtn: { width: 50, height: 50, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  micBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#4ade80", alignItems: "center", justifyContent: "center", shadowColor: "#4ade80", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 },
-  micBtnActive: { backgroundColor: "#ff6b6b", shadowColor: "#ff6b6b" },
+  controlBtn: {
+    width: 58, height: 58, borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", 
+  },
+  controlBtnLabel: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 9 },
+  micBtn: {
+    width: 78, height: 78, borderRadius: 39,
+    backgroundColor: "#004927", alignItems: "center", justifyContent: "center",
+    shadowColor: "#004927", shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45, shadowRadius: 18, elevation: 10, borderColor: "rgba(74,222,128,0.3)"
+  },
+  micBtnActive: {
+   borderColor: "rgba(255,107,107,0.3)", backgroundColor: "#f8383842", shadowColor: "#f8383842"
+  },
 
-  sttNotice: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)" },
-  sttNoticeText: { color: "#555", fontFamily: "Poppins_400Regular", fontSize: 9, flex: 1 },
+  sttNotice: {
+    flexDirection: "row", alignItems: "flex-start", gap: 6,
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)",
+  },
+  sttNoticeText: { color: "#444", fontFamily: "Poppins_400Regular", fontSize: 9, flex: 1, lineHeight: 14 },
 });

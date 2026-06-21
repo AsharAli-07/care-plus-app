@@ -5,11 +5,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ImageBackground,
+  ImageBackground, StatusBar
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
-
+import { LinearGradient } from "expo-linear-gradient";
 export default function EmergencyContacts() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,14 +71,21 @@ export default function EmergencyContacts() {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.centerWrapper}>
+ <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+           <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ height: "100%", width: "100%" }}
+        resizeMode="cover"
+      >
+   <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
+                <View style={styles.overlay}>
 
-        <BlurView intensity={50} tint="prominent" style={styles.card}>
+        <BlurView intensity={50} tint="dark" style={styles.card}>
 
           <Text style={styles.title}>Emergency Contact</Text>
 
@@ -128,6 +135,8 @@ export default function EmergencyContacts() {
 
       </View>
     </ImageBackground>
+      </View>
+
   );
 }
 
@@ -148,6 +157,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     alignItems: "center",
+      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    alignSelf: 'center',
+
   },
 
   title: {
@@ -170,7 +184,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
+      backgroundColor: "rgba(255,255,255,0.08)",
     color: "#fff",
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
@@ -183,6 +197,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     marginTop: 15,
+       borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   btnText: {
@@ -196,5 +213,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
     marginBottom: 15,
+  },
+            glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
+  },
+    overlay: {
+ flex: 1,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

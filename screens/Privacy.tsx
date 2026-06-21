@@ -5,13 +5,15 @@ import {
   StyleSheet,
   ImageBackground,
   Switch,
-  Alert,
+  Alert, StatusBar
 } from "react-native";
 
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { BASE_URL } from '../api';
+import { LinearGradient } from "expo-linear-gradient";
+
 
 
 const Privacy = () => {
@@ -60,13 +62,21 @@ const Privacy = () => {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/images/home-bg.jpg")}
-      style={styles.background}
-    >
-      <View style={styles.overlay}>
+ <View style={{ flex: 1,backgroundColor: "#050f09", }}>
+           <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ height: "100%", width: "100%" }}
+        resizeMode="cover"
+      >
+   <LinearGradient
+                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.glowTop} />
+                <View style={styles.overlay}>
 
-        <BlurView intensity={50} tint="prominent" style={styles.card}>
+        <BlurView intensity={50} tint="dark" style={styles.card}>
 
           <Text style={styles.title}>
             Privacy & Emotional Safety
@@ -93,6 +103,8 @@ const Privacy = () => {
 
       </View>
     </ImageBackground>
+      </View>
+
   );
 };
 
@@ -114,6 +126,9 @@ const styles = StyleSheet.create({
   card: {
     padding: 20,
     borderRadius: 15,
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   title: {
@@ -141,5 +156,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontFamily: 'Poppins_400Regular'
+  },
+            glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
   },
 });

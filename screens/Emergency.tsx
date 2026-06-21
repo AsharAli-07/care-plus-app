@@ -5,6 +5,8 @@ import {
   Alert,
   ImageBackground,
   StyleSheet,
+  StatusBar,
+  ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -14,7 +16,7 @@ import SOSButton from "../components/SOSButton";
 import EmergencyActionButton from "../components/EmergencyActionButton";
 import { getLocation } from "../utils/location";
 import * as Linking from "expo-linking";
-import { ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function Emergency({ navigation }: any) {
   const [contact, setContact] = useState<any>(null);
@@ -64,7 +66,6 @@ export default function Emergency({ navigation }: any) {
     }
 
     const msg = await buildMessage();
-
     Linking.openURL(`sms:${contact.phone}?body=${encodeURIComponent(msg)}`);
   };
 
@@ -90,36 +91,47 @@ export default function Emergency({ navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#050f09" }}>
+      <StatusBar barStyle="light-content" />
+
       <ImageBackground
         source={require("../assets/images/home-bg.jpg")}
         style={{ flex: 1, height: '100%', width: '100%' }}
         resizeMode="cover"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.overlay}>
+        <LinearGradient
+          colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+          style={StyleSheet.absoluteFill}
+        />
 
+        <View style={styles.glowTop} />
+
+        {/* IMPORTANT FIX: flex container */}
+        <View style={styles.overlay}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+          >
             {/* TITLE */}
             <Text style={styles.title}>Emergency Support</Text>
 
             {/* CONTACT CARD */}
-            <BlurView intensity={50} tint="prominent" style={styles.card}>
+            <BlurView intensity={50} tint="dark" style={styles.card}>
               <EmergencyCard contact={contact} />
-                              <EmergencyActionButton
-  title="Edit Contact"
-  icon="create"
-  onPress={() => navigation.navigate("EmergencyContacts")}
-  isLast
 
-/>
+              <EmergencyActionButton
+                title="Edit Contact"
+                icon="create"
+                onPress={() => navigation.navigate("EmergencyContacts")}
+                isLast
+              />
             </BlurView>
 
             {/* NO CONTACT */}
             {!contact && (
-              <BlurView intensity={50} tint="prominent" style={styles.card}>
+              <BlurView intensity={50} tint="dark" style={styles.card}>
                 <Text style={styles.text}>
                   No emergency contact added
                 </Text>
@@ -129,19 +141,20 @@ export default function Emergency({ navigation }: any) {
                   icon="person-add"
                   onPress={() =>
                     navigation.navigate("EmergencyContacts")
+                    
                   }
+                  isLast
                 />
-
               </BlurView>
             )}
 
-            {/* SOS SECTION (NEW DESIGN) */}
- <BlurView intensity={40} tint="prominent" style={styles.sosCard}>
-  <SOSButton onPress={sos} />
-</BlurView>
+            {/* SOS */}
+            <BlurView intensity={50} tint="dark" style={styles.sosCard}>
+              <SOSButton onPress={sos} />
+            </BlurView>
 
             {/* ACTION BUTTONS */}
-            <BlurView intensity={40} tint="prominent" style={styles.card}>
+            <BlurView intensity={50} tint="dark" style={styles.card}>
               <EmergencyActionButton
                 title="WhatsApp Alert"
                 icon="logo-whatsapp"
@@ -158,14 +171,12 @@ export default function Emergency({ navigation }: any) {
                 title="Call Contact"
                 icon="call"
                 onPress={call}
-                  isLast
+                isLast
               />
-
-
             </BlurView>
 
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </ImageBackground>
     </View>
   );
@@ -173,11 +184,12 @@ export default function Emergency({ navigation }: any) {
 
 const styles = StyleSheet.create({
   overlay: {
+    flex: 1, // ✅ IMPORTANT FIX
     padding: 20,
   },
 
   scrollContainer: {
-    flexGrow: 1,
+    paddingBottom: 40, // ✅ important for scrolling end space
   },
 
   title: {
@@ -185,14 +197,21 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     color: "#fff",
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: "center",
   },
 
   card: {
     borderRadius: 12,
     padding: 15,
     overflow: "hidden",
-    marginBottom: 20
+    marginBottom: 20,
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+    shadowColor: "#004927",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    elevation: 6,
   },
 
   text: {
@@ -202,43 +221,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  /* SOS SECTION */
   sosCard: {
     borderRadius: 12,
     padding: 15,
     marginBottom: 20,
     overflow: "hidden",
+       borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
-  sosRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: 'space-between'
+  glowTop: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,73,39,0.22)",
+    pointerEvents: "none",
   },
-
-sosButtonWrap: {
-  marginRight: 12,
-  alignItems: "center",
-  justifyContent: "center",
-},
-
-  sosTextWrap: {
-    flex: 1,
-  },
-
-  sosTitle: {
-    fontSize: 12,
-    fontFamily: "Poppins_500Medium",
-    color: "#fff",
-  },
-
-  sosSubtitle: {
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-    color: "#bbb",
-    marginTop: 2,
-  },
-  sosButtonSmall: {
-  transform: [{ scale: 0.5 }], // 👈 main fix (controls size)
-},
 });

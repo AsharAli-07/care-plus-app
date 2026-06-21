@@ -1,53 +1,50 @@
 import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
 
-type MindfulnessInputProps = {
-  value: number;
-  onChange: (minutes: number) => void;
+type Props = { value: number; onChange: (m: number) => void };
+
+export const MindfulnessInput: React.FC<Props> = ({ value, onChange }) => {
+  const presets = [5, 10, 15, 20, 30];
+  return (
+    <BlurView intensity={40} tint="dark" style={s.card}>
+      <View style={s.row}>
+        <TouchableOpacity style={s.btn} onPress={() => onChange(Math.max(0, value - 5))}>
+          <Ionicons name="remove" size={18} color="#60a5fa" />
+        </TouchableOpacity>
+        <View style={s.center}>
+          <Text style={s.value}>{value === 0 ? "—" : `${value}`}</Text>
+          <Text style={s.sub}>minutes meditated</Text>
+        </View>
+        <TouchableOpacity style={s.btn} onPress={() => onChange(value + 5)}>
+          <Ionicons name="add" size={18} color="#60a5fa" />
+        </TouchableOpacity>
+      </View>
+      <View style={s.presets}>
+        {presets.map(m => (
+          <TouchableOpacity
+            key={m}
+            style={[s.preset, value === m && s.presetActive]}
+            onPress={() => onChange(m)}
+          >
+            <Text style={[s.presetTxt, value === m && { color: "#60a5fa" }]}>{m}m</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </BlurView>
+  );
 };
 
-export const MindfulnessInput: React.FC<MindfulnessInputProps> = ({
-  value,
-  onChange,
-}) => (
-  <View style={styles.container}>
-    <Text style={styles.section}>Mindfulness</Text>
-
-    <TextInput
-      placeholder="Enter meditation minutes"
-      placeholderTextColor="#ffffffff"
-      keyboardType="numeric"
-      value={value === 0 ? "" : value.toString()}
-      onChangeText={(v) =>
-        onChange(Number(v.replace(/[^0-9]/g, "")))
-      }
-      style={styles.input}
-    />
-  </View>
-);
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-  },
-
-  section: {
-    color: "#fff",
-    fontSize: 20,
-    marginBottom: 15,
-    fontFamily: "Poppins_500Medium",
-  },
-
-  input: {
-  width: "100%",
-  padding: 10,
-
-  borderRadius: 12,
-  backgroundColor: "#1f2820e1",
-
-  color: "#fff",
-  fontSize: 12,
-  fontFamily: "Poppins_400Regular",
-  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
-  },
+const s = StyleSheet.create({
+  card:         { borderRadius: 16, padding: 16, marginBottom: 14, borderColor: "rgba(96,165,250,0.3)", borderWidth: 1, overflow: "hidden" },
+  row:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  btn:          { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(96,165,250,0.12)", alignItems: "center", justifyContent: "center", borderColor: "rgba(96,165,250,0.3)", borderWidth: 1 },
+  center:       { alignItems: "center" },
+  value:        { color: "#fff", fontSize: 32, fontFamily: "Poppins_700Bold" },
+  sub:          { color: "#888", fontSize: 10, fontFamily: "Poppins_400Regular" },
+  presets:      { flexDirection: "row", justifyContent: "space-between", marginTop: 14, gap: 6 },
+  preset:       { flex: 1, padding: 7, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", borderColor: "rgba(255,255,255,0.08)", borderWidth: 1 },
+  presetActive: { backgroundColor: "rgba(96,165,250,0.18)", borderColor: "rgba(96,165,250,0.5)" },
+  presetTxt:    { color: "#aaa", fontSize: 11, fontFamily: "Poppins_500Medium" },
 });
