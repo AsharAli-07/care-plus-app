@@ -127,6 +127,12 @@ useEffect(() => {
 />
 
 <SettingItem
+  icon="watch-outline"
+  title="Connect Watch"
+  onPress={() => navigation.navigate("ConnectWatch")}
+/>
+
+<SettingItem
   icon="medkit-outline"
   title="Emergency Support"
   onPress={() => navigation.navigate("Emergency")}

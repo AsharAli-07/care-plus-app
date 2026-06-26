@@ -24,6 +24,7 @@ import WellnessTracker from './screens/WellnessTracker';
 import BookSession from './components/BookSession';
 import VoiceTherapy from './components/VoiceTherapy';
 import ChatTherapy from './components/ChatTherapy';
+import ConnectWatch from './screens/ConnectWatch';
 
 import { 
   useFonts,  
@@ -80,6 +81,7 @@ export type RootStackParamList = {
   BookSession: undefined;
   Dashboard: undefined;
   Meditation: undefined;
+  ConnectWatch: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -142,6 +144,7 @@ useEffect(() => {
         <Stack.Screen name="ChatTherapy" component={ChatTherapy} />
         <Stack.Screen name="VoiceTherapy" component={VoiceTherapy} />
         <Stack.Screen name="BookSession" component={BookSession} />
+        <Stack.Screen name="ConnectWatch" component={ConnectWatch} />
 
 
 
