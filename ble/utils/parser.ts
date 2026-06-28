@@ -39,7 +39,7 @@ export const parseWatchData = (dataStr: string): Partial<WatchData> | null => {
       if (temp > 50) {
         temp = (temp - 32) * 5 / 9;
       }
-      parsed.temperature = (temp > 0 && temp <= 50) ? temp.toFixed(1) : "--";
+      parsed.temperature = data.t;
     }
 
     if (data.o !== undefined) {
