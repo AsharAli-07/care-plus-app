@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { useBLE } from '../ble';
+import { useBLEContext } from '../ble';
 
 const ConnectWatch = ({ navigation }: any) => {
   const {
@@ -25,7 +25,7 @@ const ConnectWatch = ({ navigation }: any) => {
     scanForDevices,
     connectToDevice,
     disconnect
-  } = useBLE();
+  } = useBLEContext();
 
   const [showDeviceModal, setShowDeviceModal] = useState(false);
 

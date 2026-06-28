@@ -25,6 +25,7 @@ import BookSession from './components/BookSession';
 import VoiceTherapy from './components/VoiceTherapy';
 import ChatTherapy from './components/ChatTherapy';
 import ConnectWatch from './screens/ConnectWatch';
+import { BLEProvider } from './ble';
 
 import { 
   useFonts,  
@@ -119,6 +120,7 @@ useEffect(() => {
   }
 
   return (
+    <BLEProvider>
     <NavigationContainer ref={navigationRef}>
 <Stack.Navigator screenOptions={{ headerShown: false }}>
 {/* <Stack.Navigator > */}
@@ -150,6 +152,7 @@ useEffect(() => {
 
       </Stack.Navigator>
     </NavigationContainer>
+    </BLEProvider>
   );
 }
 

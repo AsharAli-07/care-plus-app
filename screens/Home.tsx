@@ -26,6 +26,7 @@ import YoutubePlayer from "react-native-youtube-iframe";
 import { HeaderSection, NotificationOverlay } from "../components/HeaderSection";
 import { MoodSection } from "../components/MoodSection";
 import { VitalSigns } from "../components/VitalSigns";
+import { useBLEContext } from '../ble';
 import { MetricsCharts } from "../components/MetricsCharts";
 import { SleepSuggestions } from "../components/SleepSuggestions";
 import { DailyQuestions } from "../components/DailyQuestions";
@@ -134,6 +135,7 @@ const formatTime = (sec: number): string => {
 
 export default function Home({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { isConnected, watchData } = useBLEContext();
   const { width } = useWindowDimensions();
 
   // === Notification Core State System ===
@@ -475,22 +477,22 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
               onStartConversation={() => navigation.navigate("Therapy")}
             />
 
-            {/* 3. Static Health Indicators Grid Box */}
+            {/* 3. Live Health Watch Data */}
             <VitalSigns
-              status="Good"
-              bloodPressure="95"
-              heartRate="75"
-              temperature="85"
-              onCheck={() => console.log("Checking metrics context...")}
+              isConnected={isConnected}
+              heartRate={watchData.heartRate}
+              spo2={watchData.spo2}
+              temperature={watchData.temperature}
+              onConnect={() => navigation.navigate('ConnectWatch')}
             />
 
             {/* 4. Canvas-drawn Radial Matrix Progression Charts Rows */}
             <MetricsCharts
-              status="Good"
-              oxygen={95}
+              status={isConnected ? "Live" : "Offline"}
+              oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
               food={70}
               sleep={80}
-              onCheck={() => console.log("Validating metric system structures...")}
+              onCheck={() => navigation.navigate('ConnectWatch')}
             />
 
             {/* 5. Horizontal Audio Media Stream Carousels Options */}
