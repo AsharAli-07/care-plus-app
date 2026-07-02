@@ -164,19 +164,17 @@ console.log(profileImage);
             paddingBottom: 40,
           }}
         >
-
-          {/* PROFILE CARD */}
-          <BlurView
-            intensity={50}
-            tint="dark"
-            style={styles.card}
-          >
-
-            {/* PROFILE IMAGE */}
-            <View style={styles.imageWrapper}>
-            <Text style={styles.heading}>
+<Text style={styles.heading}>
               Edit Profile
             </Text>
+          {/* PROFILE CARD */}
+          <View
+            style={styles.card}
+          >
+      
+            {/* PROFILE IMAGE */}
+            <View style={styles.imageWrapper}>
+      
 <Image
   source={
     privacyMode
@@ -211,7 +209,7 @@ console.log(profileImage);
                 value={mask(name)}
                 onChangeText={setName}
                 placeholder="Enter name"
-                  placeholderTextColor="#b3b3b3ff"
+                  placeholderTextColor="#999"
                 style={styles.input}
                 editable={!privacyMode}
               />
@@ -227,7 +225,7 @@ console.log(profileImage);
                 value={mask(email)}
                 onChangeText={setEmail}
                 placeholder="Email"
-                  placeholderTextColor="#b3b3b3ff"
+                  placeholderTextColor="#999"
                 style={styles.input}
                 selectTextOnFocus={false}
                 editable={!privacyMode}
@@ -261,7 +259,7 @@ console.log(profileImage);
               </Text>
             </TouchableOpacity>
 
-          </BlurView>
+          </View>
 
         </ScrollView>
 
@@ -290,10 +288,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     padding: 20,
-    marginTop: 50,
+   marginTop: 30,
         borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
        shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,  backgroundColor: "rgba(0, 26, 17, 0.53)",
   },
 
   imageWrapper: {
@@ -302,8 +300,8 @@ const styles = StyleSheet.create({
   },
 
   profileImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
     borderRadius: 100,
     borderWidth: 1,
     borderColor: "rgba(74,222,128,0.3)",
@@ -326,7 +324,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 20,
     textAlign: "center",
-    marginBottom: 15,
+marginTop: 40,
     fontFamily: "Poppins_500Medium",
     
   },

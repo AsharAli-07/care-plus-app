@@ -14,7 +14,7 @@ const MEAL_META: Record<MealKey, { emoji: string; time: string; color: string }>
 };
 
 export const NutritionCheck: React.FC<Props> = ({ meals, mealKeys, onToggleMeal, mealScore }) => (
-  <BlurView intensity={40} tint="dark" style={s.card}>
+  <View style={s.card}>
     <View style={s.topRow}>
       <Text style={s.progress}>{mealScore}/3 meals logged</Text>
       <View style={s.badge}>
@@ -40,11 +40,12 @@ export const NutritionCheck: React.FC<Props> = ({ meals, mealKeys, onToggleMeal,
         );
       })}
     </View>
-  </BlurView>
+  </View>
 );
 
 const s = StyleSheet.create({
-  card:     { borderRadius: 16, padding: 16, marginBottom: 14, borderColor: "rgba(251,146,60,0.3)", borderWidth: 1, overflow: "hidden" },
+  card:     { borderRadius: 25, padding: 15, marginBottom: 30, borderColor: "rgba(251,146,60,0.3)", borderWidth: 1, overflow: "hidden" , backgroundColor: 'rgba(61, 28, 0, 0.3)',shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, shadowColor:"rgba(251,146,60,0.3)" },
   topRow:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   progress: { color: "#ccc", fontSize: 12, fontFamily: "Poppins_400Regular" },
   badge:    { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, backgroundColor: "rgba(251,146,60,0.15)", borderColor: "rgba(251,146,60,0.4)", borderWidth: 1 },

@@ -1,63 +1,96 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { CircleChart } from "./CircleChart";
 
 type MetricsChartsProps = {
-  status: string;
-  oxygen: number;
   food: number;
   sleep: number;
+  hydration: number;
   onCheck: () => void;
 };
 
 export const MetricsCharts: React.FC<MetricsChartsProps> = ({
-  status,
-  oxygen,
   food,
   sleep,
+  hydration,
   onCheck,
 }) => {
   return (
-     <BlurView intensity={50} tint="dark" style={{ marginBottom: 20, borderRadius: 12,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1, }}>
-      <TouchableOpacity style={styles.chartBox} onPress={onCheck}>
-        <View style={styles.firstRow}>
-          <Text style={styles.checkText}>Status: {status}</Text>
-        </View>
+    <View style={styles.card}>
 
+      <TouchableOpacity
+        style={styles.chartBox}
+        onPress={onCheck}
+        activeOpacity={0.85}
+      >
         <View style={styles.chartInside}>
-          <View style={styles.chartcol}>
-            <CircleChart value={oxygen} />
-            <Text style={styles.chartHeading}>Oxygen</Text>
-          </View>
-          <View style={styles.col}>
+          <View style={styles.chartCol}>
             <CircleChart value={food} />
             <Text style={styles.chartHeading}>Food</Text>
           </View>
-          <View style={[styles.col, styles.chartLastCol]}>
+
+          <View style={styles.chartCol}>
             <CircleChart value={sleep} />
             <Text style={styles.chartHeading}>Sleep</Text>
           </View>
-        </View>
 
-        <View style={styles.row}>
-          <Text style={styles.checkText}>Check</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+          <View style={[styles.chartCol, styles.lastChartCol]}>
+            <CircleChart value={hydration} />
+            <Text style={styles.chartHeading}>Hydration</Text>
+          </View>
         </View>
       </TouchableOpacity>
-    </BlurView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  chartBox: { height: 160, borderRadius: 12, justifyContent: "space-between", elevation: 3, paddingTop: 15, paddingBottom: 15 },
-  firstRow: { alignItems: "center" },
-  checkText: { fontSize: 12, color: "#fff", fontFamily: "Poppins_400Regular" },
-  chartInside: { flexDirection: "row", width: "100%" },
-  chartcol: { flex: 1, paddingLeft: 15, paddingRight: 15, justifyContent: "center", borderRightWidth: 1, borderColor: "#fff", height: 60 },
-  col: { flex: 1, paddingLeft: 15, paddingRight: 15, justifyContent: "center", borderRightWidth: 1, borderColor: "#fff", height: 60 },
-  chartLastCol: { borderRightWidth: 0 },
-  chartHeading: { paddingTop: 5, fontSize: 8, color: "#fff", fontFamily: "Poppins_500Medium", textAlign: "center" },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingRight: 15, paddingLeft: 15 },
+  card: {
+    marginBottom: 30,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: "rgba(74,222,128,0.3)",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+    overflow: "hidden",
+
+    shadowColor: "#004927",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+
+  chartBox: {
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    borderRadius: 25,
+  },
+
+  chartInside: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  chartCol: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    borderRightWidth: 1,
+    borderColor: "rgba(74,222,128,0.15)",
+  },
+
+  lastChartCol: {
+    borderRightWidth: 0,
+  },
+
+  chartHeading: {
+    marginTop: 8,
+    color: "#aaa",
+    fontSize: 10,
+    fontFamily: "Poppins_400Regular",
+    textAlign: "center",
+  },
 });

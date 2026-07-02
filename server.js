@@ -1,1059 +1,3 @@
-// require('dotenv').config();
-
-// const express    = require("express");
-// const bcrypt     = require("bcryptjs");
-// const jwt        = require("jsonwebtoken");
-// const cors       = require("cors");
-// const fs         = require("fs");
-// const path       = require("path");
-// const axios      = require("axios");
-// const cron       = require("node-cron");
-// const mysql      = require("mysql2/promise");
-// const multer     = require("multer");
-// const FormData   = require("form-data");
-// const Groq       = require("groq-sdk");
-// const groq       = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-// const app = express();
-
-// app.use(express.json());
-// app.use(cors());
-// app.use("/assets", express.static(path.join(__dirname, "assets")));
-
-// // AFTER — pool that stays alive
-// const db = mysql.createPool({
-//   host: "localhost",
-//   user: "root",
-//   password: "",
-//   database: "care-plus-app",
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0,
-// });
-
-// db.getConnection()
-//   .then(conn => { console.log("MYSQL CONNECTED"); conn.release(); })
-//   .catch(err => console.error("DB CONNECTION ERROR:", err));
-
-// // =====================
-// // MULTER STORAGE
-// // =====================
-// if (!fs.existsSync("./assets/uploads")) {
-//   fs.mkdirSync("./assets/uploads", { recursive: true });
-// }
-
-// const diskStorage = multer.diskStorage({
-//   destination: (req, file, cb) => { cb(null, "./assets/uploads"); },
-//   filename:    (req, file, cb) => { cb(null, Date.now() + "-" + file.originalname); },
-// });
-
-// const upload       = multer({ storage: diskStorage });
-// const uploadMemory = multer({ storage: multer.memoryStorage() });
-
-// // =====================
-// // AUTH MIDDLEWARE
-// // =====================
-// const authMiddleware = (req, res, next) => {
-//   let token = req.headers.authorization;
-//   if (!token) return res.status(401).json({ message: "No token" });
-//   if (token.startsWith("Bearer ")) token = token.split(" ")[1];
-//   try {
-//     const decoded = jwt.verify(token, "secret123");
-//     req.userId = decoded.id;
-//     next();
-//   } catch {
-//     return res.status(401).json({ message: "Invalid token" });
-//   }
-// };
-
-// // =====================
-// // REGISTER
-// // =====================
-// app.post("/register", async (req, res) => {
-//   const defaultProfile = "assets/images/profile.png";
-//   const { name, email, password, phone_number } = req.body;
-//   try {
-//     const [existingUsers] = await db.execute("SELECT * FROM users WHERE email = ?", [email]);
-//     if (existingUsers.length > 0) return res.status(400).json({ message: "User already exists" });
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     await db.execute(
-//       "INSERT INTO users (name, email, password, phone_number, profile_image) VALUES (?, ?, ?, ?, ?)",
-//       [name, email, hashedPassword, phone_number, defaultProfile]
-//     );
-//     res.json({ message: "User registered" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Server registry error" });
-//   }
-// });
-
-// // =====================
-// // LOGIN
-// // =====================
-// app.post("/login", async (req, res) => {
-//   const { email, password } = req.body;
-//   try {
-//     const [results] = await db.execute("SELECT * FROM users WHERE email = ?", [email]);
-//     if (results.length === 0) return res.status(400).json({ message: "User not found" });
-//     const user = results[0];
-//     const match = await bcrypt.compare(password, user.password);
-//     if (!match) return res.status(400).json({ message: "Wrong password" });
-//     const token = jwt.sign({ id: user.id }, "secret123", { expiresIn: "7d" });
-//     res.json({
-//       token,
-//       user: {
-//         id: user.id, name: user.name, email: user.email,
-//         phone_number: user.phone_number, profile_image: user.profile_image,
-//       },
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// // =====================
-// // GET USER
-// // =====================
-// app.get("/me", authMiddleware, async (req, res) => {
-//   try {
-//     const [result] = await db.execute(
-//       "SELECT id, name, email, phone_number, created_at, profile_image, privacy_mode FROM users WHERE id = ?",
-//       [req.userId]
-//     );
-//     if (!result || result.length === 0) return res.status(404).json({ message: "User not found" });
-//     res.json(result[0]);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// // =====================
-// // UPDATE PROFILE
-// // =====================
-// app.put("/update-profile", authMiddleware, upload.single("profile_image"), async (req, res) => {
-//   const { name, email, phone_number } = req.body;
-//   try {
-//     const [result] = await db.execute("SELECT profile_image FROM users WHERE id = ?", [req.userId]);
-//     const oldImage = result[0]?.profile_image;
-//     let newImage = oldImage;
-//     if (req.file) {
-//       newImage = `assets/uploads/${req.file.filename}`;
-//       if (oldImage && oldImage.includes("/uploads/")) {
-//         const filename = oldImage.split("/uploads/")[1];
-//         const oldPath = path.join(__dirname, "assets", "uploads", filename);
-//         fs.unlink(oldPath, (err) => { if (err) console.log("Old image delete error:", err.message); });
-//       }
-//     }
-//     await db.execute(
-//       "UPDATE users SET name = ?, email = ?, phone_number = ?, profile_image = ? WHERE id = ?",
-//       [name, email, phone_number, newImage, req.userId]
-//     );
-//     res.json({ message: "Profile updated successfully", profile_image: newImage });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Update failed" });
-//   }
-// });
-
-// // =====================
-// // CHANGE PASSWORD
-// // =====================
-// app.put("/change-password", authMiddleware, async (req, res) => {
-//   const { newPassword, confirmPassword } = req.body;
-//   if (!newPassword || !confirmPassword) return res.status(400).json({ message: "Fields required" });
-//   if (newPassword !== confirmPassword) return res.status(400).json({ message: "Passwords do not match" });
-//   try {
-//     const hashed = await bcrypt.hash(newPassword, 10);
-//     await db.execute("UPDATE users SET password = ? WHERE id = ?", [hashed, req.userId]);
-//     res.json({ message: "Password updated successfully" });
-//   } catch (error) {
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// // =====================
-// // SAVE MOOD
-// // =====================
-// app.post("/mood", authMiddleware, async (req, res) => {
-//   const { mood_emoji } = req.body;
-//   const moodMap = { "😄": "Happy", "🙂": "Good", "😐": "Neutral", "😕": "Sad", "😔": "Very Sad" };
-//   const mood_text = moodMap[mood_emoji] || "Unknown";
-//   try {
-//     await db.execute("INSERT INTO moods (user_id, mood_emoji, mood_text) VALUES (?, ?, ?)", [req.userId, mood_emoji, mood_text]);
-//     res.json({ message: "Mood saved successfully" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Error saving mood" });
-//   }
-// });
-
-// // =====================
-// // GET MOOD HISTORY
-// // =====================
-// app.get("/mood-history", authMiddleware, async (req, res) => {
-//   const limit  = parseInt(req.query.limit)  || 7;
-//   const offset = parseInt(req.query.offset) || 0;
-//   try {
-//     const [result] = await db.execute(
-//       "SELECT id, mood_emoji, mood_text, created_at FROM moods WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
-//       [req.userId, limit, offset]
-//     );
-//     res.json(result);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Error fetching moods" });
-//   }
-// });
-
-// // =====================
-// // DELETE MOOD
-// // =====================
-// app.delete("/delete-mood/:id", authMiddleware, async (req, res) => {
-//   try {
-//     await db.execute("DELETE FROM moods WHERE id = ? AND user_id = ?", [req.params.id, req.userId]);
-//     res.json({ message: "Mood deleted" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Delete failed" });
-//   }
-// });
-
-// // =====================
-// // TOGGLE PRIVACY
-// // =====================
-// app.put("/toggle-privacy", authMiddleware, async (req, res) => {
-//   const { privacy_mode } = req.body;
-//   try {
-//     await db.execute("UPDATE users SET privacy_mode = ? WHERE id = ?", [privacy_mode, req.userId]);
-//     res.json({ message: "Privacy mode updated" });
-//   } catch (err) {
-//     res.status(500).json({ message: "Failed to update privacy mode" });
-//   }
-// });
-
-// // =====================
-// // DELETE ACCOUNT
-// // =====================
-// app.delete("/delete-account", authMiddleware, async (req, res) => {
-//   const userId = req.userId;
-//   try {
-//     await db.execute("DELETE FROM moods WHERE user_id = ?", [userId]);
-//     await db.execute("DELETE FROM users WHERE id = ?", [userId]);
-//     res.json({ message: "Your account has been deleted successfully" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Failed deleting account info" });
-//   }
-// });
-
-// // =========================
-// // NOTIFICATION SETTINGS
-// // =========================
-// app.get("/notification-settings", authMiddleware, async (req, res) => {
-//   try {
-//     let [result] = await db.execute("SELECT * FROM notification_settings WHERE user_id = ?", [req.userId]);
-//     if (result.length === 0) {
-//       await db.execute("INSERT INTO notification_settings (user_id) VALUES (?)", [req.userId]);
-//       [result] = await db.execute("SELECT * FROM notification_settings WHERE user_id = ?", [req.userId]);
-//     }
-//     res.json(result[0]);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// app.put("/notification-settings", authMiddleware, async (req, res) => {
-//   let { mood_reminder, sleep_reminder, water_reminder, meal_reminder,
-//         notification_sound, notification_preview, quiet_mode } = req.body;
-
-//   let finalQuietMode = quiet_mode;
-//   if (req.body.quiet_mode === undefined) {
-//     if (mood_reminder || sleep_reminder || water_reminder || meal_reminder) finalQuietMode = false;
-//   }
-
-//   let finalMood  = mood_reminder,  finalSleep = sleep_reminder;
-//   let finalWater = water_reminder, finalMeal  = meal_reminder;
-//   let finalSound = notification_sound, finalPreview = notification_preview;
-
-//   if (finalQuietMode) {
-//     finalMood = finalSleep = finalWater = finalMeal = finalSound = finalPreview = false;
-//   }
-
-//   try {
-//     await db.execute(
-//       `UPDATE notification_settings
-//        SET mood_reminder=?, sleep_reminder=?, water_reminder=?, meal_reminder=?,
-//            notification_sound=?, notification_preview=?, quiet_mode=?
-//        WHERE user_id=?`,
-//       [finalMood, finalSleep, finalWater, finalMeal, finalSound, finalPreview, finalQuietMode, req.userId]
-//     );
-//     res.json({
-//       message: "Notification settings updated",
-//       data: { mood_reminder: finalMood, sleep_reminder: finalSleep, water_reminder: finalWater,
-//               meal_reminder: finalMeal, notification_sound: finalSound, notification_preview: finalPreview,
-//               quiet_mode: finalQuietMode },
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: "Update failed" });
-//   }
-// });
-
-// // =====================
-// // EXPO TOKEN (kept for future use, won't break existing clients)
-// // =====================
-// app.post("/save-token", authMiddleware, async (req, res) => {
-//   const { expo_token } = req.body;
-//   try {
-//     await db.execute("UPDATE users SET expo_token = ? WHERE id = ?", [expo_token, req.userId]);
-//     res.json({ message: "Token saved" });
-//   } catch (err) {
-//     res.status(500).json(err);
-//   }
-// });
-
-// // =====================
-// // IN-APP NOTIFICATIONS
-// // =====================
-// app.get("/notifications", authMiddleware, async (req, res) => {
-//   try {
-//     const [result] = await db.execute(
-//       "SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 50",
-//       [req.userId]
-//     );
-//     res.json(result);
-//   } catch (err) {
-//     res.status(500).json(err);
-//   }
-// });
-
-// app.put("/notifications/read-all", authMiddleware, async (req, res) => {
-//   try {
-//     await db.execute("UPDATE notifications SET read_status = 1 WHERE user_id = ?", [req.userId]);
-//     res.json({ message: "All marked read" });
-//   } catch (err) {
-//     res.status(500).json(err);
-//   }
-// });
-
-// // =====================
-// // IN-APP NOTIFICATION HELPER
-// // Writes to DB only — no Expo push
-// // =====================
-// async function createInAppNotification(userId, title, body) {
-//   try {
-//     // Deduplicate: don't insert the same title within the last 55 minutes
-//     const [existing] = await db.execute(
-//       "SELECT id FROM notifications WHERE user_id = ? AND title = ? AND created_at >= NOW() - INTERVAL 55 MINUTE LIMIT 1",
-//       [userId, title]
-//     );
-//     if (existing.length > 0) return;
-
-//     await db.execute(
-//       "INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)",
-//       [userId, title, body]
-//     );
-//   } catch (err) {
-//     console.log("createInAppNotification error:", err.message);
-//   }
-// }
-
-// function pickQuote() {
-//   const quotes = [
-//     "You are stronger than you think 💪",
-//     "Small progress is still progress 🌱",
-//     "Stay consistent, not perfect ✨",
-//     "Take care of your mind today 🧠",
-//   ];
-//   return quotes[Math.floor(Math.random() * quotes.length)];
-// }
-
-// // =====================
-// // CRON — in-app notifications only (no push)
-// // =====================
-// cron.schedule("* * * * *", async () => {
-//   const now    = new Date();
-//   const hour   = now.getHours();
-//   const minute = now.getMinutes();
-
-//   try {
-//     const [users] = await db.execute(`
-//       SELECT users.id, notification_settings.*, wellness_preferences.*
-//       FROM users
-//       LEFT JOIN notification_settings ON users.id = notification_settings.user_id
-//       LEFT JOIN wellness_preferences  ON users.id = wellness_preferences.user_id
-//     `);
-
-//     if (!Array.isArray(users)) return;
-
-//     for (const user of users) {
-//       if (user.quiet_mode) continue;
-
-//       // Sleep — 22:00
-//       if (hour === 22 && minute === 0 && user.sleep_reminder) {
-//         await createInAppNotification(user.id, "🌙 Sleep Insight",
-//           `Sleep goal: ${user.sleep_goal || "8h"} — time to wind down and rest`);
-//       }
-//       // Water — every 3 hours on the hour
-//       if (hour % 3 === 0 && minute === 0 && user.water_reminder) {
-//         await createInAppNotification(user.id, "💧 Hydration Insight",
-//           `Hydration goal: ${user.water_goal || "2L"} — log your water intake`);
-//       }
-//       // Mood — 09:00
-//       if (hour === 9 && minute === 0 && user.mood_reminder) {
-//         await createInAppNotification(user.id, "😊 Mood Check",
-//           "How are you feeling today? Log your mood to track your wellness");
-//       }
-//       // Meal — 14:00
-//       if (hour === 14 && minute === 0 && user.meal_reminder) {
-//         await createInAppNotification(user.id, "🍽 Meal Reminder",
-//           "Don't skip your afternoon meal — log it for your wellness score");
-//       }
-//       // Meditation — 18:00
-//       if (hour === 18 && minute === 0 && user.meditation_reminder) {
-//         await createInAppNotification(user.id, "🧘 Mind Reset",
-//           "Take 5 minutes for breathing and calmness");
-//       }
-//       // Journal — 21:00
-//       if (hour === 21 && minute === 0 && user.journal_reminder) {
-//         await createInAppNotification(user.id, "📔 Journal Time",
-//           "Write your thoughts — reflect on your day");
-//       }
-//       // Motivation — 10:00
-//       if (hour === 10 && minute === 0 && user.motivation_quotes) {
-//         await createInAppNotification(user.id, "✨ Daily Motivation", pickQuote());
-//       }
-//     }
-//   } catch (err) {
-//     console.log("CRON ERROR:", err);
-//   }
-// });
-
-// // Midnight streak sync
-// cron.schedule("0 0 * * *", async () => {
-//   try {
-//     const [users] = await db.execute("SELECT id FROM users");
-//     for (const user of users) {
-//       await db.execute(
-//         "INSERT INTO wellness_activity (user_id, date) VALUES (?, CURDATE()) ON DUPLICATE KEY UPDATE id=id",
-//         [user.id]
-//       );
-//     }
-//   } catch (err) {
-//     console.error("Midnight Sync Error:", err);
-//   }
-// });
-
-// // =====================
-// // WELLNESS PREFERENCES
-// // =====================
-// app.get("/wellness-preferences", authMiddleware, async (req, res) => {
-//   try {
-//     let [result] = await db.execute("SELECT * FROM wellness_preferences WHERE user_id = ?", [req.userId]);
-//     if (result.length === 0) {
-//       await db.execute("INSERT INTO wellness_preferences (user_id) VALUES (?)", [req.userId]);
-//       [result] = await db.execute("SELECT * FROM wellness_preferences WHERE user_id = ?", [req.userId]);
-//     }
-//     res.json(result[0]);
-//   } catch (err) {
-//     res.status(500).json(err);
-//   }
-// });
-
-// app.put("/wellness-preferences", authMiddleware, async (req, res) => {
-//   let { sleep_goal, water_goal, mood_tracking, meal_tracking,
-//         meditation_reminder, journal_reminder, motivation_quotes, night_mode } = req.body;
-
-//   if (night_mode === true) { meditation_reminder = false; journal_reminder = false; motivation_quotes = false; }
-//   if (meditation_reminder === true || journal_reminder === true || motivation_quotes === true) night_mode = false;
-
-//   try {
-//     await db.execute(
-//       `UPDATE wellness_preferences
-//        SET sleep_goal=?, water_goal=?, mood_tracking=?, meal_tracking=?,
-//            meditation_reminder=?, journal_reminder=?, motivation_quotes=?, night_mode=?
-//        WHERE user_id=?`,
-//       [sleep_goal, water_goal, mood_tracking, meal_tracking,
-//        meditation_reminder, journal_reminder, motivation_quotes, night_mode, req.userId]
-//     );
-//     res.json({ message: "Preferences updated successfully" });
-//   } catch (err) {
-//     res.status(500).json(err);
-//   }
-// });
-
-// // =====================
-// // ACHIEVEMENTS
-// // =====================
-// async function checkAchievements(userId, data) {
-//   try {
-//     const [streakResult] = await db.execute(
-//       "SELECT current_streak FROM wellness_streaks WHERE user_id = ?", [userId]
-//     );
-//     const streak     = parseInt(streakResult[0]?.current_streak) || 0;
-//     const water      = parseFloat(data.water) || 0;
-//     const sleep      = parseFloat(data.sleep) || 0;
-//     const meditation = parseInt(data.meditation) || 0;
-
-//     const achievements = [
-//       { title: "7 Day Streak",    condition: streak >= 7,     desc: "Maintained wellness tracking for 7 days" },
-//       { title: "30 Day Master",   condition: streak >= 30,    desc: "Maintained wellness consistency for 30 days" },
-//       { title: "Hydration Hero",  condition: water >= 3.0,    desc: "Drank 3L of water in one day" },
-//       { title: "Deep Sleeper",    condition: sleep >= 8,      desc: "Achieved 8+ hours of sleep" },
-//       { title: "Zen Master",      condition: meditation >= 20, desc: "Completed 20 mins of meditation" },
-//     ];
-
-//     for (const ach of achievements) {
-//       if (ach.condition) await unlockAchievement(userId, ach.title, ach.desc);
-//     }
-//   } catch (err) {
-//     console.error("checkAchievements error:", err);
-//   }
-// }
-
-// async function unlockAchievement(userId, title, description) {
-//   try {
-//     const [existing] = await db.execute(
-//       "SELECT id FROM achievements WHERE user_id = ? AND title = ?", [userId, title]
-//     );
-//     if (existing.length > 0) return;
-
-//     await db.execute(
-//       "INSERT INTO achievements (user_id, title, description) VALUES (?, ?, ?)",
-//       [userId, title, description]
-//     );
-
-//     // Also surface as an in-app notification
-//     await createInAppNotification(
-//       userId,
-//       `🏆 Achievement Unlocked`,
-//       `You earned "${title}" — ${description}`
-//     );
-//   } catch (err) {
-//     console.error("unlockAchievement SQL error:", err);
-//   }
-// }
-// // Add this to server.js
-// app.get("/achievements/daily", authMiddleware, async (req, res) => {
-//   try {
-//     const [log] = await db.execute(
-//       "SELECT * FROM wellness_logs WHERE user_id=? AND log_date=CURDATE() LIMIT 1", [req.userId]
-//     );
-//     const [streak] = await db.execute(
-//       "SELECT current_streak FROM wellness_streaks WHERE user_id=?", [req.userId]
-//     );
-
-//     const data = log[0] || {};
-//     const currentStreak = streak[0]?.current_streak || 0;
-
-//     const daily = [
-//       { id: "sleep",      emoji: "💤", title: "Deep Sleeper",   desc: "Sleep 8+ hours",        done: (data.sleep_hours || 0) >= 8 },
-//       { id: "water",      emoji: "💧", title: "Hydration Hero", desc: "Drink 2L+ water",        done: (data.water_intake || 0) >= 2 },
-//       { id: "meals",      emoji: "🍽", title: "Meal Master",    desc: "Log 3 meals",            done: (data.meals_count || 0) >= 3 },
-//       { id: "meditation", emoji: "🧘", title: "Zen Warrior",    desc: "Meditate 10+ mins",      done: (data.meditation_minutes || 0) >= 10 },
-//       { id: "stress",     emoji: "😌", title: "Calm Mind",      desc: "Stress level ≤ 3",       done: (data.stress_level || 10) <= 3 },
-//       { id: "energy",     emoji: "⚡", title: "Full Power",     desc: "Energy level 7+",        done: (data.energy_level || 0) >= 7 },
-//       { id: "streak7",    emoji: "🔥", title: "7-Day Streak",   desc: "7 day streak",           done: currentStreak >= 7 },
-//       { id: "perfect",    emoji: "🏆", title: "Perfect Day",    desc: "Score 90+",              done: (data.score || 0) >= 90 },
-//     ];
-
-//     res.json({ date: new Date().toISOString().split("T")[0], achievements: daily });
-//   } catch (err) {
-//     res.status(500).json({ error: "Failed" });
-//   }
-// });
-// // =====================
-// // DAILY QUOTE
-// // =====================
-// app.get("/wellness/daily-quote", authMiddleware, async (req, res) => {
-//   try {
-//     const [prefsResult] = await db.execute(
-//       "SELECT motivation_quotes FROM wellness_preferences WHERE user_id = ?",
-//       [req.userId]
-//     );
-
-//     const prefs = prefsResult[0];
-//     // If the row exists AND is explicitly off, return empty
-//     if (prefs && prefs.motivation_quotes === 0) {
-//       return res.json({ showQuote: false, text: "" });
-//     }
-
-//     const quotesPool = [
-//       "You are stronger than you think 💪",
-//       "Small progress is still progress 🌱",
-//       "Stay consistent, not perfect ✨",
-//       "Take care of your mind today 🧠",
-//       "Do the best you can until you know better 🌟",
-//       "Believe you can and you're halfway there 🎯",
-//       "Your mental health is a priority. Your happiness is essential. Your self-care is a necessity. 🧘",
-//       "Rest is not a reward — it's a requirement 🛌",
-//       "Be patient with yourself; growth takes time 🌿",
-//       "One mindful breath can change your whole day 🍃",
-//     ];
-
-//     // Pick by day-of-year so it changes daily but stays consistent within the day
-//     const now   = new Date();
-//     const start = new Date(now.getFullYear(), 0, 0);
-//     const dayOfYear = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-
-//     return res.json({
-//       showQuote: true,
-//       text: quotesPool[dayOfYear % quotesPool.length],
-//     });
-//   } catch (err) {
-//     console.error("Quote API Error:", err);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// });
-
-// // =====================
-// // WELLNESS LOGGING
-// // =====================
-// app.post("/wellness-log", authMiddleware, async (req, res) => {
-//   const { sleep_hours, water_intake, meals_count, meditation_minutes,
-//           stress_level, anxiety_level, energy_level } = req.body;
-
-//   const user_id  = req.userId;
-//   const log_date = new Date().toISOString().split("T")[0];
-
-//   let calculatedScore = 0;
-//   const sleep      = parseFloat(sleep_hours)       || 0;
-//   const waterLiters= parseFloat(water_intake)      || 0;
-//   const meals      = parseInt(meals_count)          || 0;
-//   const meditation = parseInt(meditation_minutes)   || 0;
-//   const stress     = parseInt(stress_level)         || 0;
-//   const anxiety    = parseInt(anxiety_level)        || 0;
-//   const energy     = parseInt(energy_level)         || 0;
-
-//   if (sleep >= 7)        calculatedScore += 25; else if (sleep >= 5) calculatedScore += 15;
-//   if (waterLiters >= 2)  calculatedScore += 25; else if (waterLiters >= 1) calculatedScore += 15;
-//   calculatedScore += meals * 10;
-//   if (meditation >= 10)  calculatedScore += 15; else if (meditation > 0) calculatedScore += 8;
-//   if (stress <= 3)       calculatedScore += 10; else if (stress <= 6) calculatedScore += 5;
-//   if (anxiety <= 3)      calculatedScore += 10; else if (anxiety <= 6) calculatedScore += 5;
-//   if (energy >= 7)       calculatedScore += 10; else if (energy >= 5) calculatedScore += 5;
-//   if (calculatedScore > 100) calculatedScore = 100;
-
-//   const sql = `
-//     INSERT INTO wellness_logs (user_id, log_date, sleep_hours, water_intake, meals_count,
-//       meditation_minutes, stress_level, anxiety_level, energy_level, score)
-//     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-//     ON DUPLICATE KEY UPDATE
-//       sleep_hours=VALUES(sleep_hours), water_intake=VALUES(water_intake),
-//       meals_count=VALUES(meals_count), meditation_minutes=VALUES(meditation_minutes),
-//       stress_level=VALUES(stress_level), anxiety_level=VALUES(anxiety_level),
-//       energy_level=VALUES(energy_level), score=VALUES(score)
-//   `;
-
-//   try {
-//     await db.execute(sql, [user_id, log_date, sleep, waterLiters, meals,
-//                            meditation, stress, anxiety, energy, calculatedScore]);
-//     await updateUserStreak(req.userId);
-//     await saveWellnessHistory(req.userId, calculatedScore);
-//     await checkAchievements(req.userId, { sleep, water: waterLiters, meditation });
-
-//     res.json({ message: "Saved successfully", score: calculatedScore });
-//   } catch (err) {
-//     console.error("SAVE ERROR:", err);
-//     res.status(500).json({ message: "Save failed" });
-//   }
-// });
-
-// async function saveWellnessHistory(userId, score) {
-//   try {
-//     const [result] = await db.execute(
-//       "SELECT * FROM wellness_logs WHERE user_id = ? AND log_date = CURDATE() LIMIT 1", [userId]
-//     );
-//     if (result.length === 0) return;
-//     const data = result[0];
-//     await db.execute(
-//       "INSERT INTO wellness_history (user_id, wellness_score, sleep_hours, water_intake, meditation_minutes) VALUES (?, ?, ?, ?, ?)",
-//       [userId, score, data.sleep_hours, data.water_intake, data.meditation_minutes]
-//     );
-//   } catch (err) {
-//     console.error("History update failure:", err);
-//   }
-// }
-
-// async function updateUserStreak(userId) {
-//   try {
-//     const [result] = await db.execute("SELECT * FROM wellness_streaks WHERE user_id = ?", [userId]);
-//     const todayString = new Date().toISOString().split("T")[0];
-
-//     if (result.length === 0) {
-//       await db.execute(
-//         "INSERT INTO wellness_streaks (user_id, current_streak, longest_streak, last_active_date) VALUES (?, 1, 1, ?)",
-//         [userId, todayString]
-//       );
-//       return;
-//     }
-
-//     const streak  = result[0];
-//     const lastDate= new Date(streak.last_active_date);
-//     const today   = new Date(todayString);
-//     const diffDays= Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-//     let current   = streak.current_streak;
-
-//     if (diffDays === 0) return;
-//     if (diffDays === 1) current += 1;
-//     if (diffDays > 1)  current = 1;
-
-//     const longest = Math.max(current, streak.longest_streak);
-//     await db.execute(
-//       "UPDATE wellness_streaks SET current_streak=?, longest_streak=?, last_active_date=? WHERE user_id=?",
-//       [current, longest, todayString, userId]
-//     );
-//   } catch (err) {
-//     console.error(err);
-//   }
-// }
-
-// function generateRecommendations(data) {
-//   const rec = [];
-//   if ((data.sleep_hours || 0) < 7)   rec.push("Try to sleep at least 7–8 hours for better recovery.");
-//   if ((data.water_intake || 0) < 2)  rec.push("Increase water intake to 2–3 liters daily.");
-//   if ((data.stress_level || 0) > 6)  rec.push("Try breathing exercises or short walks to reduce stress.");
-//   if ((data.energy_level || 0) < 5)  rec.push("Low energy detected — improve sleep and nutrition.");
-//   if (rec.length === 0) rec.push("Great job! Keep maintaining your healthy routine.");
-//   return rec;
-// }
-
-// // =====================
-// // DASHBOARD & GETTERS
-// // =====================
-// app.get("/wellness-log/today", authMiddleware, async (req, res) => {
-//   try {
-//     const [result] = await db.execute(
-//       "SELECT * FROM wellness_logs WHERE user_id = ? AND log_date = CURDATE()", [req.userId]
-//     );
-//     res.json(result[0] || {
-//       sleep_hours: null, water_intake: 0, meals_count: 0, meditation_minutes: 0,
-//       stress_level: null, anxiety_level: null, energy_level: null,
-//     });
-//   } catch (err) {
-//     res.status(500).json(err);
-//   }
-// });
-
-// app.get("/wellness-dashboard", authMiddleware, async (req, res) => {
-//   const userId = req.userId;
-//   try {
-//     const [logs]         = await db.execute("SELECT * FROM wellness_logs WHERE user_id=? AND log_date=CURDATE() LIMIT 1", [userId]);
-//     const [mood]         = await db.execute("SELECT mood_emoji, mood_text FROM moods WHERE user_id=? AND DATE(created_at)=CURDATE() ORDER BY created_at DESC LIMIT 1", [userId]);
-//     const [streak]       = await db.execute("SELECT current_streak, longest_streak FROM wellness_streaks WHERE user_id=? LIMIT 1", [userId]);
-//     const [achievements] = await db.execute("SELECT id, title, description, unlocked_at FROM achievements WHERE user_id=? ORDER BY unlocked_at DESC", [userId]);
-
-//     const log = logs[0] || { score:0, sleep_hours:0, water_intake:0, meals_count:0,
-//                              meditation_minutes:0, stress_level:0, anxiety_level:0, energy_level:0 };
-
-//     res.json({
-//       ...log,
-//       mood: mood.length > 0 ? { emoji: mood[0].mood_emoji, text: mood[0].mood_text } : null,
-//       streaks: { current: streak[0]?.current_streak || 0, longest: streak[0]?.longest_streak || 0 },
-//       achievements: achievements || [],
-//       recommendations: generateRecommendations(log),
-//     });
-//   } catch (err) {
-//     console.log(err);
-//     res.status(500).json({ error: "Dashboard error" });
-//   }
-// });
-
-// app.get("/dashboard/:userId", async (req, res) => {
-//   const userId = req.params.userId;
-//   const sql = `
-//     SELECT w.*, COALESCE(m.mood_emoji,'😐') AS mood_emoji, COALESCE(m.mood_text,'Neutral') AS mood_text,
-//            ws.current_streak, ws.longest_streak, ws.last_active_date
-//     FROM wellness_logs w
-//     LEFT JOIN moods m ON m.user_id=w.user_id AND DATE(m.created_at)=DATE(w.log_date)
-//     LEFT JOIN wellness_streaks ws ON ws.user_id=w.user_id
-//     WHERE w.user_id=? AND w.log_date=CURDATE() LIMIT 1
-//   `;
-//   try {
-//     const [rows] = await db.execute(sql, [userId]);
-//     res.json(rows[0] || null);
-//   } catch (err) {
-//     console.log(err);
-//     res.status(500).json({ error: "Dashboard error" });
-//   }
-// });
-
-// app.get("/logs/:userId", async (req, res) => {
-//   try {
-//     const [rows] = await db.execute(
-//       "SELECT * FROM wellness_logs WHERE user_id=? ORDER BY log_date DESC LIMIT 7", [req.params.userId]
-//     );
-//     res.json(rows);
-//   } catch (err) {
-//     res.status(500).json({ error: "Logs fetching error" });
-//   }
-// });
-
-// // =====================
-// // FAVOURITE CONTACTS
-// // =====================
-// app.post("/favourite-contact", authMiddleware, (req, res) => {
-//   const { name, phone, relationship } = req.body;
-//   db.query("SELECT COUNT(*) AS total FROM favourite_contacts WHERE user_id=?", [req.userId], (err, result) => {
-//     if (err) return res.status(500).json(err);
-//     if (result[0].total >= 5) return res.status(400).json({ message: "Maximum 5 emergency contacts allowed" });
-//     db.query(
-//       "INSERT INTO favourite_contacts (user_id, name, phone, relationship) VALUES (?, ?, ?, ?)",
-//       [req.userId, name, phone, relationship], (err) => {
-//         if (err) return res.status(500).json(err);
-//         res.json({ message: "Contact saved successfully" });
-//       }
-//     );
-//   });
-// });
-
-// app.get("/favourite-contact", authMiddleware, (req, res) => {
-//   db.query("SELECT * FROM favourite_contacts WHERE user_id=? ORDER BY created_at DESC", [req.userId], (err, result) => {
-//     if (err) return res.status(500).json(err);
-//     res.json(result);
-//   });
-// });
-
-// app.put("/favourite-contact/:id", authMiddleware, (req, res) => {
-//   const { name, phone, relationship } = req.body;
-//   db.query(
-//     "UPDATE favourite_contacts SET name=?, phone=?, relationship=? WHERE id=? AND user_id=?",
-//     [name, phone, relationship, req.params.id, req.userId], (err) => {
-//       if (err) return res.status(500).json(err);
-//       res.json({ message: "Contact updated successfully" });
-//     }
-//   );
-// });
-
-// app.delete("/favourite-contact/:id", authMiddleware, (req, res) => {
-//   db.query("DELETE FROM favourite_contacts WHERE id=? AND user_id=?", [req.params.id, req.userId], (err) => {
-//     if (err) return res.status(500).json(err);
-//     res.json({ message: "Contact deleted successfully" });
-//   });
-// });
-
-// // =====================
-// // MEDITATION UPDATE
-// // =====================
-// app.post("/api/meditation/update-minutes", authMiddleware, async (req, res) => {
-//   const { log_date, meditation_minutes } = req.body;
-//   if (!log_date || meditation_minutes == null)
-//     return res.status(400).json({ message: "log_date and meditation_minutes are required" });
-//   try {
-//     await db.execute(
-//       `INSERT INTO wellness_logs (user_id, log_date, meditation_minutes)
-//        VALUES (?, ?, ?)
-//        ON DUPLICATE KEY UPDATE meditation_minutes = meditation_minutes + VALUES(meditation_minutes)`,
-//       [req.userId, log_date, meditation_minutes]
-//     );
-//     res.json({ message: "Meditation updated successfully" });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// // =====================
-// // GAME SCORES
-// // =====================
-// app.get("/api/game-scores", authMiddleware, async (req, res) => {
-//   try {
-//     const today = new Date().toISOString().split("T")[0];
-//     const [todayRows] = await db.execute(
-//       "SELECT memory, stroop, sequence, tapstar, reverse, gratitude FROM game_scores WHERE user_id=? AND log_date=?",
-//       [req.userId, today]
-//     );
-//     const [prevRows] = await db.execute(
-//       `SELECT MAX(memory) AS memory, MAX(stroop) AS stroop, MAX(sequence) AS sequence,
-//               MAX(tapstar) AS tapstar, MAX(reverse) AS reverse, MAX(gratitude) AS gratitude
-//        FROM game_scores WHERE user_id=? AND log_date<?`,
-//       [req.userId, today]
-//     );
-//     res.json({ today: todayRows[0] ?? {}, previous: prevRows[0] ?? {} });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// app.post("/api/game-scores", authMiddleware, async (req, res) => {
-//   const { game, score, log_date } = req.body;
-//   const VALID_GAMES = ["memory", "stroop", "sequence", "tapstar", "reverse", "gratitude"];
-//   if (!game || !VALID_GAMES.includes(game)) return res.status(400).json({ message: "Invalid or missing game key" });
-//   if (score == null || !log_date) return res.status(400).json({ message: "score and log_date are required" });
-//   try {
-//     await db.execute(
-//       `INSERT INTO game_scores (user_id, log_date, ${game}) VALUES (?, ?, ?)
-//        ON DUPLICATE KEY UPDATE ${game} = GREATEST(${game}, VALUES(${game}))`,
-//       [req.userId, log_date, score]
-//     );
-//     const [rows] = await db.execute(
-//       "SELECT memory, stroop, sequence, tapstar, reverse, gratitude FROM game_scores WHERE user_id=? AND log_date=?",
-//       [req.userId, log_date]
-//     );
-//     res.json({ message: "Score saved", today: rows[0] ?? {} });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// });
-
-// // =====================
-// // THERAPY
-// // =====================
-// app.get("/therapy/sessions/:userId", async (req, res) => {
-//   try {
-//     const [rows] = await db.query(
-//       "SELECT * FROM therapy_sessions WHERE user_id=? ORDER BY session_date ASC",
-//       [req.params.userId]
-//     );
-//     res.json(rows);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// });
-
-// app.post("/therapy/book", async (req, res) => {
-//   const { user_id, therapist_id, therapist_name, title, session_type, session_date, session_time, notes } = req.body;
-//   try {
-//     const [result] = await db.query(
-//       "INSERT INTO therapy_sessions (user_id,therapist_id,therapist_name,title,session_type,session_date,session_time,status,notes) VALUES (?,?,?,?,?,?,?,?,?)",
-//       [user_id, therapist_id||null, therapist_name, title, session_type, session_date, session_time, "upcoming", notes||null]
-//     );
-//     res.json({ success: true, sessionId: result.insertId });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Booking Failed" });
-//   }
-// });
-
-// app.post("/therapy/chat-log", async (req, res) => {
-//   const { user_id, session_id, message_count, summary } = req.body;
-//   try {
-//     await db.query(
-//       "INSERT INTO therapy_chat_logs (user_id,session_id,message_count,summary) VALUES (?,?,?,?)",
-//       [user_id, session_id, message_count, summary]
-//     );
-//     res.json({ success: true, message: "Chat Logged" });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Error" });
-//   }
-// });
-
-// app.post("/therapy/voice-log", async (req, res) => {
-//   const { user_id, session_id, exchange_count } = req.body;
-//   try {
-//     await db.query(
-//       "INSERT INTO therapy_voice_logs (user_id,session_id,exchange_count) VALUES (?,?,?)",
-//       [user_id, session_id, exchange_count]
-//     );
-//     res.json({ success: true, message: "Voice Log Saved" });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Error" });
-//   }
-// });
-
-// app.put("/therapy/session-status/:id", async (req, res) => {
-//   const { status } = req.body;
-//   try {
-//     await db.query("UPDATE therapy_sessions SET status=? WHERE id=?", [status, req.params.id]);
-//     res.json({ success: true, message: "Status Updated" });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Error" });
-//   }
-// });
-
-// // =====================
-// // CHAT THERAPY (Sera)
-// // =====================
-// app.post("/api/therapy/chat", authMiddleware, async (req, res) => {
-//   try {
-//     const userId = req.userId;
-//     const { messages, session } = req.body;
-
-//     const [wellnessRows] = await db.execute(
-//       "SELECT * FROM wellness_logs WHERE user_id=? AND log_date=CURDATE() LIMIT 1", [userId]
-//     );
-//     const [moodRows] = await db.execute(
-//       "SELECT * FROM moods WHERE user_id=? ORDER BY created_at DESC LIMIT 1", [userId]
-//     );
-//     const [userRows] = await db.execute("SELECT name, privacy_mode FROM users WHERE id=?", [userId]);
-
-//     const wellness = wellnessRows[0] || null;
-//     const mood     = moodRows[0]     || null;
-//     const user     = userRows[0]     || null;
-//     const name = user?.privacy_mode ? "the user" : user?.name?.split(" ")[0] || "the user";
-
-//     const systemPrompt = `You are Sera, a compassionate AI therapy companion inside the Care Plus mental health app.
-
-// USER CONTEXT:
-// - Name: ${name}
-// - Mood: ${mood ? `${mood.mood_emoji} ${mood.mood_text}` : "Not logged today"}
-// - Sleep: ${wellness?.sleep_hours ?? "?"}h | Water: ${wellness?.water_intake ?? "?"}L | Meditation: ${wellness?.meditation_minutes ?? "?"}m
-// - Stress: ${wellness?.stress_level ?? "?"}/5 | Anxiety: ${wellness?.anxiety_level ?? "?"}/5 | Energy: ${wellness?.energy_level ?? "?"}/5
-// - Wellness score: ${wellness?.score ?? "?"}/100
-// ${session ? `- Session context: "${session.title}" with ${session.therapist_name}` : ""}
-
-// RULES:
-// 1. Be warm, empathetic, non-judgmental. Never clinical or cold.
-// 2. Use their data naturally — don't list it robotically.
-// 3. If stress or anxiety > 3, prioritise grounding techniques.
-// 4. If mood is Sad or Very Sad, validate emotionally before any advice.
-// 5. Keep responses to 2–4 sentences unless user asks for more.
-// 6. Never diagnose or prescribe. Recommend professional help for serious concerns.
-// 7. If user seems in crisis: "Please contact a crisis helpline or emergency services immediately."
-// 8. End with a gentle question or short grounding suggestion.`;
-
-//     const response = await groq.chat.completions.create({
-//       model: "llama-3.3-70b-versatile",
-//       max_tokens: 500,
-//       messages: [{ role: "system", content: systemPrompt }, ...messages],
-//     });
-
-//     const reply = response?.choices?.[0]?.message?.content;
-//     if (!reply) return res.status(500).json({ message: "Sera is unavailable right now. Please try again." });
-//     res.json({ reply });
-//   } catch (error) {
-//     console.log("Chat therapy error:", error?.message || error);
-//     if (!res.headersSent) res.status(500).json({ message: "Sera is unavailable right now. Please try again." });
-//   }
-// });
-
-// // =====================
-// // TRANSCRIBE
-// // =====================
-// app.post("/api/therapy/transcribe", authMiddleware, uploadMemory.single("audio"), async (req, res) => {
-//   try {
-//     const form = new FormData();
-//     form.append("file", req.file.buffer, { filename: "audio.m4a", contentType: req.file.mimetype || "audio/m4a" });
-//     form.append("model", "whisper-large-v3");
-//     form.append("language", "en");
-
-//     const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-//       method: "POST",
-//       headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, ...form.getHeaders() },
-//       body: form,
-//     });
-//     const data = await response.json();
-//     res.json({ transcript: data.text || "" });
-//   } catch (error) {
-//     console.log("Transcription error:", error);
-//     res.status(500).json({ message: "Transcription failed" });
-//   }
-// });
-
-// app.listen(5000, "0.0.0.0", () => {
-//   console.log("Server running on http://0.0.0.0:5000");
-// });
-
-
 require('dotenv').config();
 
 const express    = require("express");
@@ -1129,7 +73,9 @@ app.post("/register", async (req, res) => {
   const { name, email, password, phone_number } = req.body;
   try {
     const [existingUsers] = await db.execute("SELECT * FROM users WHERE email = ?", [email]);
-    if (existingUsers.length > 0) return res.status(400).json({ message: "User already exists" });
+    if (existingUsers.length > 0) return res.status(409).json({
+  message: "Email already registered"
+});
     const hashedPassword = await bcrypt.hash(password, 10);
     await db.execute(
       "INSERT INTO users (name, email, password, phone_number, profile_image) VALUES (?, ?, ?, ?, ?)",
@@ -1293,12 +239,46 @@ app.put("/toggle-privacy", authMiddleware, async (req, res) => {
 // =====================
 app.delete("/delete-account", authMiddleware, async (req, res) => {
   const userId = req.userId;
+
+  const childTables = [
+    "moods",
+    "notifications",
+    "notification_settings",
+    "wellness_preferences",
+    "wellness_logs",
+    "wellness_streaks",
+    "wellness_history",
+    "wellness_activity",
+    "health_monitoring",
+    "favourite_contacts",
+    "achievements",
+    "game_scores",
+    "therapy_chat_logs",
+    "therapy_voice_logs",
+    "therapy_sessions",
+    "password_resets",
+  ];
+
   try {
-    await db.execute("DELETE FROM moods WHERE user_id = ?", [userId]);
-    await db.execute("DELETE FROM users WHERE id = ?", [userId]);
+    for (const table of childTables) {
+      try {
+        await db.execute(`DELETE FROM ${table} WHERE user_id = ?`, [userId]);
+      } catch (tableErr) {
+        // If the table doesn't exist, skip it — don't kill the whole request.
+        // Any OTHER error (like a real FK issue) gets logged so we can see it.
+        console.log(`delete-account: skipped/failed on table "${table}":`, tableErr.code || tableErr.message);
+      }
+    }
+
+    const [result] = await db.execute("DELETE FROM users WHERE id = ?", [userId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "User not found or already deleted" });
+    }
+
     res.json({ message: "Your account has been deleted successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Delete account error:", err);
     res.status(500).json({ message: "Failed deleting account info" });
   }
 });
@@ -1437,13 +417,13 @@ async function createInAppNotification(userId, title, body, type = "general") {
 
 function pickQuote() {
   const quotes = [
-    "You are stronger than you think 💪",
-    "Small progress is still progress 🌱",
-    "Stay consistent, not perfect ✨",
-    "Take care of your mind today 🧠",
-    "Healing is not linear — be patient with yourself 🌿",
-    "One step at a time is still moving forward 🚶",
-    "Your feelings are valid. You matter. 💚",
+    "You are stronger than you think.",
+    "Small progress is still progress.",
+    "Stay consistent, not perfect.",
+    "Take care of your mind today.",
+    "Healing is not linear — be patient with yourself.",
+    "One step at a time is still moving forward.",
+    "Your feelings are valid. You matter.",
   ];
   return quotes[Math.floor(Math.random() * quotes.length)];
 }
@@ -1458,7 +438,18 @@ cron.schedule("* * * * *", async () => {
 
   try {
     const [users] = await db.execute(`
-      SELECT users.id, notification_settings.*, wellness_preferences.*
+      SELECT 
+        users.id AS user_id,
+        notification_settings.mood_reminder,
+        notification_settings.sleep_reminder,
+        notification_settings.water_reminder,
+        notification_settings.meal_reminder,
+        notification_settings.quiet_mode,
+        wellness_preferences.meditation_reminder,
+        wellness_preferences.journal_reminder,
+        wellness_preferences.motivation_quotes,
+        wellness_preferences.sleep_goal,
+        wellness_preferences.water_goal
       FROM users
       LEFT JOIN notification_settings ON users.id = notification_settings.user_id
       LEFT JOIN wellness_preferences  ON users.id = wellness_preferences.user_id
@@ -1468,55 +459,54 @@ cron.schedule("* * * * *", async () => {
 
     for (const user of users) {
       if (user.quiet_mode) continue;
+      const userId = user.user_id; // use this everywhere below instead of user.id
 
       if (hour === 22 && minute === 0 && user.sleep_reminder) {
-        await createInAppNotification(user.id, "🌙 Sleep Insight",
+        await createInAppNotification(userId, "🌙 Sleep Insight",
           `Sleep goal: ${user.sleep_goal || "8h"} — time to wind down and rest`, "wellness");
       }
       if (hour % 3 === 0 && minute === 0 && user.water_reminder) {
-        await createInAppNotification(user.id, "💧 Hydration Insight",
+        await createInAppNotification(userId, "💧 Hydration Insight",
           `Hydration goal: ${user.water_goal || "2L"} — log your water intake`, "wellness");
       }
       if (hour === 9 && minute === 0 && user.mood_reminder) {
-        await createInAppNotification(user.id, "😊 Mood Check",
+        await createInAppNotification(userId, "😊 Mood Check",
           "How are you feeling today? Log your mood to track your wellness", "wellness");
       }
       if (hour === 14 && minute === 0 && user.meal_reminder) {
-        await createInAppNotification(user.id, "🍽 Meal Reminder",
+        await createInAppNotification(userId, "🍽 Meal Reminder",
           "Don't skip your afternoon meal — log it for your wellness score", "wellness");
       }
       if (hour === 18 && minute === 0 && user.meditation_reminder) {
-        await createInAppNotification(user.id, "🧘 Mind Reset",
+        await createInAppNotification(userId, "🧘 Mind Reset",
           "Take 5 minutes for breathing and calmness", "wellness");
       }
       if (hour === 21 && minute === 0 && user.journal_reminder) {
-        await createInAppNotification(user.id, "📔 Journal Time",
+        await createInAppNotification(userId, "📔 Journal Time",
           "Write your thoughts — reflect on your day", "wellness");
       }
       if (hour === 10 && minute === 0 && user.motivation_quotes) {
-        await createInAppNotification(user.id, "✨ Daily Motivation", pickQuote(), "wellness");
+        await createInAppNotification(userId, "✨ Daily Motivation", pickQuote(), "wellness");
       }
 
-      // Daily wellness check — remind to log if not done
       if (hour === 20 && minute === 0) {
         const [logs] = await db.execute(
           "SELECT id FROM wellness_logs WHERE user_id = ? AND log_date = CURDATE() LIMIT 1",
-          [user.id]
+          [userId]
         );
         if (logs.length === 0) {
-          await createInAppNotification(user.id, "📊 Wellness Log Pending",
+          await createInAppNotification(userId, "📊 Wellness Log Pending",
             "You haven't logged your wellness today. Take 2 minutes to track your health!", "wellness");
         }
       }
 
-      // Low wellness score alert
       if (hour === 19 && minute === 0) {
         const [logs] = await db.execute(
           "SELECT score FROM wellness_logs WHERE user_id = ? AND log_date = CURDATE() LIMIT 1",
-          [user.id]
+          [userId]
         );
         if (logs.length > 0 && logs[0].score < 40) {
-          await createInAppNotification(user.id, "💙 Wellness Support",
+          await createInAppNotification(userId, "💙 Wellness Support",
             "Your wellness score is low today. Sera is here — start a chat session for support.", "therapy");
         }
       }
@@ -1752,16 +742,16 @@ app.get("/wellness/daily-quote", authMiddleware, async (req, res) => {
     }
 
     const quotesPool = [
-      "You are stronger than you think 💪",
-      "Small progress is still progress 🌱",
-      "Stay consistent, not perfect ✨",
-      "Take care of your mind today 🧠",
-      "Do the best you can until you know better 🌟",
-      "Believe you can and you're halfway there 🎯",
-      "Your mental health is a priority. Your happiness is essential. Your self-care is a necessity. 🧘",
-      "Rest is not a reward — it's a requirement 🛌",
-      "Be patient with yourself; growth takes time 🌿",
-      "One mindful breath can change your whole day 🍃",
+      "You are stronger than you think.",
+      "Small progress is still progress.",
+      "Stay consistent, not perfect.",
+      "Take care of your mind today.",
+      "Do the best you can until you know better.",
+      "Believe you can and you're halfway there.",
+      "Your mental health is a priority. Your happiness is essential. Your self-care is a necessity.",
+      "Rest is not a reward — it's a requirement.",
+      "Be patient with yourself; growth takes time.",
+      "One mindful breath can change your whole day.",
     ];
 
     const now   = new Date();
@@ -2078,47 +1068,78 @@ app.post("/health-monitoring", authMiddleware, async (req, res) => {
 });
 
 // =====================
-// FAVOURITE CONTACTS
+// FAVOURITE CONTACTS — replace your existing block with this
+// Adds email field support
 // =====================
-app.post("/favourite-contact", authMiddleware, (req, res) => {
-  const { name, phone, relationship } = req.body;
-  db.query("SELECT COUNT(*) AS total FROM favourite_contacts WHERE user_id=?", [req.userId], (err, result) => {
-    if (err) return res.status(500).json(err);
-    if (result[0].total >= 5) return res.status(400).json({ message: "Maximum 5 emergency contacts allowed" });
-    db.query(
-      "INSERT INTO favourite_contacts (user_id, name, phone, relationship) VALUES (?, ?, ?, ?)",
-      [req.userId, name, phone, relationship], (err) => {
-        if (err) return res.status(500).json(err);
-        res.json({ message: "Contact saved successfully" });
-      }
+
+// First run this SQL to add the email column (only once):
+// ALTER TABLE favourite_contacts ADD COLUMN email VARCHAR(255) NULL AFTER phone;
+
+app.post("/favourite-contact", authMiddleware, async (req, res) => {
+  const { name, phone, email } = req.body;
+  try {
+    const [countResult] = await db.execute(
+      "SELECT COUNT(*) AS total FROM favourite_contacts WHERE user_id = ?",
+      [req.userId]
     );
-  });
-});
-
-app.get("/favourite-contact", authMiddleware, (req, res) => {
-  db.query("SELECT * FROM favourite_contacts WHERE user_id=? ORDER BY created_at DESC", [req.userId], (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json(result);
-  });
-});
-
-app.put("/favourite-contact/:id", authMiddleware, (req, res) => {
-  const { name, phone, relationship } = req.body;
-  db.query(
-    "UPDATE favourite_contacts SET name=?, phone=?, relationship=? WHERE id=? AND user_id=?",
-    [name, phone, relationship, req.params.id, req.userId], (err) => {
-      if (err) return res.status(500).json(err);
-      res.json({ message: "Contact updated successfully" });
+    if (countResult[0].total >= 5) {
+      return res.status(400).json({ message: "Maximum 5 emergency contacts allowed" });
     }
-  );
+    await db.execute(
+      "INSERT INTO favourite_contacts (user_id, name, phone, email) VALUES (?, ?, ?, ?)",
+      [req.userId, name, phone, email || null]
+    );
+    res.json({ message: "Contact saved successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to save contact" });
+  }
 });
 
-app.delete("/favourite-contact/:id", authMiddleware, (req, res) => {
-  db.query("DELETE FROM favourite_contacts WHERE id=? AND user_id=?", [req.params.id, req.userId], (err) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "Contact deleted successfully" });
-  });
+app.get("/favourite-contact", authMiddleware, async (req, res) => {
+  try {
+    const [result] = await db.execute(
+      "SELECT * FROM favourite_contacts WHERE user_id = ? ORDER BY created_at ASC",
+      [req.userId]
+    );
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch contacts" });
+  }
 });
+
+app.put("/favourite-contact/:id", authMiddleware, async (req, res) => {
+  const { name, phone, email } = req.body;
+  try {
+    await db.execute(
+      "UPDATE favourite_contacts SET name=?, phone=?, email=? WHERE id=? AND user_id=?",
+      [name, phone, email || null, req.params.id, req.userId]
+    );
+    res.json({ message: "Contact updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update contact" });
+  }
+});
+
+app.delete("/favourite-contact/:id", authMiddleware, async (req, res) => {
+  try {
+    await db.execute(
+      "DELETE FROM favourite_contacts WHERE id=? AND user_id=?",
+      [req.params.id, req.userId]
+    );
+    res.json({ message: "Contact deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete contact" });
+  }
+});
+
+
+
+
+
 
 // =====================
 // MEDITATION UPDATE
@@ -2614,6 +1635,630 @@ app.get("/crisis-resources", (req, res) => {
     ],
     message: "You are not alone. Help is available right now.",
   });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// PASSWORD RESET — OTP via Email (Nodemailer + Gmail SMTP)
+// ════════════════════════════════════════════════════════════════════════════
+// Add this block to your server.js (paste near the other auth routes,
+// e.g. right after the /login route)
+// ════════════════════════════════════════════════════════════════════════════
+
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+
+// ── Mailer setup ─────────────────────────────────────────────────────────────
+// Requires these in your .env file:
+//   GMAIL_USER=youraddress@gmail.com
+//   GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx   (16-char App Password, NOT your real password)
+//
+// How to get an App Password:
+// 1. Go to https://myaccount.google.com/security
+// 2. Enable 2-Step Verification (required)
+// 3. Go to https://myaccount.google.com/apppasswords
+// 4. Generate a password for "Mail" — copy the 16-char code into .env
+
+const mailer = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
+// ── Helper: generate a 6-digit numeric OTP ──────────────────────────────────
+function generateOTP() {
+  return crypto.randomInt(100000, 999999).toString();
+}
+
+// ── Helper: send the OTP email ──────────────────────────────────────────────
+async function sendOTPEmail(toEmail, otp, name = "there") {
+  const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; background:#050f09; padding:32px; border-radius:16px; color:#fff; max-width:420px; margin:0 auto;">
+      <h2 style="color:#4ade80; margin-bottom:4px;">Care Plus</h2>
+      <p style="color:rgba(255,255,255,0.7); font-size:14px;">Password Reset Request</p>
+      <p style="margin-top:24px; font-size:14px; color:rgba(255,255,255,0.85);">
+        Hi ${name}, use the code below to reset your password. This code expires in 10 minutes.
+      </p>
+      <div style="background:#004927; border:1px solid rgba(74,222,128,0.3); border-radius:12px; padding:18px; text-align:center; margin:24px 0;">
+        <span style="font-size:32px; font-weight:600; letter-spacing:8px; color:#4ade80;">${otp}</span>
+      </div>
+      <p style="font-size:12px; color:rgba(255,255,255,0.4);">
+        If you didn't request this, you can safely ignore this email.
+      </p>
+    </div>
+  `;
+
+  await mailer.sendMail({
+    from: `"Care Plus" <${process.env.GMAIL_USER}>`,
+    to: toEmail,
+    subject: "Your Care Plus password reset code",
+    html,
+  });
+}
+
+// ── Helper: Send SOS Emergency Email ───────────────────────────────────────────
+// ── Helper: Send SOS Emergency Email ───────────────────────────────────────────
+async function sendEmergencyEmail(
+  toEmail,
+  userName,
+  latitude,
+  phone,
+
+  
+  longitude,
+  message = "I need your help. Please contact me as soon as possible."
+) {
+  let relationMessage = `${userName} needs your immediate help.`;
+
+
+  const locationUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; background:#050f09; padding:32px; border-radius:16px; color:#fff; max-width:420px; margin:0 auto;">
+      <h2 style="color:#4ade80; margin-bottom:4px;">Care Plus</h2>
+      <p style="color:rgba(255,255,255,0.7); font-size:14px;">Emergency Alert</p>
+
+   <div style="background:#7f1d1d;border:1px solid #ef4444;padding:18px;border-radius:12px;margin:24px 0;">
+  <div style="font-size:20px;font-weight:bold;color:#ffffff;">
+    ${relationMessage}
+  </div>
+
+  <p style="margin-top:10px;font-size:14px;color:#f3f4f6;line-height:1.6;">
+    You are registered as <strong>favourite contact</strong> in
+    <strong>${userName}'s</strong> Care Plus emergency contacts.
+    They have activated <strong>Panic Mode</strong> and are requesting immediate assistance.
+  </p>
+</div>
+
+   <div style="background:#004927; border:1px solid rgba(74,222,128,0.3); border-radius:12px; padding:18px; text-align:center; margin:24px 0;">
+  <span style="font-size:13px; color:rgba(255,255,255,0.6); display:block; margin-bottom:10px;">
+    Call immediately
+  </span>
+
+  <a
+    href="tel:${phone}"
+    style="
+      display:inline-block;
+      color:#4ade80;
+      font-size:26px;
+      font-weight:600;
+      text-decoration:none;
+    "
+  >
+    📞 ${phone}
+  </a>
+</div>
+
+      <p style="font-size:14px; color:rgba(255,255,255,0.85); margin-bottom:24px;">
+        "${message}"
+      </p>
+
+  <div style="margin:25px 0;text-align:center;">
+  <a href="${locationUrl}"
+     style="display:inline-block;background:#4ade80;color:#050f09;padding:14px 24px;border-radius:10px;text-decoration:none;font-size:16px;font-weight:bold;">
+    📍 View ${userName}'s Live Location
+  </a>
+</div>
+
+      <p style="font-size:12px; color:rgba(255,255,255,0.4);">
+        Lat: ${latitude ?? "unavailable"} · Long: ${longitude ?? "unavailable"}
+      </p>
+
+      <p style="font-size:12px; color:rgba(255,255,255,0.4); margin-top:16px;">
+        This alert was sent automatically by Care Plus. If this seems serious, please also consider contacting local emergency services.
+      </p>
+    </div>
+  `;
+
+  await mailer.sendMail({
+    from: `"Care Plus" <${process.env.GMAIL_USER}>`,
+    to: toEmail,
+    subject: `🚨 ${userName} needs your help!`,
+    html,
+  });
+}
+
+
+app.post("/send-emergency-email", authMiddleware, async (req, res) => {
+    try {
+        const { email, latitude, longitude  } = req.body;
+        const [rows] = await db.execute(
+            "SELECT name, phone_number FROM users WHERE id=?",
+            [req.userId]
+        );
+        if (!rows.length) return res.status(404).json({ message: "User not found" });
+        const user = rows[0];
+await sendEmergencyEmail(
+    email,
+    user.name,
+    latitude,
+    user.phone_number,
+    longitude,
+  
+);
+
+        res.json({ message: "Emergency email sent." });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Failed to send email." });
+    }
+});
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// ROUTE 1 — Request OTP
+// POST /forgot-password   { email }
+// ═════════════════════════════════════════════════════════════════════════
+// app.post("/forgot-password", async (req, res) => {
+//   const { email } = req.body;
+
+//   if (!email) {
+//     return res.status(400).json({ message: "Email is required" });
+//   }
+
+//   try {
+//     const [users] = await db.execute("SELECT id, name FROM users WHERE email = ?", [email]);
+
+//     if (users.length === 0) {
+//       // Don't reveal whether the email exists — generic message
+//       return res.status(200).json({
+//         message: "If an account exists with this email, an OTP has been sent.",
+//       });
+//     }
+
+//     const user = users[0];
+//     const otp = generateOTP();
+//     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+//     // Remove any previous unused OTPs for this user, then insert fresh one
+//     await db.execute("DELETE FROM password_resets WHERE user_id = ?", [user.id]);
+//     await db.execute(
+//       "INSERT INTO password_resets (user_id, otp, expires_at, verified) VALUES (?, ?, ?, 0)",
+//       [user.id, otp, expiresAt]
+//     );
+
+//     await sendOTPEmail(email, otp, user.name);
+
+//     res.json({ message: "If an account exists with this email, an OTP has been sent." });
+//   } catch (err) {
+//     console.error("forgot-password error:", err);
+//     res.status(500).json({ message: "Failed to send OTP. Please try again." });
+//   }
+// });
+
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      message: "Email is required",
+    });
+  }
+
+  try {
+    const [users] = await db.execute(
+      "SELECT id, name FROM users WHERE email = ?",
+      [email]
+    );
+
+    // EMAIL DOES NOT EXIST
+    if (users.length === 0) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const user = users[0];
+
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await db.execute(
+      "DELETE FROM password_resets WHERE user_id = ?",
+      [user.id]
+    );
+
+    await db.execute(
+      "INSERT INTO password_resets (user_id, otp, expires_at, verified) VALUES (?, ?, ?, 0)",
+      [user.id, otp, expiresAt]
+    );
+
+    await sendOTPEmail(email, otp, user.name);
+
+    res.json({
+      message: "OTP sent successfully",
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      message: "Failed to send OTP",
+    });
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════
+// ROUTE 2 — Verify OTP
+// POST /verify-otp   { email, otp }
+// Returns a short-lived resetToken (JWT) used to authorize the password change
+// ═════════════════════════════════════════════════════════════════════════
+app.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email and OTP are required" });
+  }
+
+  try {
+    const [users] = await db.execute("SELECT id FROM users WHERE email = ?", [email]);
+    if (users.length === 0) {
+      return res.status(400).json({ message: "Invalid OTP or email" });
+    }
+    const userId = users[0].id;
+
+    const [resets] = await db.execute(
+      "SELECT * FROM password_resets WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+      [userId]
+    );
+
+    if (resets.length === 0) {
+      return res.status(400).json({ message: "No OTP request found. Please request a new one." });
+    }
+
+    const resetRow = resets[0];
+
+    if (new Date(resetRow.expires_at) < new Date()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    if (resetRow.otp !== otp) {
+      return res.status(400).json({ message: "Incorrect OTP. Please try again." });
+    }
+
+    // Mark verified so /reset-password knows this step was completed
+    await db.execute("UPDATE password_resets SET verified = 1 WHERE id = ?", [resetRow.id]);
+
+    // Short-lived token (15 min) — proves the OTP step succeeded
+    const resetToken = jwt.sign(
+      { id: userId, purpose: "password_reset" },
+      "secret123",
+      { expiresIn: "15m" }
+    );
+
+    res.json({ message: "OTP verified successfully", resetToken });
+  } catch (err) {
+    console.error("verify-otp error:", err);
+    res.status(500).json({ message: "Verification failed. Please try again." });
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════
+// ROUTE 3 — Reset Password
+// POST /reset-password   { resetToken, newPassword, confirmPassword }
+// ═════════════════════════════════════════════════════════════════════════
+app.post("/reset-password", async (req, res) => {
+  const { resetToken, newPassword, confirmPassword } = req.body;
+
+  if (!resetToken || !newPassword || !confirmPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
+  }
+
+  try {
+    let decoded;
+    try {
+      decoded = jwt.verify(resetToken, "secret123");
+    } catch {
+      return res.status(401).json({ message: "Reset session expired. Please start again." });
+    }
+
+    if (decoded.purpose !== "password_reset") {
+      return res.status(401).json({ message: "Invalid reset session" });
+    }
+
+    const userId = decoded.id;
+
+    // Confirm the OTP step was actually verified (defense against token replay)
+    const [resets] = await db.execute(
+      "SELECT * FROM password_resets WHERE user_id = ? AND verified = 1 ORDER BY id DESC LIMIT 1",
+      [userId]
+    );
+    if (resets.length === 0) {
+      return res.status(401).json({ message: "OTP verification required before resetting password" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await db.execute("UPDATE users SET password = ? WHERE id = ?", [hashed, userId]);
+
+    // Clean up used OTP rows for this user
+    await db.execute("DELETE FROM password_resets WHERE user_id = ?", [userId]);
+
+    res.json({ message: "Password reset successfully" });
+  } catch (err) {
+    console.error("reset-password error:", err);
+    res.status(500).json({ message: "Failed to reset password. Please try again." });
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════
+// SQL — run this once to create the password_resets table
+// ═════════════════════════════════════════════════════════════════════════
+/*
+CREATE TABLE password_resets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  otp VARCHAR(6) NOT NULL,
+  verified TINYINT(1) DEFAULT 0,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+*/
+
+
+
+const PDFDocument = require("pdfkit");
+
+// ── Pull together everything the report might need ─────────────────────────
+async function getFullUserData(userId) {
+  const [
+    [userRows],
+    [moodRows],
+    [wellnessHistoryRows],
+    [streakRows],
+    [achRows],
+    [gameRows],
+    [therapyRows],
+    [vitalsRows],
+  ] = await Promise.all([
+    db.execute("SELECT name, email, phone_number, created_at FROM users WHERE id = ?", [userId]),
+    db.execute("SELECT mood_emoji, mood_text, created_at FROM moods WHERE user_id = ? ORDER BY created_at DESC LIMIT 90", [userId]),
+    db.execute("SELECT wellness_score, sleep_hours, water_intake, meditation_minutes, created_at FROM wellness_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 90", [userId]),
+    db.execute("SELECT current_streak, longest_streak, last_active_date FROM wellness_streaks WHERE user_id = ?", [userId]),
+    db.execute("SELECT title, description, unlocked_at FROM achievements WHERE user_id = ? ORDER BY unlocked_at DESC", [userId]),
+    db.execute("SELECT memory, stroop, sequence, tapstar, reverse, gratitude, log_date FROM game_scores WHERE user_id = ? ORDER BY log_date DESC LIMIT 30", [userId]),
+    db.execute("SELECT title, session_type, session_date, session_time, status FROM therapy_sessions WHERE user_id = ? ORDER BY session_date DESC", [userId]),
+    db.execute("SELECT heart_rate_bpm, temperature_celsius, blood_oxygen_percent, movement, recorded_at FROM health_monitoring WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 60", [userId]),
+  ]);
+
+  return {
+    user: userRows[0] || { name: "User", email: "", phone_number: "" },
+    moods: moodRows,
+    wellnessHistory: wellnessHistoryRows,
+    streaks: streakRows[0] || { current_streak: 0, longest_streak: 0 },
+    achievements: achRows,
+    games: gameRows,
+    therapySessions: therapyRows,
+    vitals: vitalsRows,
+  };
+}
+
+// ── Build the PDF ────────────────────────────────────────────────────────
+function buildHealthReportPDF(data, categories) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const buffers = [];
+    doc.on("data", (chunk) => buffers.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+
+    // ── Header ──
+    doc.rect(0, 0, doc.page.width, 90).fill("#050f09");
+    doc.fillColor("#4ade80").fontSize(24).font("Helvetica-Bold").text("Care Plus", 40, 25);
+    doc.fillColor("#ffffff").fontSize(11).font("Helvetica").text("Personal Health Report", 40, 55);
+    doc.fillColor("#000000").moveDown(3);
+
+    doc.fontSize(10).fillColor("#333333");
+    doc.text(`Name: ${data.user.name || "N/A"}`);
+    doc.text(`Email: ${data.user.email || "N/A"}`);
+    doc.text(`Phone: ${data.user.phone_number || "N/A"}`);
+    doc.text(`Report generated: ${new Date().toLocaleString()}`);
+    doc.moveDown(1.5);
+
+    const sectionTitle = (title) => {
+      doc.moveDown(0.5);
+      doc.fontSize(14).fillColor("#16a34a").font("Helvetica-Bold").text(title);
+      doc.moveTo(40, doc.y + 2).lineTo(555, doc.y + 2).strokeColor("#4ade80").stroke();
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor("#000000").font("Helvetica");
+    };
+
+    // ── Wellness Score / Sleep / Water / Meditation trend ──
+    if (categories.includes("wellness") && data.wellnessHistory.length) {
+      sectionTitle("Wellness Trend (Score, Sleep, Water, Meditation)");
+      data.wellnessHistory.forEach((r) => {
+        doc.text(
+          `${new Date(r.created_at).toLocaleDateString()}  —  Score: ${r.wellness_score ?? "-"}/100  |  Sleep: ${r.sleep_hours ?? "-"}h  |  Water: ${r.water_intake ?? "-"}L  |  Meditation: ${r.meditation_minutes ?? "-"} min`
+        );
+      });
+    }
+
+    // ── Mood History ──
+    if (categories.includes("mood") && data.moods.length) {
+      sectionTitle("Mood History");
+      data.moods.forEach((m) => {
+        doc.text(`${new Date(m.created_at).toLocaleString()}  —  ${m.mood_text}`);
+      });
+    }
+
+    // ── Vitals ──
+    if (categories.includes("vitals") && data.vitals.length) {
+      sectionTitle("Health Vitals");
+      data.vitals.forEach((v) => {
+        doc.text(
+          `${new Date(v.recorded_at).toLocaleString()}  —  HR: ${v.heart_rate_bpm ?? "-"} bpm | SpO2: ${v.blood_oxygen_percent ?? "-"}% | Temp: ${v.temperature_celsius ?? "-"}°C | Movement: ${v.movement ?? "-"}`
+        );
+      });
+    }
+
+    // ── Streaks ──
+    if (categories.includes("streaks")) {
+      sectionTitle("Wellness Streaks");
+      doc.text(`Current streak: ${data.streaks.current_streak} days`);
+      doc.text(`Longest streak: ${data.streaks.longest_streak} days`);
+    }
+
+    // ── Achievements ──
+    if (categories.includes("achievements") && data.achievements.length) {
+      sectionTitle("Achievements");
+      data.achievements.forEach((a) => {
+        doc.text(`${new Date(a.unlocked_at).toLocaleDateString()}  —  ${a.title}: ${a.description}`);
+      });
+    }
+
+    // ── Brain Games ──
+    if (categories.includes("games") && data.games.length) {
+      sectionTitle("Brain Games Scores");
+      data.games.forEach((g) => {
+        doc.text(
+          `${g.log_date}  —  Memory: ${g.memory ?? "-"} | Stroop: ${g.stroop ?? "-"} | Sequence: ${g.sequence ?? "-"} | TapStar: ${g.tapstar ?? "-"} | Reverse: ${g.reverse ?? "-"} | Gratitude: ${g.gratitude ?? "-"}`
+        );
+      });
+    }
+
+    // ── Therapy Sessions ──
+    if (categories.includes("therapy") && data.therapySessions.length) {
+      sectionTitle("Therapy Sessions with Sera");
+      data.therapySessions.forEach((s) => {
+        doc.text(`${s.session_date} at ${s.session_time}  —  "${s.title}" (${s.session_type}, ${s.status})`);
+      });
+    }
+
+    doc.moveDown(2);
+    doc.fontSize(8).fillColor("#aaa").text(
+      "This report was generated automatically by Care Plus and is intended for personal use or to be shared with a healthcare provider.",
+      { align: "center" }
+    );
+
+    doc.end();
+  });
+}
+
+// ── Route: get PDF as base64 (easiest for React Native to consume) ─────────
+app.post("/health-report/pdf-base64", authMiddleware, async (req, res) => {
+  try {
+    const categories = req.body.categories && req.body.categories.length
+      ? req.body.categories
+      : ["wellness", "mood", "vitals", "streaks", "achievements", "games", "therapy"];
+
+    const data = await getFullUserData(req.userId);
+    const pdfBuffer = await buildHealthReportPDF(data, categories);
+
+    res.json({ base64: pdfBuffer.toString("base64") });
+  } catch (err) {
+    console.error("PDF generation error:", err);
+    res.status(500).json({ message: "Failed to generate report" });
+  }
+});
+
+// ── Route: email the PDF report ─────────────────────────────────────────────
+app.post("/health-report/email", authMiddleware, async (req, res) => {
+  try {
+    const categories = req.body.categories && req.body.categories.length
+      ? req.body.categories
+      : ["wellness", "mood", "vitals", "streaks", "achievements", "games", "therapy"];
+
+    const data = await getFullUserData(req.userId);
+    const pdfBuffer = await buildHealthReportPDF(data, categories);
+    const recipient = req.body.toEmail || data.user.email;
+
+    if (!recipient) return res.status(400).json({ message: "No recipient email available" });
+
+    const html = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; background:#050f09; padding:32px; border-radius:16px; color:#fff; max-width:420px; margin:0 auto;">
+        <h2 style="color:#4ade80; margin-bottom:4px;">Care Plus</h2>
+        <p style="color:rgba(255,255,255,0.7); font-size:14px;">Your Health Report</p>
+        <p style="margin-top:24px; font-size:14px; color:rgba(255,255,255,0.85);">
+          Hi ${data.user.name || "there"}, your requested health report is attached as a PDF. You can share it with a doctor or keep it for your own records.
+        </p>
+      </div>
+    `;
+
+    await mailer.sendMail({
+      from: `"Care Plus" <${process.env.GMAIL_USER}>`,
+      to: recipient,
+      subject: "Your Care Plus Health Report",
+      html,
+      attachments: [{ filename: "care-plus-health-report.pdf", content: pdfBuffer }],
+    });
+
+    res.json({ message: "Report emailed successfully" });
+  } catch (err) {
+    console.error("Email report error:", err);
+    res.status(500).json({ message: "Failed to email report" });
+  }
+});
+
+// ── GET all liked items ────────────────────────────────────────────────────────
+app.get("/peace/likes", authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      "SELECT item_id FROM likes WHERE user_id = ?",
+      [req.userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Get likes error:", err);
+    res.status(500).json({ message: "Failed to fetch likes" });
+  }
+});
+
+// ── POST: Add a like ───────────────────────────────────────────────────────────
+app.post("/peace/likes", authMiddleware, async (req, res) => {
+  const { item_id } = req.body;
+  if (!item_id) return res.status(400).json({ message: "item_id required" });
+  try {
+    await db.execute(
+      "INSERT IGNORE INTO likes (user_id, item_id) VALUES (?, ?)",
+      [req.userId, item_id]
+    );
+    res.json({ message: "Liked successfully" });
+  } catch (err) {
+    console.error("Like error:", err);
+    res.status(500).json({ message: "Failed to like" });
+  }
+});
+
+// ── DELETE: Remove a like ──────────────────────────────────────────────────────
+app.delete("/peace/likes/:item_id", authMiddleware, async (req, res) => {
+  const item_id = decodeURIComponent(req.params.item_id);
+  try {
+    await db.execute(
+      "DELETE FROM likes WHERE user_id = ? AND item_id = ?",
+      [req.userId, item_id]
+    );
+    res.json({ message: "Unliked successfully" });
+  } catch (err) {
+    console.error("Unlike error:", err);
+    res.status(500).json({ message: "Failed to unlike" });
+  }
 });
 
 app.listen(5000, "0.0.0.0", () => {

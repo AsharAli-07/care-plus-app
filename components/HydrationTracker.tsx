@@ -12,7 +12,7 @@ export const HydrationTracker: React.FC<Props> = ({ waterML, onAdd, onRemove, go
   const totalCups= Math.round((goalL * 1000) / 250); // e.g. 2L → 8 cups, 3L → 12
 
   return (
-    <BlurView intensity={40} tint="dark" style={s.card}>
+    <View style={s.card}>
       <View style={s.topRow}>
         <View>
           <Text style={s.value}>{liters.toFixed(2)}<Text style={s.unit}> L</Text></Text>
@@ -47,12 +47,13 @@ export const HydrationTracker: React.FC<Props> = ({ waterML, onAdd, onRemove, go
           <Text style={[s.btnTxt, { color: "#34d399" }]}>250ml</Text>
         </TouchableOpacity>
       </View>
-    </BlurView>
+    </View>
   );
 };
 
 const s = StyleSheet.create({
-  card:      { borderRadius: 16, padding: 16, marginBottom: 14, borderColor: "rgba(52,211,153,0.3)", borderWidth: 1, overflow: "hidden" },
+  card:      { borderRadius: 25, padding: 15, marginBottom: 30, borderColor: "rgba(52,211,153,0.3)", borderWidth: 1, overflow: "hidden", backgroundColor: "rgba(0,26,17,0.53)",shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, shadowColor: "#004927" },
   topRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   value:     { color: "#fff", fontSize: 28, fontFamily: "Poppins_700Bold" },
   unit:      { fontSize: 14, color: "#888" },

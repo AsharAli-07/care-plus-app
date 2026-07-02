@@ -14,6 +14,7 @@ import axios from "axios";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 
+
 import { BASE_URL } from "../api";
 
 const Wellness = () => {
@@ -130,14 +131,14 @@ const updatePreference = async (key: string, value: any) => {
                 <View style={styles.glowTop} />
                 <View style={styles.overlay}>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} style={{paddingTop: 40, paddingBottom: 25}}>
 
           <Text style={styles.heading}>
             Wellness Preferences
           </Text>
 
           {/* SLEEP GOAL */}
-          <BlurView intensity={50} tint="dark" style={styles.card}>
+          <View style={styles.card}>
             <View style={styles.row}>
 
               <View>
@@ -162,10 +163,10 @@ const updatePreference = async (key: string, value: any) => {
               </TouchableOpacity>
 
             </View>
-          </BlurView>
+          </View>
 
           {/* WATER GOAL */}
-          <BlurView intensity={50} tint="dark" style={styles.card}>
+          <View style={styles.card}>
             <View style={styles.row}>
 
               <View>
@@ -190,7 +191,7 @@ const updatePreference = async (key: string, value: any) => {
               </TouchableOpacity>
 
             </View>
-          </BlurView>
+          </View>
 
           {/* TOGGLES */}
 
@@ -278,9 +279,7 @@ const PreferenceItem = ({
 }: any) => {
 
   return (
-    <BlurView
-      intensity={50}
-      tint="dark"
+    <View
       style={styles.card}
     >
 
@@ -316,11 +315,17 @@ const PreferenceItem = ({
             true: "#555",
           }}
           thumbColor="#fff"
+          style={{
+  transform: [
+    { scaleX: 0.8 },
+    { scaleY: 0.8 },
+  ],
+}}
         />
 
       </View>
 
-    </BlurView>
+    </View>
   );
 };
 
@@ -339,16 +344,16 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     paddingHorizontal: 20,
-     paddingBottom: 5
+    
   },
 
   heading: {
     fontSize: 20,
     color: "#fff",
-    marginBottom: 20,
+    marginBottom: 30,
     alignSelf: "center",
     fontFamily: "Poppins_500Medium",
-    marginTop: 20,
+
   },
 
   card: {
@@ -359,6 +364,7 @@ const styles = StyleSheet.create({
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
        shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
   },
 
   row: {

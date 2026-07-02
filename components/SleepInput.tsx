@@ -63,7 +63,7 @@ export const SleepInput: React.FC<Props> = ({ value, onChange, goal }) => {
   const presets = Array.from({ length: 5 }, (_, i) => Math.max(1, goal - 2 + i));
 
   return (
-    <BlurView intensity={40} tint="dark" style={s.card}>
+    <View style={s.card}>
       <View style={s.goalRow}>
         <Text style={s.goalTxt}>Goal: {goal}h</Text>
         <View style={[s.goalBadge, { borderColor: value >= goal ? "#4ade80" : "rgba(167,139,250,0.4)" }]}>
@@ -102,25 +102,25 @@ export const SleepInput: React.FC<Props> = ({ value, onChange, goal }) => {
           </TouchableOpacity>
         ))}
       </View>
-    </BlurView>
+    </View>
   );
 };
 
 const s = StyleSheet.create({
-  card:         { borderRadius: 16, padding: 16, marginBottom: 14, borderColor: "rgba(167,139,250,0.3)", borderWidth: 1, overflow: "hidden" },
+  card:         { borderRadius: 25, padding: 15, marginBottom: 30, borderColor: "rgba(167,139,250,0.3)", borderWidth: 1, overflow: "hidden", backgroundColor: '#0a00274d' },
   goalRow:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  goalTxt:      { color: "#888", fontSize: 11, fontFamily: "Poppins_400Regular" },
+  goalTxt:      { color: "#999", fontSize: 11, fontFamily: "Poppins_400Regular" },
   goalBadge:    { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, borderWidth: 1, backgroundColor: "rgba(167,139,250,0.1)" },
   goalBadgeTxt: { fontSize: 11, fontFamily: "Poppins_500Medium" },
   row:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   btn:          { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(167,139,250,0.12)", alignItems: "center", justifyContent: "center", borderColor: "rgba(167,139,250,0.3)", borderWidth: 1 },
   center:       { alignItems: "center" },
   value:        { color: "#fff", fontSize: 32, fontFamily: "Poppins_700Bold" },
-  sub:          { color: "#888", fontSize: 10, fontFamily: "Poppins_400Regular" },
+  sub:          { color: "#999", fontSize: 10, fontFamily: "Poppins_400Regular" },
   track:        { height: 5, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 3, marginTop: 12, marginBottom: 12, overflow: "hidden" },
   fill:         { height: 5, borderRadius: 3 },
   presets:      { flexDirection: "row", justifyContent: "space-between", gap: 6 },
   preset:       { flex: 1, padding: 7, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", borderColor: "rgba(255,255,255,0.08)", borderWidth: 1 },
   presetActive: { backgroundColor: "rgba(167,139,250,0.18)", borderColor: "rgba(167,139,250,0.5)" },
-  presetTxt:    { color: "#aaa", fontSize: 11, fontFamily: "Poppins_500Medium" },
+  presetTxt:    { color: "#999", fontSize: 11, fontFamily: "Poppins_500Medium" },
 });

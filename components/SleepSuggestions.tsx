@@ -71,8 +71,7 @@ export const SleepSuggestions: React.FC<SleepSuggestionsProps> = ({
   onSelectTrack,
 }) => {
   return (
-    <View style={{ marginBottom: 20 }}>
-      <Text style={styles.sectionHeading}>Sleep Suggestions</Text>
+    <View style={{ marginBottom: 30 }}>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {items.map((item, index) => {

@@ -9,6 +9,7 @@ import {
   ImageBackground,
   ActivityIndicator, StatusBar
 } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
@@ -21,34 +22,62 @@ import { BASE_URL } from '../api';
 
 
 const Login = ({ navigation }: any) => {
-
+const [error, setError] = useState("");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // ======================
   // 🔐 LOGIN
   // ======================
-  const handleLogin = async () => {
-    try {
-      setLoading(true);
+const handleLogin = async () => {
+  setError("");
 
-      const res = await axios.post(`${BASE_URL}/login`, {
-        email,
-        password,
-      });
+  if (!email.trim() || !password.trim()) {
+    setError("Please fill all fields");
+    return;
+  }
 
-      await AsyncStorage.setItem("token", res.data.token);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      navigation.replace("Start");
+  if (!emailRegex.test(email.trim())) {
+    setError("Please enter a valid email address");
+    return;
+  }
 
-    } catch (err: any) {
-      console.log(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
+  if (password.length < 6) {
+    setError("Password is too short");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await axios.post(`${BASE_URL}/login`, {
+      email: email.trim(),
+      password,
+    });
+
+    await AsyncStorage.setItem("token", res.data.token);
+
+    navigation.replace("Start");
+
+  } catch (err: any) {
+    const message = err?.response?.data?.message;
+
+    if (
+      message?.toLowerCase().includes("invalid") ||
+      message?.toLowerCase().includes("incorrect")
+    ) {
+      setError("Incorrect email or password");
+    } else {
+      setError(message || "Login failed");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ======================
   // 🔐 AUTO LOGIN CHECK
@@ -95,38 +124,68 @@ const Login = ({ navigation }: any) => {
               <View style={styles.glowTop} />
       <View style={styles.centerWrapper}>
 
-        <BlurView intensity={50} tint="dark" style={styles.cardWrapper}>
+        <View style={styles.cardWrapper}>
 
           <Image
             source={require('../assets/images/logo.png')}
             style={styles.logo}
           />
+          {error ? (
+  <View style={styles.errorWrap}>
+    <Ionicons
+      name="alert-circle-outline"
+      size={16}
+      color="#f87171"
+    />
+    <Text style={styles.errorText}>{error}</Text>
+  </View>
+) : null}
 <Text style={styles.label}>
                             Email
                           </Text>
           
-            
+            <View style={styles.inputWrap}>
+  <Ionicons name="mail-outline" size={16} color="rgba(255,255,255,0.4)" />
             <TextInput
               placeholder="Email"
-              placeholderTextColor="#b3b3b3ff"
+              placeholderTextColor="#999"
               style={styles.input}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+  setEmail(text);
+  if (error) setError("");
+}}
             />
-          
+          </View>
 <Text style={styles.label}>
                             Password
                           </Text>
           
             
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#b3b3b3ff"
-              secureTextEntry
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-            />
+  <View style={styles.inputWrap}>
+  <Ionicons name="lock-closed-outline" size={16} color="rgba(255,255,255,0.4)" />
+  <TextInput
+    style={styles.passwordInput}
+    placeholder="Password"
+    placeholderTextColor="#999"
+    secureTextEntry={!showPassword}
+    value={password}
+    onChangeText={(text) => {
+  setPassword(text);
+  if (error) setError("");
+}}
+    autoCapitalize="none"
+  />
+
+  <TouchableOpacity onPress={() => setShowPassword((s) => !s)}>
+    <Ionicons
+      name={showPassword ? "eye-outline" : "eye-off-outline"}
+      size={18}
+      color={showPassword ? "#4ade80" : "#999"}
+    />
+  </TouchableOpacity>
+</View>
+            
         
 
           <TouchableOpacity onPress={() => navigation.navigate('Help')}>
@@ -145,7 +204,7 @@ const Login = ({ navigation }: any) => {
             )}
           </TouchableOpacity>
 
-        </BlurView>
+        </View>
 
       </View>
     </ImageBackground>
@@ -155,6 +214,26 @@ const Login = ({ navigation }: any) => {
 
 
 const styles = StyleSheet.create({
+
+  errorWrap: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  backgroundColor: "rgba(248,113,113,0.1)",
+  borderRadius: 10,
+  padding: 10,
+  borderWidth: 1,
+  borderColor: "rgba(248,113,113,0.2)",
+  marginBottom: 16,
+  width: "100%",
+},
+
+errorText: {
+  color: "#f87171",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
+  flex: 1,
+},
   container: {
   flex: 1,
 },
@@ -180,9 +259,12 @@ cardWrapper: {
   paddingRight: 20,
   paddingBottom: 20,
   paddingLeft: 20,
-  borderRadius: 12,
+  borderRadius: 25,
   alignItems: "center",
-  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
+  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
 },
 
 logo: {
@@ -190,6 +272,13 @@ logo: {
   height: 150,
 },
 
+
+passwordInput: {
+  flex: 1,
+  color: "#fff",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
+},
 
 label: {
     color: "#fff",
@@ -199,19 +288,22 @@ label: {
     alignSelf: 'flex-start'
   },
 
-input: {
+inputWrap: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
   width: "100%",
   padding: 10,
   marginBottom: 15,
-
   borderRadius: 12,
   backgroundColor: "rgba(255,255,255,0.08)",
-
+},
+input: {
+  flex: 1,
   color: "#fff",
   fontSize: 12,
   fontFamily: "Poppins_400Regular",
 },
-
 loginButton: {
   backgroundColor: "#004927ff",
   padding: 10,

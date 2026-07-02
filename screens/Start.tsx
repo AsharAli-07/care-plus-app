@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
 
   heading: {
     fontSize: 20,
-    marginBottom: 40,
+    marginBottom: 0,
     color: "#ffffffff",
     textAlign: "center",
     paddingHorizontal: 20,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 15,
     width: "100%",
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
          shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },

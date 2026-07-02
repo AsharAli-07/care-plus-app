@@ -13,12 +13,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { BASE_URL } from "../api";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 const ChangePassword = ({ navigation }: any) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
     const [privacyMode, setPrivacyMode] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // 🔒 Password validation: 8+ chars + number
   const isValidPassword = (password: string) => {
@@ -115,40 +118,75 @@ const loadUser = async () => {
                 <View style={styles.glowTop} />
                 <View style={styles.overlay}>
 
-        <BlurView intensity={50} tint="dark" style={styles.card}>
+        <View style={styles.card}>
 
           <Text style={styles.heading}>Change Password</Text>
 
           {/* ERROR MESSAGE */}
-          {error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : null}
+         {error ? (
+  <View style={styles.errorWrap}>
+    <Ionicons
+      name="alert-circle-outline"
+      size={16}
+      color="#f87171"
+    />
+    <Text style={styles.errorText}>{error}</Text>
+  </View>
+) : null}
 
 
 
           {/* NEW PASSWORD */}
-          <Text style={styles.label}>New Password</Text>
-          <TextInput
-            placeholder="New Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={newPassword}
-            onChangeText={setNewPassword}
-            style={styles.input}
-            editable={!privacyMode}
-          />
+<Text style={styles.label}>New Password</Text>
+
+<View style={styles.passwordWrap}>
+  <TextInput
+    style={styles.passwordInput}
+    placeholder="New Password"
+    placeholderTextColor="#999"
+    secureTextEntry={!showNewPassword}
+    value={newPassword}
+    onChangeText={setNewPassword}
+    editable={!privacyMode}
+    autoCapitalize="none"
+  />
+
+  <TouchableOpacity
+    onPress={() => setShowNewPassword((s) => !s)}
+  >
+    <Ionicons
+      name={showNewPassword ? "eye-outline" : "eye-off-outline"}
+      size={18}
+      color={showNewPassword ? "#4ade80" : "#999"}
+    />
+  </TouchableOpacity>
+</View>
 
           {/* CONFIRM PASSWORD */}
-          <Text style={styles.label}>Confirm Password</Text>
-          <TextInput
-            placeholder="Confirm Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            style={styles.input}
-            editable={!privacyMode}
-          />
+<Text style={styles.label}>Confirm Password</Text>
+
+<View style={styles.passwordWrap}>
+  <TextInput
+    style={styles.passwordInput}
+    placeholder="Confirm Password"
+    placeholderTextColor="#999"
+    secureTextEntry={!showConfirmPassword}
+    value={confirmPassword}
+    onChangeText={setConfirmPassword}
+    editable={!privacyMode}
+    autoCapitalize="none"
+  />
+
+  <TouchableOpacity
+    onPress={() => setShowConfirmPassword((s) => !s)}
+  >
+    <Ionicons
+      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+      size={18}
+      color={showConfirmPassword ? "#4ade80" : "#999"}
+    />
+  </TouchableOpacity>
+</View>
 
           {/* BUTTON */}
           <TouchableOpacity
@@ -158,7 +196,7 @@ const loadUser = async () => {
             <Text style={styles.buttonText}>Update Password</Text>
           </TouchableOpacity>
 
-        </BlurView>
+        </View>
         </View>
 </ImageBackground>
       </View>
@@ -181,10 +219,11 @@ const styles = StyleSheet.create({
 
   card: {
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 25,
       borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
        shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
   },
 
   heading: {
@@ -201,21 +240,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Poppins_500Medium",
   },
+passwordWrap: {
+  width: "100%",
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 10,
+  marginBottom: 15,
+  borderRadius: 12,
+  backgroundColor: "rgba(255,255,255,0.08)",
+},
 
-  input: {
-    width: "100%",
-    padding: 10,
-    borderRadius: 12,
-    paddingHorizontal: 15,
+passwordInput: {
+  flex: 1,
+  paddingVertical: 10,
+  color: "#fff",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
+},
 
-    backgroundColor: "#1f2820e1",
+errorWrap: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  backgroundColor: "rgba(248,113,113,0.1)",
+  borderRadius: 10,
+  padding: 10,
+  borderWidth: 1,
+  borderColor: "rgba(248,113,113,0.2)",
+  marginBottom: 16,
+},
 
-    color: "#fff",
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
+errorText: {
+  color: "#f87171",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
+  flex: 1,
+},
 
-    marginBottom: 15,
-  },
 
   button: {
     backgroundColor: "#004927",
@@ -234,13 +295,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  errorText: {
-    color: "#ff4d4d",
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-    marginBottom: 15,
-    textAlign:'center'
-  },
+
           glowTop: {
     position: "absolute",
     top: -80,

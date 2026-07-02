@@ -22,8 +22,8 @@ export const MoodSelector: React.FC<Props> = ({ moodEmoji, moodText, onMoodPress
   };
 
   return (
-    <BlurView intensity={50} tint="dark" style={s.card}>
-      <LinearGradient colors={["rgba(74,222,128,0.06)", "transparent"]} style={StyleSheet.absoluteFill} />
+    <View style={s.card}>
+    
 
       {moodEmoji ? (
         <View style={s.selectedWrap}>
@@ -50,20 +50,28 @@ export const MoodSelector: React.FC<Props> = ({ moodEmoji, moodText, onMoodPress
           </View>
         </View>
       )}
-    </BlurView>
+    </View>
   );
 };
 
 const s = StyleSheet.create({
-  card:         { borderRadius: 18, padding: 18, marginBottom: 14, overflow: "hidden", borderColor: "rgba(74,222,128,0.2)", borderWidth: 1 },
+  card:         {   overflow: "hidden",  width: '100%',
+  padding: 15,
+  marginBottom: 30,
+  borderRadius: 25,
+  alignItems: "center",
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,},
   selectedWrap: { alignItems: "center", paddingVertical: 6 },
   circle:       { width: 72, height: 72, borderRadius: 36, borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.05)", marginBottom: 8 },
   bigEmoji:     { fontSize: 40 },
   moodLabel:    { fontSize: 14, fontFamily: "Poppins_600SemiBold", marginBottom: 10 },
   changeBtn:    { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, backgroundColor: "rgba(74,222,128,0.1)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
-  changeTxt:    { color: "#4ade80", fontSize: 11, fontFamily: "Poppins_500Medium" },
+  changeTxt:    { color: "#4ade80", fontSize: 12, fontFamily: "Poppins_500Medium" },
   pickerWrap:   { alignItems: "center" },
-  question:     { color: "#aaa", fontSize: 12, fontFamily: "Poppins_400Regular", marginBottom: 14 },
+  question:     { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular", marginBottom: 14 },
   emojiRow:     { flexDirection: "row", gap: 20 },
   emojiBtn:     { width: 35, height: 35, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", justifyContent: "center", borderColor: "rgba(255,255,255,0.1)", borderWidth: 1 },
   emojiTxt:     { fontSize: 20 },

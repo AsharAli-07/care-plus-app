@@ -14,8 +14,23 @@ import { BASE_URL } from "../api";
 import BookSession from "../components/BookSession";
 import ChatTherapy from "../components/ChatTherapy";
 import VoiceTherapy from "../components/VoiceTherapy";
+import { LayoutAnimation, Platform, UIManager } from "react-native";
 
 const { width } = Dimensions.get("window");
+
+export const SectionHeader = ({ label, icon, color = "#4ade80" }: any) => (
+  <View style={sh.row}>
+    <View style={[sh.bar, { backgroundColor: color }]} />
+    <Ionicons name={icon} size={14} color={color} />
+    <Text style={[sh.txt, { color }]}>{label}</Text>
+  </View>
+);
+
+const sh = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 15 },
+  bar: { width: 3, height: 16, borderRadius: 2 },
+  txt: { fontSize: 16, fontFamily: "Poppins_500Medium" },
+});
 
 // ─── Dummy sensor data (replace with BLE integration later) ───────────────────
 const DUMMY_SENSOR: SensorData = {
@@ -98,11 +113,11 @@ const PulseRing = ({ delay = 0, color = "rgba(56,189,248,0.3)" }: { delay?: numb
 
 // ─── Wellness chip ─────────────────────────────────────────────────────────────
 const Chip = ({ icon, label, value, alert }: { icon: string; label: string; value: string; alert?: boolean }) => (
-  <BlurView intensity={50} tint="dark" style={[styles.chip, alert && styles.chipAlert]}>
+  <View style={[styles.chip, alert && styles.chipAlert]}>
     <Ionicons name={icon as any} size={15} color={alert ? "#ff6b6b" : "#4ade80"} />
     <Text style={[styles.chipValue, alert && { color: "#ff6b6b" }]}>{value}</Text>
     <Text style={styles.chipLabel}>{label}</Text>
-  </BlurView>
+  </View>
 );
 
 // ─── Session Card ──────────────────────────────────────────────────────────────
@@ -111,7 +126,8 @@ const SessionCard = ({ session, onPress }: { session: BookedSession; onPress: ()
   const isVoice = session.session_type === "voice";
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <BlurView intensity={40} tint="dark" style={styles.sessionCard}>
+   
+              <View style={styles.sessionCard}>
         <View style={[styles.sessionTypeIcon, { backgroundColor: isVoice ? "rgba(56,189,248,0.12)" : "rgba(74,222,128,0.12)" }]}>
           <Ionicons name={isVoice ? "mic-outline" : "chatbubble-ellipses-outline"} size={18} color={isVoice ? "#38bdf8" : "#4ade80"} />
         </View>
@@ -126,21 +142,22 @@ const SessionCard = ({ session, onPress }: { session: BookedSession; onPress: ()
             {isUpcoming ? "Upcoming" : session.status === "completed" ? "Done" : "Cancelled"}
           </Text>
         </View>
-      </BlurView>
+        </View>
+   
     </TouchableOpacity>
   );
 };
 
 // ─── Empty sessions state ──────────────────────────────────────────────────────
 const EmptySessions = ({ onBook }: { onBook: () => void }) => (
-  <BlurView intensity={35} tint="dark" style={styles.emptyBox}>
+  <View style={styles.emptyBox}>
     <Ionicons name="calendar-outline" size={32} color="#4ade80" style={{ opacity: 0.5, marginBottom: 10 }} />
     <Text style={styles.emptyTitle}>No sessions yet</Text>
     <Text style={styles.emptySub}>Book your first therapy session to get personalised support.</Text>
     <TouchableOpacity onPress={onBook} style={styles.emptyBtn}>
       <Text style={styles.emptyBtnText}>Book a Session</Text>
     </TouchableOpacity>
-  </BlurView>
+  </View>
 );
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
@@ -154,6 +171,15 @@ const Therapy = ({ navigation }: any) => {
   const [refreshing, setRefreshing] = useState(false);
   const breatheScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [showAllSessions, setShowAllSessions] = useState(false);
+
+  const toggleSessions = () => {
+  LayoutAnimation.configureNext(
+    LayoutAnimation.Presets.easeInEaseOut
+  );
+
+  setShowAllSessions(prev => !prev);
+};
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -209,7 +235,9 @@ const Therapy = ({ navigation }: any) => {
   };
 
   const upcomingSessions = sessions.filter((s) => s.status === "upcoming").slice(0, 3);
-  const allSessions = sessions.slice(0, 3);
+ const displayedSessions = showAllSessions
+  ? sessions
+  : sessions.slice(0, 3);
 
   if (loading) {
     return (
@@ -222,7 +250,7 @@ const Therapy = ({ navigation }: any) => {
   return (
     <View style={{ flex: 1, backgroundColor: "#050f09" }}>
       <StatusBar barStyle="light-content" />
-      <ImageBackground source={require("../assets/images/home-bg.jpg")} style={{ flex: 1 }} resizeMode="cover">
+      <ImageBackground source={require("../assets/images/home-bg.jpg")} style={{ flex: 1, height: '100%', width: '100%' }} resizeMode="cover">
         <LinearGradient colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.93)"]} style={StyleSheet.absoluteFill} />
         <View style={styles.glowTop} />
 
@@ -241,29 +269,38 @@ const Therapy = ({ navigation }: any) => {
               </Text>
             </View>
             <TouchableOpacity style={styles.bookBtn} onPress={() => navigation.navigate("BookSession")}>
-              <Ionicons name="add" size={16} color="#050f09" />
+              <Ionicons name="add" size={16} color="#ffffffff" />
               <Text style={styles.bookBtnText}>Book</Text>
             </TouchableOpacity>
           </View>
 
           {/* ── AI greeting ── */}
-          <BlurView intensity={50} tint="dark" style={styles.greetingBanner}>
+          <View style={styles.greetingBanner}>
             <View style={styles.greetingDot} />
             <Text style={styles.greetingText}>{getGreeting()}</Text>
-          </BlurView>
+          </View>
 
           {/* ── Wellness snapshot ── */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionLabel}>WELLNESS SNAPSHOT</Text>
+               <SectionHeader label="Wellness Snapshot" icon="heart-outline" color="#4ade80" />
               <Text style={styles.sensorTime}>Sensor · {sensor.lastUpdated}</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.chipRow}>
-                {latestMood && (
-                  <Chip icon="radio-button-off-outline" label="Mood" value={`${latestMood.mood_text}`}
+                
+                  
+                             <Chip
+                  icon={sensor.motionStatus === "fall_detected" ? "warning-outline" : sensor.motionStatus === "active" ? "walk-outline" : "body-outline"}
+                  label="Motion"
+                  value={sensor.motionStatus === "fall_detected" ? "Fall!" : sensor.motionStatus === "active" ? "Active" : "Still"}
+                  alert={sensor.motionStatus === "fall_detected"}
+                />
+                  
+              {latestMood && (      
+             <Chip icon="radio-button-off-outline" label="Mood" value={`${latestMood.mood_text}`}
                     alert={latestMood.mood_text === "Very Sad" || latestMood.mood_text === "Sad"} />
-                )}
+                     )}   
                 <Chip icon="heart-outline" label="HR" value={`${sensor.heartRate} bpm`} alert={sensor.heartRate > 100} />
                 <Chip icon="water-outline" label="SpO₂" value={`${sensor.spo2}%`} alert={sensor.spo2 < 94} />
                 <Chip icon="thermometer-outline" label="Temp" value={`${sensor.temperature}°C`} alert={sensor.temperature > 37.5} />
@@ -275,19 +312,14 @@ const Therapy = ({ navigation }: any) => {
                     <Chip icon="flash-outline" label="Energy" value={`${wellness.energy_level}/5`} alert={wellness.energy_level <= 2} />
                   </>
                 )}
-                <Chip
-                  icon={sensor.motionStatus === "fall_detected" ? "warning-outline" : sensor.motionStatus === "active" ? "walk-outline" : "body-outline"}
-                  label="Motion"
-                  value={sensor.motionStatus === "fall_detected" ? "Fall!" : sensor.motionStatus === "active" ? "Active" : "Still"}
-                  alert={sensor.motionStatus === "fall_detected"}
-                />
+
               </View>
             </ScrollView>
           </View>
 
           {/* ── Two therapy entry cards ── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>START A SESSION</Text>
+             <SectionHeader label="Start a Session" icon="heart-outline" color="#4ade80" />
             <View style={styles.therapyRow}>
 
               {/* Chat Therapy */}
@@ -337,9 +369,9 @@ const Therapy = ({ navigation }: any) => {
 
           {/* ── Quick Relief ── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>QUICK RELIEF</Text>
+         <SectionHeader label="Quick Relief" icon="heart-outline" color="#4ade80" />
 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-  <View style={{ flexDirection: "row", gap: 15, marginTop: 15 }}>
+  <View style={{ flexDirection: "row", gap: 15,}}>
     {[
       { label: "Breathe",        tab: "breathing" },
       { label: "Eye",          tab: "eye"       },
@@ -368,18 +400,31 @@ const Therapy = ({ navigation }: any) => {
           {/* ── Sessions ── */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionLabel]}>YOUR SESSIONS</Text>
-              {sessions.length > 0 && (
-                <TouchableOpacity onPress={() => navigation.navigate("AllSessions", { sessions })}>
-                  <Text style={styles.seeAll}>See all</Text>
-                </TouchableOpacity>
+               <SectionHeader label="Your Sessions" icon="heart-outline" color="#4ade80" />
+              {sessions.length > 3 && (
+  <TouchableOpacity
+    onPress={toggleSessions}
+    style={{ flexDirection: "row", alignItems: "center" }}
+  >
+    <Text style={styles.seeAll}>
+      {showAllSessions ? "Show Less" : "See All"}
+    </Text>
+
+    <Ionicons
+      name={showAllSessions ? "chevron-up" : "chevron-down"}
+      size={16}
+      color="#aaa"
+      style={{ marginLeft: 4, marginBottom: 15 }}
+    />
+  </TouchableOpacity>
+
               )}
             </View>
 
             {sessions.length === 0 ? (
               <EmptySessions onBook={() => navigation.navigate("BookSession")} />
             ) : (
-              allSessions.map((s) => (
+              displayedSessions.map((s) => (
                 <SessionCard
                   key={s.id}
                   session={s}
@@ -404,37 +449,48 @@ export default Therapy;
 
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: "#050f09", alignItems: "center", justifyContent: "center" },
-  scroll: { paddingHorizontal: 20, paddingTop: 20 },
+  scroll: { paddingHorizontal: 20, paddingTop: 40 },
   glowTop: { position: "absolute", top: -90, left: -30, width: 200, height: 200, borderRadius: 140, backgroundColor: "rgba(0, 73, 39, 0.73)", pointerEvents: "none" },
 
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  eyebrow: { fontSize: 10, color: "#4ade80", fontFamily: "Poppins_400Regular", letterSpacing: 1.4, marginBottom: 2 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 30, },
+  eyebrow: { fontSize: 12, color: "#4ade80", fontFamily: "Poppins_400Regular", letterSpacing: 1.4, marginBottom: 2 },
   headerTitle: { fontSize: 20, color: "#fff", fontFamily: "Poppins_500Medium" },
-  bookBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#4ade80", paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, gap: 4 },
-  bookBtnText: { color: "#050f09", fontFamily: "Poppins_500Medium", fontSize: 12 },
+  bookBtn: { flexDirection: "row",  backgroundColor: "#004927ff",
+  padding: 10,
+  borderRadius: 12,
+  alignItems: "center",
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  bookBtnText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12, marginLeft: 4 },
 
-  greetingBanner: { flexDirection: "row", alignItems: "center", borderRadius: 14, overflow: "hidden", padding: 14, marginBottom: 25, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", gap: 10 },
+  greetingBanner: { flexDirection: "row", alignItems: "center", borderRadius: 14, overflow: "hidden", padding: 14, marginBottom: 30,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, gap: 10 },
   greetingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#4ade80" },
-  greetingText: { color: "#e2e8f0", fontFamily: "Poppins_400Regular", fontSize: 13, flex: 1, lineHeight: 20 },
+  greetingText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12, flex: 1, lineHeight: 20 },
 
-  section: { marginBottom: 25 },
-  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 },
+  section: { marginBottom: 30 },
+  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   sectionLabel: { fontSize: 10, color: "#4ade80", fontFamily: "Poppins_400Regular", letterSpacing: 1.5 },
-  sensorTime: { fontSize: 9, color: "#666", fontFamily: "Poppins_400Regular" },
-  seeAll: { fontSize: 11, color: "#4ade80", fontFamily: "Poppins_400Regular" },
+  sensorTime: { fontSize: 10, color: "#aaa", fontFamily: "Poppins_400Regular", marginBottom: 15 },
+  seeAll: { fontSize: 10, color: "#aaa", fontFamily: "Poppins_400Regular", marginBottom: 15 },
 
   chipRow: { flexDirection: "row", gap: 15},
-  chip: { alignItems: "center", justifyContent: "center", paddingVertical: 10, paddingHorizontal: 13, borderRadius: 13, overflow: "hidden", borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", gap: 3, minWidth: 68 },
+  chip: { alignItems: "center", justifyContent: "center", paddingVertical: 10, paddingHorizontal: 13, borderRadius: 13, overflow: "hidden",  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+   gap: 3, minWidth: 68 },
   chipAlert: { borderColor: "rgba(255,107,107,0.4)" },
-  chipValue: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 11 },
-  chipLabel: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 9, letterSpacing: 0.4 },
+  chipValue: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
+  chipLabel: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 10, letterSpacing: 0.4 },
 
-  therapyRow: { flexDirection: "row", gap: 15, marginTop: 15 },
+  therapyRow: { flexDirection: "row", gap: 15,},
   therapyCardTouch: { borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "rgba(74,222,128,0.22)" },
   therapyCard: { padding: 15, minHeight: 195, justifyContent: "space-between", height: 220 },
   therapyIconWrap: { width: 46, height: 46, borderRadius: 13, backgroundColor: "rgba(74,222,128,0.12)", alignItems: "center", justifyContent: "center", marginBottom: 10 },
   therapyCardTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 14, lineHeight: 21, marginBottom: 5 },
-  therapyCardSub: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 10, lineHeight: 15, flex: 1, marginBottom: 10 },
+  therapyCardSub: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 10, lineHeight: 15, flex: 1, marginBottom: 10 },
   therapyTag: { alignSelf: "flex-start", backgroundColor: "rgba(74,222,128,0.12)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   therapyTagText: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 9, letterSpacing: 0.5 },
 
@@ -442,20 +498,34 @@ const styles = StyleSheet.create({
   pulseRing: { position: "absolute", width: 46, height: 46, borderRadius: 23 },
   voiceOrb: { width: 46, height: 46, borderRadius: 23, backgroundColor: "rgba(56,189,248,0.15)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(56,189,248,0.4)" },
 
-  quickChip: { alignItems: "center",justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 50, borderWidth: 1, borderColor: "rgba(74,222,128,0.25)", backgroundColor: "rgba(0,73,39,0.18)" },
-  quickChipDanger: { borderColor: "rgba(255,107,107,0.3)", backgroundColor: "rgba(255,50,50,0.08)" },
-  quickChipText: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 11 },
+  quickChip: { alignItems: "center",justifyContent: 'center', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 50,  borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)"},
 
-  sessionCard: { flexDirection: "row", alignItems: "center", borderRadius: 14, overflow: "hidden", padding: 13, marginBottom: 10, borderWidth: 1, borderColor: "rgba(74,222,128,0.18)" },
+    
+  quickChipDanger: { borderColor: "rgba(255,107,107,0.3)", backgroundColor: "rgba(255,50,50,0.08)" },
+  quickChipText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
+
+  sessionCard: { flexDirection: "row", alignItems: "center", borderRadius: 25, overflow: "hidden", padding: 13, marginBottom: 10, borderWidth: 1, borderColor: "rgba(74,222,128,0.18)",  backgroundColor: "rgba(0, 26, 17, 0.53)", },
   sessionTypeIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  sessionTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 12, marginBottom: 2 },
-  sessionSub: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 10 },
+  sessionTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 14, marginBottom: 2 },
+  sessionSub: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 10 },
   sessionBadge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, marginLeft: 8 },
   sessionBadgeText: { fontFamily: "Poppins_400Regular", fontSize: 9 },
 
-  emptyBox: { borderRadius: 16, overflow: "hidden", padding: 28, alignItems: "center", borderWidth: 1, borderColor: "rgba(74,222,128,0.15)" },
-  emptyTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15, marginBottom: 6 },
-  emptySub: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 12, textAlign: "center", lineHeight: 18, marginBottom: 18 },
-  emptyBtn: { backgroundColor: "rgba(74,222,128,0.15)", paddingVertical: 10, paddingHorizontal: 22, borderRadius: 10, borderWidth: 1, borderColor: "rgba(74,222,128,0.35)" },
-  emptyBtnText: { color: "#4ade80", fontFamily: "Poppins_500Medium", fontSize: 12 },
+  emptyBox: { borderRadius: 25, overflow: "hidden", padding: 15, alignItems: "center", borderWidth: 1, borderColor: "rgba(74,222,128,0.15)",  backgroundColor: "rgba(0, 26, 17, 0.53)",  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  emptyTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 14, marginBottom: 6 },
+  emptySub: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 12, textAlign: "center", lineHeight: 18, marginBottom: 18 },
+  emptyBtn: {   backgroundColor: "#004927ff",
+  padding: 10,
+  borderRadius: 12,
+  alignItems: "center",
+  width: "100%",
+  marginTop: 15,
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  emptyBtnText: {   color: "#fff",
+  fontSize: 12,
+  fontFamily: 'Poppins_400Regular', },
 });

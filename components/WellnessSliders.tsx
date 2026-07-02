@@ -40,20 +40,21 @@ const SliderRow = ({ label, value, onChange, color, invert }: any) => {
 export const WellnessSliders: React.FC<Props> = ({
   stressLevel, setStressLevel, anxietyLevel, setAnxietyLevel, energyLevel, setEnergyLevel,
 }) => (
-  <BlurView intensity={40} tint="dark" style={sl.card}>
+  <View style={sl.card}>
     <SliderRow label="😤 Stress Level"  value={stressLevel}  onChange={setStressLevel}  color="#f87171" invert />
     <SliderRow label="😰 Anxiety Level" value={anxietyLevel} onChange={setAnxietyLevel} color="#fb923c" invert />
     <SliderRow label="⚡ Energy Level"  value={energyLevel}  onChange={setEnergyLevel}  color="#4ade80" />
-  </BlurView>
+  </View>
 );
 
 const sl = StyleSheet.create({
-  card:     { borderRadius: 16, padding: 16, marginBottom: 14, borderColor: "rgba(248,113,113,0.25)", borderWidth: 1, overflow: "hidden" },
+  card:     { borderRadius: 25, padding: 15, marginBottom: 14, borderColor: "rgba(248, 113, 113, 0.17)", borderWidth: 1, overflow: "hidden",  shadowColor: "rgba(248,113,113,0.25)", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, backgroundColor: "rgba(39, 0, 0, 0.25)"},
   row:      { marginBottom: 16 },
   labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  label:    { color: "#ccc", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  label:    { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular" },
   pill:     { paddingHorizontal: 10, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
   pillTxt:  { fontSize: 10, fontFamily: "Poppins_600SemiBold" },
   ticks:    { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 },
-  tick:     { color: "#555", fontSize: 9, fontFamily: "Poppins_400Regular" },
+  tick:     { color: "#999", fontSize: 9, fontFamily: "Poppins_400Regular" },
 });

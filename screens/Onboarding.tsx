@@ -65,9 +65,7 @@ const Onboarding = ({ navigation }: any) => {
           >
 
             {/* CARD 1 */}
-            <BlurView
-              intensity={50}
-              tint="dark"
+            <View
               style={[styles.card, { marginRight: GAP }]}
             >
               <Text style={styles.heading}>
@@ -89,12 +87,10 @@ const Onboarding = ({ navigation }: any) => {
               <TouchableOpacity onPress={() => navigation.replace("BottomTabs")}>
                 <Text style={styles.backText}>Skip</Text>
               </TouchableOpacity>
-            </BlurView>
+            </View>
 
             {/* CARD 2 */}
-            <BlurView
-              intensity={50}
-              tint="dark"
+            <View
               style={[styles.card, { marginRight: GAP }]}
             >
               <Text style={styles.heading}>
@@ -109,22 +105,20 @@ const Onboarding = ({ navigation }: any) => {
 
               <TouchableOpacity
                 style={styles.button}
-                onPress={goThird}
+                
               >
                 <Text style={styles.buttonText}>
-                  Next
+                  Connect Now
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => navigation.replace("BottomTabs")}>
+              <TouchableOpacity onPress={goThird}>
                 <Text style={styles.backText}>Skip</Text>
               </TouchableOpacity>
-            </BlurView>
+            </View>
 
             {/* CARD 3 */}
-            <BlurView
-              intensity={50}
-              tint="dark"
+            <View
               style={styles.card}
             >
               <Text style={styles.heading}>
@@ -146,7 +140,7 @@ const Onboarding = ({ navigation }: any) => {
                   Explore Dashboard
                 </Text>
               </TouchableOpacity>
-            </BlurView>
+            </View>
 
           </Animated.View>
         </View>
@@ -175,8 +169,11 @@ const styles = StyleSheet.create({
 
   viewport: {
     width: CARD_WIDTH,
-    height: 400,
+    height: 300,
     overflow: "hidden",
+    shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    borderRadius: 25
   },
 
   track: {
@@ -195,19 +192,19 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    height: 400,
-    borderRadius: 12,
-    padding: 22,
+    height: 300,
+    borderRadius: 25,
+    padding: 20,
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
-          borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   heading: {
-    fontSize: 22,
+    fontSize: 20,
     color: "#fff",
     marginBottom: 15,
     textAlign: "center",

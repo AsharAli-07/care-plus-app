@@ -35,7 +35,7 @@ export const SectionHeader = ({ label, icon, color = "#4ade80" }: any) => (
 const sh = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12, marginTop: 6 },
   bar: { width: 3, height: 16, borderRadius: 2 },
-  txt: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
+  txt: { fontSize: 16, fontFamily: "Poppins_600SemiBold" },
 });
 
 // ─── Animated Section Wrapper ─────────────────────────────────────────────────
@@ -241,16 +241,23 @@ const loadTodayData = async () => {
 export default WellnessTracker;
 
 const styles = StyleSheet.create({
-  scroll:    { paddingHorizontal: 20, paddingTop: 20 },
-  heroTitle: { color: "#fff", fontSize: 16, fontFamily: "Poppins_600SemiBold" },
-  saveBtn:       {   backgroundColor: "#004927ff",
-  padding: 10,
-  borderRadius: 12,
-  alignItems: "center",
-  width: "100%",
-  marginTop: 15,
-   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
-  saveText:  { color: "#fff", fontSize: 12, fontFamily: "Poppins_500Medium" },
+  scroll:    { paddingHorizontal: 20, paddingTop: 40, marginBottom: 20 },
+
+  section:   { marginBottom: 80 },
+  saveBtn:       {
+    backgroundColor: "#004927ff",
+    padding: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    width: "100%",
+    marginTop: 15,
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+    shadowColor: "rgba(74,222,128,0.3)",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  saveText:  { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular" },
 });

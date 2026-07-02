@@ -98,7 +98,8 @@ useEffect(() => {
 <Text style={styles.userEmail}>
   {user?.privacy_mode ? "Hidden for privacy" : user?.email || ""}
 </Text>
-            <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 15, borderRadius: 12,     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,     shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+            <TouchableOpacity style={{backgroundColor: '#004927ff', paddingVertical: 8,paddingHorizontal: 15, marginTop: 15, borderRadius: 12,     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1, 
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, }} onPress={()=>navigation.navigate('Profile')}>
               <Text style={{fontFamily: 'Poppins_400Regular', fontSize: 12, color: '#fff'}}>Edit Profile</Text>
             </TouchableOpacity>
@@ -167,7 +168,7 @@ export default Settings;
 
 const SettingItem = ({ icon, title, isDanger, onPress }: any) => {
   return (
-    <BlurView intensity={50} tint="dark" style={styles.itemRow}>
+    <View style={styles.itemRow}>
 
       <TouchableOpacity onPress={onPress} style={styles.touchRow}>
 
@@ -192,7 +193,7 @@ const SettingItem = ({ icon, title, isDanger, onPress }: any) => {
 
       </TouchableOpacity>
 
-    </BlurView>
+    </View>
   );
 };
 
@@ -205,12 +206,13 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     padding: 20,
-    paddingBottom: 80
+    paddingBottom: 90,
+    paddingTop: 40
   },
 
   profileCard: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 30,
   },
 
   profileImage: {
@@ -239,7 +241,10 @@ itemRow: {
   borderRadius: 12,
   marginBottom: 15,
   overflow: "hidden",
-    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
 },
 
   leftRow: {

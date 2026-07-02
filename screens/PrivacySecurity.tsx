@@ -111,7 +111,11 @@ const handleDeleteAccount = () => {
 
   <SettingItem icon="document-text-outline" title="Anonymous Journal Mode" onPress={() => navigation.navigate("Privacy")}/>
 
-  <SettingItem icon="download-outline" title="Download My Data" />
+<SettingItem
+  icon="download-outline"
+  title="Download My Data"
+  onPress={() => navigation.navigate("DownloadHealthData")}
+/>
 
   <SettingItem
   icon="trash-outline"
@@ -142,7 +146,7 @@ export default PrivacySecurity;
 
 const SettingItem = ({ icon, title, isDanger, onPress }: any) => {
   return (
-    <BlurView intensity={50} tint="dark" style={styles.itemRow}>
+    <View style={styles.itemRow}>
 
       <TouchableOpacity onPress={onPress} style={styles.touchRow}>
 
@@ -167,7 +171,7 @@ const SettingItem = ({ icon, title, isDanger, onPress }: any) => {
 
       </TouchableOpacity>
 
-    </BlurView>
+    </View>
   );
 };
 
@@ -180,6 +184,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     padding: 20,
+    paddingTop: 40
   
   },
 
@@ -202,6 +207,7 @@ itemRow: {
     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
        shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
 },
 
   leftRow: {

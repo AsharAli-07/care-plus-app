@@ -30,26 +30,26 @@ export default function About() {
           <Text style={styles.title}>About Care Plus</Text>
 
           {/* APP INFO */}
-          <BlurView intensity={50} tint="dark" style={styles.card}>
+          <View style={styles.card}>
             <Text style={styles.heading}>Care Plus</Text>
             <Text style={styles.text}>
               Care Plus is a smart wellness and emergency support application designed to help users
               monitor their mental and physical well-being while providing quick emergency assistance
               when needed.
             </Text>
-          </BlurView>
+          </View>
 
           {/* MISSION */}
-          <BlurView intensity={50} tint="dark" style={styles.card}>
+          <View style={styles.card}>
             <Text style={styles.heading}>Our Mission</Text>
             <Text style={styles.text}>
               To improve daily wellness tracking and ensure instant emergency response support
               through technology, location sharing, and instant communication tools.
             </Text>
-          </BlurView>
+          </View>
 
           {/* FEATURES */}
-          <BlurView intensity={50} tint="dark" style={styles.card}>
+          <View style={styles.card}>
             <Text style={styles.heading}>Key Features</Text>
 
             <Text style={[styles.text, { lineHeight: 20 }]}>•  Daily Wellness Tracking</Text>
@@ -60,13 +60,13 @@ export default function About() {
             <Text style={[styles.text, { lineHeight: 20 }]}>•  Live Location Sharing</Text>
             <Text style={styles.text}>•  Emergency Contact Management</Text>
 
-          </BlurView>
+          </View>
 
           {/* VERSION */}
-          <BlurView intensity={50} tint="dark" style={styles.card}>
+          <View style={styles.card}>
             <Text style={styles.heading}>Version</Text>
             <Text style={styles.text}>Care Plus v1.0.0</Text>
-          </BlurView>
+          </View>
 
           {/* FOOTER */}
           <Text style={styles.footer}>
@@ -83,7 +83,9 @@ export default function About() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20
+    padding: 20,
+    paddingTop: 40,
+    paddingBottom: 40
   },
     overlay: {
     flex: 1,
@@ -95,25 +97,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "Poppins_500Medium",
     color: "#fff",
-    marginBottom: 20,
+    marginBottom: 30,
     textAlign: 'center'
   },
 
   card: {
-    borderRadius: 12,
+    borderRadius: 25,
     padding: 15,
-    marginBottom: 20,
+    marginBottom: 15,
     overflow: "hidden",
-          borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
 
   heading: {
     fontSize: 16,
-    fontFamily: "Poppins_500Medium",
+    fontFamily: "Poppins_400Regular",
     color: "#fff",
-    marginBottom: 15,
+    marginBottom: 13,
   },
 
   text: {
@@ -125,8 +128,8 @@ const styles = StyleSheet.create({
 
   footer: {
     textAlign: "center",
-    color: "#ffffffff",
-    fontSize: 12,
+    color: "#aaa",
+    fontSize: 10,
     fontFamily: "Poppins_400Regular",
   },
             glowTop: {
