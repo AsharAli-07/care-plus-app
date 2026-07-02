@@ -29,6 +29,8 @@ import DownloadHealthData from './screens/DownloadHealthData';
 
 import ResetPasswordScreen from './screens/Resetpasswordscreen';
 import VerifyOTP from './screens/Verifyotp';
+import ConnectWatch from './screens/ConnectWatch';
+import { BLEProvider } from './ble';
 
 import { 
   useFonts,  
@@ -68,6 +70,7 @@ export type RootStackParamList = {
 
   VerifyOTP: { email: string };
 ResetPasswordScreen: { resetToken: string };
+  ConnectWatch: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -105,6 +108,7 @@ useEffect(() => {
   }
 
   return (
+    <BLEProvider>
     <NavigationContainer ref={navigationRef}>
 <Stack.Navigator >
 {/* <Stack.Navigator > */}
@@ -135,11 +139,13 @@ useEffect(() => {
          <Stack.Screen name="DownloadHealthData" component={DownloadHealthData} />
 
 
+        <Stack.Screen name="ConnectWatch" component={ConnectWatch} />
 
 
 
       </Stack.Navigator>
     </NavigationContainer>
+    </BLEProvider>
   );
 }
 

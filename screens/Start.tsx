@@ -118,7 +118,7 @@ export default function Start({ navigation }: any) {
       </Animated.Text>
 
       {/* Buttons */}
-      <TouchableOpacity style={styles.btn}>
+      <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate("ConnectWatch")}>
         <Text style={styles.btnText}>Connect Watch</Text>
       </TouchableOpacity>
 

@@ -25,6 +25,7 @@ import YoutubePlayer from "react-native-youtube-iframe";
 // 📦 Modular Interface Elements Imports
 import { HeaderSection, NotificationOverlay } from "../components/HeaderSection";
 import { VitalSigns } from "../components/VitalSigns";
+import { useBLEContext } from '../ble';
 import { MetricsCharts } from "../components/MetricsCharts";
 import { SleepSuggestions } from "../components/SleepSuggestions";
 import { DailyQuestions, DailyQuestion } from "../components/DailyQuestions";
@@ -166,6 +167,7 @@ const formatTime = (sec: number): string => {
 
 export default function Home({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { isConnected, watchData } = useBLEContext();
   const { width } = useWindowDimensions();
   const [moodEmoji, setMoodEmoji] = useState<string | null>(null);
   const [moodText, setMoodText] = useState<string | null>(null);
@@ -577,6 +579,24 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
               temperature={temperature}
               oxygen={oxygenLevel}
               onCheck={loadWellnessData}
+            <MoodSection
+              selected={selected}
+              selectedEmoji={selectedEmoji}
+              textOpacity={textOpacity}
+              emojiOpacity={emojiOpacity}
+              responseOpacity={responseOpacity}
+              startBtnOpacity={startBtnOpacity}
+              onEmojiPress={handleEmojiPress}
+              onStartConversation={() => navigation.navigate("Therapy")}
+            />
+
+            {/* 3. Live Health Watch Data */}
+            <VitalSigns
+              isConnected={isConnected}
+              heartRate={watchData.heartRate}
+              spo2={watchData.spo2}
+              temperature={watchData.temperature}
+              onConnect={() => navigation.navigate('ConnectWatch')}
             />
                        
        
@@ -588,6 +608,11 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
               sleep={sleepPct}
               hydration={hydrationPct}
               onCheck={loadWellnessData}
+              status={isConnected ? "Live" : "Offline"}
+              oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
+              food={70}
+              sleep={80}
+              onCheck={() => navigation.navigate('ConnectWatch')}
             />
 
             {/* 5. Horizontal Audio Media Stream Carousels Options */}

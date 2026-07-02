@@ -1,0 +1,64 @@
+ESP32-C3 Health Watch (WatchFWC3) Wiring
+=========================================
+
+I2C Bus (shared by MAX30102, MPU6050, OLED)
+--------------------------------------------
+GPIO 8  -> SDA (all I2C devices)
+GPIO 9  -> SCL (all I2C devices)
+I2C clock in firmware: 100 kHz
+
+MAX30102 (I2C address 0x57)
+---------------------------
+ESP32-C3 -> MAX30102
+GPIO 8   -> SDA
+GPIO 9   -> SCL
+3.3V     -> VIN
+GND      -> GND
+
+MPU6050 (I2C address 0x68)
+--------------------------
+ESP32-C3 -> MPU6050
+GPIO 8   -> SDA
+GPIO 9   -> SCL
+3.3V     -> VCC
+GND      -> GND
+AD0      -> GND (address 0x68)
+
+OLED SSD1306 (I2C address 0x3C)
+--------------------------------
+ESP32-C3 -> OLED
+GPIO 8   -> SDA
+GPIO 9   -> SCL
+3.3V     -> VCC
+GND      -> GND
+
+LM35 Temperature Sensor
+-----------------------
+ESP32-C3 -> LM35
+GPIO 0   -> VOUT
+3.3V     -> VCC
+GND      -> GND
+
+Buzzer
+------
+ESP32-C3 -> Buzzer
+GPIO 4   -> Signal/+
+GND      -> -
+
+Panic Button (active low)
+-------------------------
+ESP32-C3 -> Button
+GPIO 3   -> One side
+GND      -> Other side
+Firmware uses INPUT_PULLUP.
+
+Battery / TP Module Signals
+---------------------------
+GPIO 1 -> VBAT ADC input
+GPIO 2 -> CHRG status pin
+
+Notes
+-----
+- Keep all sensor and MCU grounds common.
+- Use 3.3V logic only on ESP32-C3 pins.
+- If I2C is unstable, shorten wires and add pull-ups (4.7k to 3.3V).

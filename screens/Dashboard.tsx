@@ -10,6 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import { BASE_URL } from "../api";
+import { useBLEContext } from '../ble';
 
 // ─── Animated Score Ring ──────────────────────────────────────────────────────
 const ScoreRing = ({ score }: { score: number }) => {
@@ -160,34 +161,49 @@ const gauge = StyleSheet.create({
 });
 
 // ─── Vital Signs ──────────────────────────────────────────────────────────────
-const VitalCard = () => {
+const VitalCard = ({ watchData, isConnected }: { watchData: any; isConnected: boolean }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const waveAnim  = useRef(new Animated.Value(0)).current;
+  const dotAnim   = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.2,  duration: 400, useNativeDriver: true }),
-      Animated.timing(pulseAnim, { toValue: 1,    duration: 400, useNativeDriver: true }),
-      Animated.timing(pulseAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
-      Animated.timing(pulseAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
-    ])).start();
-    Animated.loop(Animated.timing(waveAnim, { toValue: 1, duration: 2000, useNativeDriver: false })).start();
-  }, []);
+    if (isConnected) {
+      Animated.loop(Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.2,  duration: 400, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 400, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
+      ])).start();
+      Animated.loop(Animated.sequence([
+        Animated.timing(dotAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(dotAnim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])).start();
+    } else {
+      pulseAnim.setValue(1);
+      dotAnim.setValue(0.4);
+    }
+  }, [isConnected]);
 
   const vitals = [
-    { label: "Blood\nPressure", value: "120/80", unit: "mmHg", icon: "pulse-outline",       color: "#f87171" },
-    { label: "Heart\nRate",     value: "72",      unit: "bpm",  icon: "heart-outline",       color: "#fb923c" },
-    { label: "Body\nTemp",      value: "36.6",    unit: "°C",   icon: "thermometer-outline", color: "#60a5fa" },
+    { label: "Heart\nRate",   value: watchData.heartRate,    unit: "bpm",  icon: "heart-outline",       color: "#f87171" },
+    { label: "SpO₂",          value: watchData.spo2,         unit: "%",    icon: "water-outline",       color: "#60a5fa" },
+    { label: "Body\nTemp",    value: watchData.temperature,  unit: "°C",   icon: "thermometer-outline", color: "#4ade80" },
   ];
 
   return (
     <View style={vital.card}>
       <LinearGradient colors={["rgba(248,113,113,0.05)", "transparent"]} style={StyleSheet.absoluteFill} />
       <View style={vital.header}>
-        <Animated.Text style={{ fontSize: 20, transform: [{ scale: pulseAnim }] }}>❤️</Animated.Text>
+        <Animated.Text style={{ fontSize: 20, transform: [{ scale: isConnected ? pulseAnim : 1 }] }}>❤️</Animated.Text>
         <Text style={vital.title}>Vital Signs</Text>
-        <View style={vital.statusBadge}>
-          <View style={vital.greenDot} />
-          <Text style={vital.statusTxt}>Normal</Text>
+        <View style={[vital.statusBadge, !isConnected && { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)" }]}>
+          {isConnected ? (
+            <Animated.View style={[vital.greenDot, { opacity: dotAnim }]} />
+          ) : (
+            <View style={[vital.greenDot, { backgroundColor: "#555" }]} />
+          )}
+          <Text style={[vital.statusTxt, !isConnected && { color: "#888" }]}>
+            {isConnected ? "Live" : "Offline"}
+          </Text>
         </View>
       </View>
       <View style={vital.row}>
@@ -196,7 +212,7 @@ const VitalCard = () => {
             <View style={[vital.iconWrap, { backgroundColor: v.color + "20" }]}>
               <Ionicons name={v.icon as any} size={20} color={v.color} />
             </View>
-            <Text style={[vital.val, { color: v.color }]}>{v.value}</Text>
+            <Text style={[vital.val, { color: isConnected && v.value !== "--" ? v.color : "#555" }]}>{v.value}</Text>
             <Text style={vital.unit}>{v.unit}</Text>
             <Text style={vital.lbl}>{v.label}</Text>
           </View>
@@ -515,6 +531,7 @@ const Dashboard = ({ navigation }: any) => {
   const [localMoodEmoji, setLocalMoodEmoji] = useState<string | null>(null);
   const [localMoodText,  setLocalMoodText]  = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { isConnected: bleConnected, watchData: bleWatchData } = useBLEContext();
 
   const moodMap: Record<string, string> = {
     "😄": "Happy", "🙂": "Good", "😐": "Neutral", "😕": "Sad", "😔": "Very Sad",
@@ -594,7 +611,7 @@ const Dashboard = ({ navigation }: any) => {
 
           {/* Vital Signs */}
           <SectionHeader label="Vital Signs" icon="heart-outline" color="#f87171" />
-          <VitalCard />
+          <VitalCard watchData={bleWatchData} isConnected={bleConnected} />
 
           {/* Body Wellness */}
           <SectionHeader label="Body Wellness" icon="body-outline" color="#60a5fa" />

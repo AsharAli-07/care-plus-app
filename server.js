@@ -30,9 +30,178 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-db.getConnection()
-  .then(conn => { console.log("MYSQL CONNECTED"); conn.release(); })
-  .catch(err => console.error("DB CONNECTION ERROR:", err));
+async function initDB() {
+  try {
+    const tempConn = await mysql.createConnection({
+      host: "localhost",
+      user: "root",
+      password: ""
+    });
+    await tempConn.query("CREATE DATABASE IF NOT EXISTS `care-plus-app`");
+    await tempConn.end();
+    
+    const tables = [
+      `CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255),
+        email VARCHAR(255) UNIQUE,
+        password VARCHAR(255),
+        phone_number VARCHAR(255),
+        profile_image VARCHAR(255),
+        privacy_mode TINYINT(1) DEFAULT 0,
+        expo_token VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS moods (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        mood_emoji VARCHAR(255),
+        mood_text VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS notification_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        mood_reminder TINYINT(1) DEFAULT 1,
+        sleep_reminder TINYINT(1) DEFAULT 1,
+        water_reminder TINYINT(1) DEFAULT 1,
+        meal_reminder TINYINT(1) DEFAULT 1,
+        notification_sound TINYINT(1) DEFAULT 1,
+        notification_preview TINYINT(1) DEFAULT 1,
+        quiet_mode TINYINT(1) DEFAULT 0
+      )`,
+      `CREATE TABLE IF NOT EXISTS wellness_preferences (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        sleep_goal VARCHAR(255) DEFAULT '8h',
+        water_goal VARCHAR(255) DEFAULT '2L',
+        mood_tracking TINYINT(1) DEFAULT 1,
+        meal_tracking TINYINT(1) DEFAULT 1,
+        meditation_reminder TINYINT(1) DEFAULT 1,
+        journal_reminder TINYINT(1) DEFAULT 1,
+        motivation_quotes TINYINT(1) DEFAULT 1,
+        night_mode TINYINT(1) DEFAULT 0
+      )`,
+      `CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        title VARCHAR(255),
+        message TEXT,
+        type VARCHAR(255) DEFAULT 'general',
+        read_status TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS wellness_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        log_date DATE,
+        sleep_hours FLOAT,
+        water_intake FLOAT,
+        meals_count INT,
+        meditation_minutes INT,
+        stress_level INT,
+        anxiety_level INT,
+        energy_level INT,
+        score INT,
+        UNIQUE KEY unique_user_date (user_id, log_date)
+      )`,
+      `CREATE TABLE IF NOT EXISTS wellness_activity (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        date DATE,
+        UNIQUE KEY unique_user_date (user_id, date)
+      )`,
+      `CREATE TABLE IF NOT EXISTS wellness_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        wellness_score INT,
+        sleep_hours FLOAT,
+        water_intake FLOAT,
+        meditation_minutes INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS wellness_streaks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        current_streak INT DEFAULT 0,
+        longest_streak INT DEFAULT 0,
+        last_active_date DATE
+      )`,
+      `CREATE TABLE IF NOT EXISTS achievements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        title VARCHAR(255),
+        description TEXT,
+        unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS health_monitoring (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        heart_rate_bpm INT,
+        temperature_celsius FLOAT,
+        blood_oxygen_percent INT,
+        movement VARCHAR(255),
+        recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS favourite_contacts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        name VARCHAR(255),
+        phone VARCHAR(255),
+        relationship VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS game_scores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        log_date DATE,
+        memory INT,
+        stroop INT,
+        sequence INT,
+        tapstar INT,
+        reverse INT,
+        gratitude INT,
+        UNIQUE KEY unique_user_date (user_id, log_date)
+      )`,
+      `CREATE TABLE IF NOT EXISTS therapy_sessions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        therapist_id INT,
+        therapist_name VARCHAR(255),
+        title VARCHAR(255),
+        session_type VARCHAR(255),
+        session_date DATE,
+        session_time VARCHAR(255),
+        status VARCHAR(255),
+        notes TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS therapy_chat_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        session_id INT,
+        message_count INT,
+        summary TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS therapy_voice_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        session_id INT,
+        exchange_count INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    ];
+
+    for (let sql of tables) {
+      await db.query(sql);
+    }
+    console.log("Database and tables auto-created / verified");
+  } catch (err) {
+    console.error("DB INIT ERROR:", err);
+  }
+}
+
+initDB();
 
 // =====================
 // MULTER STORAGE
