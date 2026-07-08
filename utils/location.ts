@@ -9,3 +9,4 @@ export const getLocation = async () => {
   const loc = await Location.getCurrentPositionAsync({});
   return loc.coords;
 };
+

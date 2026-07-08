@@ -2,18 +2,19 @@ import React, { useRef } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ImageBackground,
-  Animated, StatusBar
+  Animated,
+  StatusBar,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 
-const CARD_WIDTH = 280;
-const GAP = 40;
-const STEP = CARD_WIDTH + GAP;
+const { width } = Dimensions.get("window");
+
+const CARD_WIDTH = width * 0.89; // same ratio as Help/Register/Login
+const STEP = CARD_WIDTH; // no gap needed, cards sit edge to edge in the track
 
 const Onboarding = ({ navigation }: any) => {
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -26,7 +27,6 @@ const Onboarding = ({ navigation }: any) => {
     }).start();
   };
 
-
   const goThird = () => {
     Animated.timing(slideAnim, {
       toValue: -(STEP * 2),
@@ -35,155 +35,116 @@ const Onboarding = ({ navigation }: any) => {
     }).start();
   };
 
-
   return (
-   <View style={{ flex: 1,backgroundColor: "#050f09", }}>
-            <StatusBar barStyle="light-content" />
-       <ImageBackground
-         source={require("../assets/images/home-bg.jpg")}
-         style={{ height: "100%", width: "100%" }}
-         resizeMode="cover"
-       >
-    <LinearGradient
-                   colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
-                   style={StyleSheet.absoluteFill}
-                 />
-                 <View style={styles.glowTop} />
-                 <View style={styles.overlay}>
-
-        {/* VIEWPORT */}
-        <View style={styles.viewport}>
-
-          {/* TRACK */}
-          <Animated.View
-            style={[
-              styles.track,
-              {
-                transform: [{ translateX: slideAnim }],
-              },
-            ]}
-          >
-
-            {/* CARD 1 */}
-            <BlurView
-              intensity={50}
-              tint="dark"
-              style={[styles.card, { marginRight: GAP }]}
+    <View style={{ flex: 1, backgroundColor: "#050f09" }}>
+      <StatusBar barStyle="light-content" />
+      <ImageBackground
+        source={require("../assets/images/home-bg.jpg")}
+        style={{ height: "100%", width: "100%" }}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.glowTop} />
+        <View style={styles.overlay}>
+          {/* VIEWPORT */}
+          <View style={styles.viewport}>
+            {/* TRACK */}
+            <Animated.View
+              style={[
+                styles.track,
+                {
+                  transform: [{ translateX: slideAnim }],
+                },
+              ]}
             >
-              <Text style={styles.heading}>
-                Welcome to Care Plus
-              </Text>
+              {/* CARD 1 */}
+              <View style={styles.card}>
+                <Text style={styles.heading}>Welcome to Care Plus</Text>
 
-              <Text style={styles.description}>
-                Care Plus helps you monitor your wellness,
-                relax your mind, track health data, and
-                improve your daily lifestyle.
-              </Text>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={goNext}
-              >
-                <Text style={styles.buttonText}>Next</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.replace("BottomTabs")}>
-                <Text style={styles.backText}>Skip</Text>
-              </TouchableOpacity>
-            </BlurView>
-
-            {/* CARD 2 */}
-            <BlurView
-              intensity={50}
-              tint="dark"
-              style={[styles.card, { marginRight: GAP }]}
-            >
-              <Text style={styles.heading}>
-                Connect Your Watch
-              </Text>
-
-              <Text style={styles.description}>
-                Easily connect your smartwatch using
-                Bluetooth to track heart rate, sleep,
-                temperature, and daily activity.
-              </Text>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={goThird}
-              >
-                <Text style={styles.buttonText}>
-                  Next
+                <Text style={styles.description}>
+                  Care Plus helps you monitor your wellness,
+                  relax your mind, track health data, and
+                  improve your daily lifestyle.
                 </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => navigation.replace("BottomTabs")}>
-                <Text style={styles.backText}>Skip</Text>
-              </TouchableOpacity>
-            </BlurView>
+                <TouchableOpacity style={styles.button} onPress={goNext}>
+                  <Text style={styles.buttonText}>Next</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.replace("BottomTabs")}>
+                  <Text style={styles.backText}>Skip</Text>
+                </TouchableOpacity>
+              </View>
 
-            {/* CARD 3 */}
-            <BlurView
-              intensity={50}
-              tint="dark"
-              style={styles.card}
-            >
-              <Text style={styles.heading}>
-                Explore Dashboard
-              </Text>
+              {/* CARD 2 */}
+              <View style={styles.card}>
+                <Text style={styles.heading}>Connect Your Watch</Text>
 
-              <Text style={styles.description}>
-                Access therapy chat, relaxing sounds,
-                breathing exercises, Quran, health
-                tracking, reports, and more inside
-                your dashboard.
-              </Text>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => navigation.replace("BottomTabs")}
-              >
-                <Text style={styles.buttonText}>
-                  Explore Dashboard
+                <Text style={styles.description}>
+                  Easily connect your smartwatch using
+                  Bluetooth to track heart rate, sleep,
+                  temperature, and daily activity.
                 </Text>
-              </TouchableOpacity>
-            </BlurView>
 
-          </Animated.View>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("ConnectWatch")}>
+                  <Text style={styles.buttonText}>Connect Now</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={goThird}>
+                  <Text style={styles.backText}>Skip</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* CARD 3 */}
+              <View style={styles.card}>
+                <Text style={styles.heading}>Explore Dashboard</Text>
+
+                <Text style={styles.description}>
+                  Access therapy chat, relaxing sounds,
+                  breathing exercises, Quran, health
+                  tracking, reports, and more inside
+                  your dashboard.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => navigation.replace("BottomTabs")}
+                >
+                  <Text style={styles.buttonText}>Explore Dashboard</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </View>
         </View>
-      </View>
-    </ImageBackground>
-      </View>
-
+      </ImageBackground>
+    </View>
   );
 };
 
 export default Onboarding;
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-
   overlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.25)",
   },
 
   viewport: {
     width: CARD_WIDTH,
-    height: 400,
+    height: 330,
     overflow: "hidden",
+    borderRadius: 25,
   },
 
   track: {
     flexDirection: "row",
     width: STEP * 3,
   },
-            glowTop: {
+
+  glowTop: {
     position: "absolute",
     top: -80,
     left: -60,
@@ -193,67 +154,58 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,73,39,0.22)",
     pointerEvents: "none",
   },
+
   card: {
     width: CARD_WIDTH,
-    height: 400,
-    borderRadius: 12,
-    padding: 22,
+    height: 330,
+    borderRadius: 25,
+    padding: 20,
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
-          borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+    backgroundColor: "rgba(0, 26, 17, 0.50)",
   },
 
   heading: {
-    fontSize: 22,
+    fontSize: 20,
     color: "#fff",
-    marginBottom: 15,
+    marginBottom: 5,
     textAlign: "center",
     fontFamily: "Poppins_500Medium",
   },
 
   description: {
-    color: "#ddd",
+    color: "#aaa",
     textAlign: "center",
-    marginBottom: 15,
-    fontSize: 13,
+    marginBottom: 30,
+    fontSize: 12,
     lineHeight: 22,
     fontFamily: "Poppins_400Regular",
   },
 
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 15,
-    width: "100%",
-    fontFamily: "Poppins_400Regular",
-  },
-
   button: {
-    backgroundColor: "#004927",
-    padding: 12,
+    backgroundColor: "#004927ff",
+    padding: 10,
     borderRadius: 12,
     alignItems: "center",
     width: "100%",
-          borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
-  
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+    marginTop: 5,
+    paddingVertical: 12,
   },
 
   buttonText: {
     color: "#fff",
     fontSize: 12,
-    fontFamily: "Poppins_500Medium",
+    fontFamily: "Poppins_400Regular",
   },
 
   backText: {
     color: "#fff",
-    marginTop: 15,
-    fontSize: 13,
+    marginTop: 20,
+    fontSize: 12,
     fontFamily: "Poppins_400Regular",
   },
 });

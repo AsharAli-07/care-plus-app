@@ -1,24 +1,15 @@
 import React from "react";
 import { View, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
-import { BlurView } from "expo-blur";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CommonActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const drawerItems = [
-  {
-    label: "Dashboard",
-    screen: "Dashboard",
-    icon: "grid-outline",
-    iconFocused: "grid",
-  },
-  {
-    label: "Daily Wellness",
-    screen: "WellnessTracker",
-    icon: "heart-outline",
-    iconFocused: "heart",
-  },
+    { label: "Watch",      screen: "Watch",      icon: "watch-outline",  iconFocused: "watch"  },
+  { label: "Dashboard",      screen: "Dashboard",      icon: "grid-outline",  iconFocused: "grid"  },
+  { label: "Daily Wellness", screen: "WellnessTracker", icon: "heart-outline", iconFocused: "heart" },
 ];
 
 export default function CustomDrawer(props: any) {
@@ -27,15 +18,20 @@ export default function CustomDrawer(props: any) {
   const handleLogout = async () => {
     await AsyncStorage.removeItem("token");
     props.navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      })
+      CommonActions.reset({ index: 0, routes: [{ name: "Login" }] })
     );
   };
 
   return (
-    <BlurView intensity={50} tint="dark" style={styles.blur}>
+    <View style={styles.container}>
+      {/* Same dark green gradient as notification panel */}
+      <LinearGradient
+        colors={["rgba(0,40,20,0.97)", "rgba(0,20,10,0.99)"]}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Green right border accent */}
+      <View style={styles.rightBorder} />
+
       <DrawerContentScrollView
         {...props}
         contentContainerStyle={styles.scrollContent}
@@ -46,7 +42,6 @@ export default function CustomDrawer(props: any) {
             source={require("../assets/images/logo.png")}
             style={styles.logo}
           />
-          <View style={styles.divider} />
         </View>
 
         {/* Nav Items */}
@@ -62,9 +57,9 @@ export default function CustomDrawer(props: any) {
               >
                 <View style={[styles.iconWrapper, focused && styles.iconWrapperFocused]}>
                   <Ionicons
-                    name={focused ? item.iconFocused : item.icon as any}
+                    name={focused ? item.iconFocused as any : item.icon as any}
                     size={18}
-                    color={focused ? "#004927" : "#fff"}
+                    color={focused ? "#004927" : "rgba(255,255,255,0.75)"}
                   />
                 </View>
                 <Text style={[styles.label, focused && styles.labelFocused]}>
@@ -91,15 +86,23 @@ export default function CustomDrawer(props: any) {
           <Text style={styles.logoutLabel}>Logout</Text>
         </TouchableOpacity>
       </DrawerContentScrollView>
-    </BlurView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  blur: {
+  container: {
     flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: "rgba(74,222,128,0.2)",
+    overflow: "hidden",
+  },
+  rightBorder: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: "rgba(74,222,128,0.2)",
+    zIndex: 10,
   },
   scrollContent: {
     paddingHorizontal: 0,
@@ -108,12 +111,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: "center",
-    paddingTop: 40,
-   
   },
   logo: {
-    width: 110,
-    height: 110,
+    width: 180,
+    height: 180,
     resizeMode: "contain",
   },
   divider: {
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    color: "#fff",
+    color: "rgba(255,255,255,0.75)",
     fontFamily: "Poppins_400Regular",
     fontSize: 13,
   },
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,107,107,0.08)",
     borderWidth: 1,
     borderColor: "rgba(255,107,107,0.2)",
-    marginTop: 10
+    marginTop: 10,
   },
   logoutIconWrapper: {
     width: 32,
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     color: "#ff6b6b",
-    fontFamily: "Poppins_500Medium",
-    fontSize: 13,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
   },
 });

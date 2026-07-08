@@ -34,13 +34,18 @@ export const parseWatchData = (dataStr: string): Partial<WatchData> | null => {
       parsed.heartRate = (hr > 0 && hr <= 250) ? hr.toString() : "--";
     }
 
+    // if (data.t !== undefined) {
+    //   let temp = parseFloat(data.t);
+    //   if (temp > 50) {
+    //     temp = (temp - 32) * 5 / 9;
+    //   }
+    //   parsed.temperature = data.t;
+    // }
+
     if (data.t !== undefined) {
-      let temp = parseFloat(data.t);
-      if (temp > 50) {
-        temp = (temp - 32) * 5 / 9;
-      }
-      parsed.temperature = data.t;
-    }
+  const temp = parseFloat(data.t);
+  parsed.temperature = !isNaN(temp) ? temp.toFixed(1) : "--";
+}
 
     if (data.o !== undefined) {
       const spo2Val = parseInt(data.o);

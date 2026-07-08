@@ -163,11 +163,11 @@ const updateSetting = async (key: keyof SettingsType, value: boolean) => {
                   <View style={styles.glowTop} />
                   <View style={styles.overlay}>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} style={{paddingTop: 40, paddingBottom: 25}}>
 
-          <Text style={styles.heading}>
+          {/* <Text style={styles.heading}>
             Notifications
-          </Text>
+          </Text> */}
 
           {/* BEHAVIOR SETTINGS */}
           <NotificationItem
@@ -251,9 +251,7 @@ const NotificationItem = ({
 }: any) => {
 
   return (
-    <BlurView
-      intensity={50}
-      tint="dark"
+    <View
       style={styles.card}
     >
 
@@ -277,9 +275,15 @@ const NotificationItem = ({
                   true: "#555",
                 }}
                 thumbColor="#fff"
+                          style={{
+  transform: [
+    { scaleX: 0.8 },
+    { scaleY: 0.8 },
+  ],
+}}
               />
 
-    </BlurView>
+    </View>
   );
 };
 
@@ -308,7 +312,7 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    marginTop: 20,
+ 
     fontSize: 20,
     color: "#fff",
     marginBottom: 20,
@@ -323,8 +327,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+   backgroundColor: "rgba(0, 26, 17, 0.50)",
   },
 
   title: {

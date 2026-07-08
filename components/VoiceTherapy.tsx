@@ -381,7 +381,7 @@ const VoiceTherapy = ({ navigation, route }: any) => {
         </ScrollView> */}
 
         {/* Controls */}
-        <BlurView intensity={50} tint="dark" style={styles.controls}>
+        <View style={styles.controls}>
           {!sessionActive ? (
             <TouchableOpacity
               style={[styles.startBtn, isThinking && { opacity: 0.6 }]}
@@ -424,7 +424,7 @@ const VoiceTherapy = ({ navigation, route }: any) => {
               >
                 <Ionicons
                   name={isListening ? "stop-outline" : "mic-outline"}
-                  size={32}
+                  size={25}
                   color={"#fff"}
                 />
               </TouchableOpacity>
@@ -436,18 +436,18 @@ const VoiceTherapy = ({ navigation, route }: any) => {
               </TouchableOpacity>
             </View>
           )}
-        </BlurView>
+        </View>
 
         {/* STT placeholder notice */}
-        {sessionActive && currentPhase === "idle" && (
-          <BlurView intensity={35} tint="dark" style={styles.sttNotice}>
+        {/* {sessionActive && currentPhase === "idle" && (
+          <View style={styles.sttNotice}>
             <Ionicons name="information-circle-outline" size={13} color="#555" />
             <Text style={styles.sttNoticeText}>
               Real-time STT: Integrate expo-speech-recognition or Groq Whisper for live transcription.
               Demo mode uses a sample phrase when you tap Stop.
             </Text>
-          </BlurView>
-        )}
+          </View>
+        )} */}
       </ImageBackground>
     </View>
   );
@@ -468,13 +468,13 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row", alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 54 : 10,
-    paddingBottom: 10, paddingHorizontal: 10,
+    paddingTop: 40,
+    paddingBottom: 15, paddingHorizontal: 20,
     borderBottomWidth: 1, borderBottomColor: "rgba(74,222,128,0.1)", gap: 12,
   },
   backBtn: { },
   headerTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15 },
-  headerSub: { color: "#666", fontFamily: "Poppins_400Regular", fontSize: 10, marginTop: 1 },
+  headerSub: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 10, marginTop: 1 },
   liveChip: {
     marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: "rgba(255,255,255,0.06)",
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3 },
   liveText: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 10 },
 
-  orbContainer: { alignItems: "center", justifyContent: "center", height: 420, marginTop: 6 },
+  orbContainer: { alignItems: "center", justifyContent: "center", height: 320, },
   orbOuter: { width: 136, height: 136, borderRadius: 68, alignItems: "center", justifyContent: "center" },
   orbInner: {
     width: 136, height: 136, borderRadius: 68,
@@ -494,6 +494,7 @@ const styles = StyleSheet.create({
   phaseLabel: {
     color: "#888", fontFamily: "Poppins_400Regular", fontSize: 12,
     textAlign: "center", marginBottom: 14, letterSpacing: 0.4, paddingHorizontal: 30,
+     top: 30,
   },
 
   transcript: { flex: 1, maxHeight: 190 },
@@ -519,35 +520,37 @@ const styles = StyleSheet.create({
   transcriptText: { color: "#ddd", fontFamily: "Poppins_400Regular", fontSize: 12, lineHeight: 19 },
 
   controls: {
-    paddingHorizontal: 24, paddingVertical: 18,
-    paddingBottom: Platform.OS === "ios" ? 40 : 20,
-    borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)",
+    paddingHorizontal: 20,
+   
+  
   },
   startBtn: {
     backgroundColor: "#004927ff",
   padding: 10,
   alignItems: "center",
   width: "100%",
-  marginTop: 15,
+
+ top: 30,
    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
        shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, borderRadius: 50
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, borderRadius: 12
   },
-  startBtnText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 14 },
+  startBtnText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
 
-  activeControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  activeControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", top: 30 },
   controlBtn: {
-    width: 58, height: 58, borderRadius: 30,
+    width: 55, height: 55, borderRadius: 30,
     backgroundColor: "rgba(255,255,255,0.06)",
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", 
   },
-  controlBtnLabel: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 9 },
+  controlBtnLabel: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 10 },
   micBtn: {
-    width: 78, height: 78, borderRadius: 39,
+    width: 55, height: 55, borderRadius: 39,
     backgroundColor: "#004927", alignItems: "center", justifyContent: "center",
     shadowColor: "#004927", shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45, shadowRadius: 18, elevation: 10, borderColor: "rgba(74,222,128,0.3)"
+    shadowOpacity: 0.45, shadowRadius: 18, elevation: 10,   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+    
   },
   micBtnActive: {
    borderColor: "rgba(255,107,107,0.3)", backgroundColor: "#f8383842", shadowColor: "#f8383842"
@@ -556,7 +559,8 @@ const styles = StyleSheet.create({
   sttNotice: {
     flexDirection: "row", alignItems: "flex-start", gap: 6,
     paddingHorizontal: 16, paddingVertical: 10,
-    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)",
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.04)", backgroundColor: "rgba(255,255,255,0.03)",
+    
   },
-  sttNoticeText: { color: "#444", fontFamily: "Poppins_400Regular", fontSize: 9, flex: 1, lineHeight: 14 },
+  sttNoticeText: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 9, flex: 1, lineHeight: 14 },
 });

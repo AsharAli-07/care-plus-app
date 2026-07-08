@@ -24,8 +24,19 @@ import WellnessTracker from './screens/WellnessTracker';
 import BookSession from './components/BookSession';
 import VoiceTherapy from './components/VoiceTherapy';
 import ChatTherapy from './components/ChatTherapy';
+import DownloadHealthData from './screens/DownloadHealthData';
+import Dashboard from './screens/Dashboard';
+import AboutWatch from './screens/AboutWatch';
+import Therapy from './screens/Therapy';
+import Home from './screens/Home';
+
+
+
+import ResetPasswordScreen from './screens/Resetpasswordscreen';
+import VerifyOTP from './screens/Verifyotp';
 import ConnectWatch from './screens/ConnectWatch';
 import { BLEProvider } from './ble';
+import JournalScreen from './screens/JournalScreen';
 
 import { 
   useFonts,  
@@ -35,29 +46,7 @@ import {
   Poppins_700Bold 
 } from "@expo-google-fonts/poppins";
 
-// 1. STRONGLY TYPED NAVIGATION STRATEGY
-// export type RootStackParamList = {
-//   Login: undefined;
-//   Start: undefined;
-//   Register: undefined;
-//   Onboarding: undefined;
-//   BottomTabs: undefined;
-//   Help: undefined;
-//   Profile: undefined;
-//   PrivacySecurity: undefined;
-//   ChangePassword: undefined;
-//   MoodHistory: undefined;
-//   Privacy: undefined;
-//   Notifications: undefined;
-//   Wellness: undefined;
-//   WellnessTracker: { targetSection?: string } | undefined; 
-//   Emergency: undefined;
-//   EmergencyContacts: undefined;
-//   About: undefined;
-//   ChatTherapy: undefined;
-//   VoiceTherapy: undefined;
-//   BookSession: undefined;
-// };
+
 
 export type RootStackParamList = {
   Login: undefined;
@@ -82,6 +71,15 @@ export type RootStackParamList = {
   BookSession: undefined;
   Dashboard: undefined;
   Meditation: undefined;
+  Therapy: undefined;
+  DownloadHealthData: undefined;
+  JournalScreen: undefined;
+  AboutWatch: undefined;
+  Home: undefined;
+ 
+
+  VerifyOTP: { email: string };
+ResetPasswordScreen: { resetToken: string };
   ConnectWatch: undefined;
 };
 
@@ -146,6 +144,21 @@ useEffect(() => {
         <Stack.Screen name="ChatTherapy" component={ChatTherapy} />
         <Stack.Screen name="VoiceTherapy" component={VoiceTherapy} />
         <Stack.Screen name="BookSession" component={BookSession} />
+         <Stack.Screen name="VerifyOTP" component={VerifyOTP} />
+         <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
+         <Stack.Screen name="DownloadHealthData" component={DownloadHealthData} />
+         <Stack.Screen name="Dashboard" component={Dashboard} />
+         <Stack.Screen name="JournalScreen" component={JournalScreen} />
+         <Stack.Screen name="AboutWatch" component={AboutWatch} />
+         <Stack.Screen name="Therapy" component={Therapy} />
+         <Stack.Screen name="Home" component={Home} />
+
+
+
+
+
+
+
         <Stack.Screen name="ConnectWatch" component={ConnectWatch} />
 
 

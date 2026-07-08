@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { AppState, AppStateStatus } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BASE_URL } from "../api";
@@ -111,6 +110,9 @@ export function useScreenTimeTracker() {
 }
 
 // ─── SCORE STORE ──────────────────────────────────────────────────────────────
+// NOTE: this is the GLOBAL cumulative "trophy" total shown in the header badge.
+// It is intentionally separate from per-game high scores below — every point
+// earned in any game adds to this running lifetime total.
 
 interface ScoreEntry { game: string; score: number; date: string; }
 
@@ -128,11 +130,14 @@ function useScoreStore() {
 }
 
 // ─── GAME SCORE CONTEXT ───────────────────────────────────────────────────────
+// NOTE: this tracks a PER-GAME "highest score ever" (kept fully separate per
+// GameKey, and fully separate from the global trophy total above).
 
 interface GameScoreCtx {
   todayScores: Partial<Record<GameKey, number>>;
   prevScores:  Partial<Record<GameKey, number>>;
   recordScore: (game: GameKey, score: number) => void;
+  getHighest:  (game: GameKey) => number;
 }
 
 const SCORE_TABS = new Set<TabKey>(["memory", "stroop", "sequence", "tapstar", "reverse", "gratitude"]);
@@ -148,21 +153,34 @@ function useGameScores(): GameScoreCtx {
     });
   }, []);
 
+  // Only writes to the DB when the new score is a genuine new best FOR THAT
+  // SPECIFIC GAME. Because scores can also be beaten by something recorded
+  // on a previous day (stored in prevScores), we compare against the true
+  // all-time highest for that game, not just today's value. So: if a run
+  // ends on a score that beats the all-time best, that becomes the new
+  // all-time highest for that game — and only that game.
   const recordScore = useCallback((game: GameKey, score: number) => {
     setTodayScores(prev => {
-      const current = prev[game] ?? 0;
-      if (score <= current) return prev;
+      const currentToday = prev[game] ?? 0;
       setPrevScores(pb => {
-        const pb_val = pb[game] ?? 0;
-        if (current > pb_val) return { ...pb, [game]: current };
+        const currentAllTime = Math.max(currentToday, pb[game] ?? 0);
+        if (score > currentAllTime) {
+          saveGameScore(game, score);
+        }
         return pb;
       });
+      if (score <= currentToday) return prev;
       return { ...prev, [game]: score };
     });
-    saveGameScore(game, score);
   }, []);
 
-  return { todayScores, prevScores, recordScore };
+  // The number to actually display: the highest ever recorded for this
+  // game, whether it happened today or on a previous day.
+  const getHighest = useCallback((game: GameKey) => {
+    return Math.max(todayScores[game] ?? 0, prevScores[game] ?? 0);
+  }, [todayScores, prevScores]);
+
+  return { todayScores, prevScores, recordScore, getHighest };
 }
 
 // ─── TAB CONFIG ───────────────────────────────────────────────────────────────
@@ -184,30 +202,19 @@ type TabKey = typeof TABS[number]["key"];
 
 // ─── SESSION BUTTON ───────────────────────────────────────────────────────────
 
-function SessionBtn({ running, onPress, label }: { running: boolean; onPress: () => void; label?: string }) {
+function SessionBtn({ running, onPress, label, stopLabel }: { running: boolean; onPress: () => void; label?: string; stopLabel?: string }) {
   return (
     <TouchableOpacity style={[btn.root, running && btn.stop]} onPress={onPress} activeOpacity={0.8}>
       <Ionicons name={running ? "stop" : "play"} size={14} color="#fff" />
-      <Text style={btn.text}>{running ? "Stop" : (label || "Start")}</Text>
+      <Text style={btn.text}>{running ? (stopLabel || "Stop") : (label || "Start")}</Text>
     </TouchableOpacity>
   );
 }
 const btn = StyleSheet.create({
-  root: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 9, paddingHorizontal: 22, borderRadius: 12, backgroundColor: "#004927", borderWidth: 1, borderColor: "rgba(74,222,128,0.25)", shadowColor: "#004927", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.55, shadowRadius: 14, elevation: 6 },
-  stop: { backgroundColor: "rgba(248,113,113,0.2)", borderColor: "rgba(248,113,113,0.35)", shadowColor: "#f87171" },
+  root: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 9, paddingHorizontal: 22, borderRadius: 12, backgroundColor: "#004927", borderWidth: 1, borderColor: "rgba(74,222,128,0.25)"},
+  stop: { backgroundColor: "rgba(248,113,113,0.08)",
+    borderWidth: 1, borderColor: "rgba(248,113,113,0.2)"},
   text: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
-});
-
-// ─── GAME SCORE HEADER ────────────────────────────────────────────────────────
-
-const gsh = StyleSheet.create({
-  row: { flexDirection: "row", gap: 10, marginBottom: 10, alignSelf: "flex-end" },
-  prevWrap: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  prevLabel: { color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "Poppins_400Regular", letterSpacing: 0.8 },
-  prevNum: { color: "rgba(255,255,255,0.5)", fontSize: 18, fontFamily: "Poppins_500Medium", fontWeight: "700" },
-  todayWrap: { alignItems: "center", backgroundColor: "rgba(0,73,39,0.5)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: "rgba(74,222,128,0.25)" },
-  todayLabel: { color: "rgba(74,222,128,0.6)", fontSize: 8, fontFamily: "Poppins_400Regular", letterSpacing: 0.8 },
-  todayNum: { color: "#4ade80", fontSize: 18, fontFamily: "Poppins_500Medium", fontWeight: "700" },
 });
 
 // ─── SCORE PILL ───────────────────────────────────────────────────────────────
@@ -222,8 +229,8 @@ function ScorePill({ score, label = "pts" }: { score: number; label?: string }) 
 }
 const sp = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "baseline", gap: 3, backgroundColor: "rgba(0,73,39,0.5)", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)" },
-  num: { color: "#4ade80", fontSize: 16, fontFamily: "Poppins_500Medium", fontWeight: "700" },
-  label: { color: "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "Poppins_400Regular" },
+  num: { color: "#4ade80", fontSize: 16, fontFamily: "Poppins_500Medium", },
+  label: { color: "#999", fontSize: 10, fontFamily: "Poppins_400Regular" },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -265,37 +272,39 @@ function BreathingExercise() {
       timeout = setTimeout(tick, 1000);
     };
 
-    const breathe = () => {
-      if (!runningRef.current) return;
-      setPhaseLabel("Inhale"); setCountdown(inhale);
-      Animated.parallel([
-        Animated.timing(scaleAnim, { toValue: 1.7, duration: inhale * 1000, useNativeDriver: true }),
-        Animated.timing(glowAnim,  { toValue: 1,   duration: inhale * 1000, useNativeDriver: false }),
-      ]).start(() => {
+const breathe = () => {
+  if (!runningRef.current) return;
+  setPhaseLabel("Inhale"); setCountdown(inhale);
+  Animated.parallel([
+    Animated.timing(scaleAnim, { toValue: 1.7, duration: inhale * 1000, useNativeDriver: true }),
+    Animated.timing(glowAnim,  { toValue: 1,   duration: inhale * 1000, useNativeDriver: true }),
+  ]).start(() => {
+    if (!runningRef.current) return;
+    if (hold > 0) {
+      doCountdown(hold, "Hold", () => {
         if (!runningRef.current) return;
-        if (hold > 0) {
-          doCountdown(hold, "Hold", () => {
-            if (!runningRef.current) return;
-            setPhaseLabel("Exhale"); setCountdown(exhale);
-            Animated.parallel([
-              Animated.timing(scaleAnim, { toValue: 1, duration: exhale * 1000, useNativeDriver: true }),
-              Animated.timing(glowAnim,  { toValue: 0, duration: exhale * 1000, useNativeDriver: false }),
-            ]).start(() => { timeout = setTimeout(breathe, 500); });
-          });
-        } else {
-          setPhaseLabel("Exhale"); setCountdown(exhale);
-          Animated.parallel([
-            Animated.timing(scaleAnim, { toValue: 1, duration: exhale * 1000, useNativeDriver: true }),
-            Animated.timing(glowAnim,  { toValue: 0, duration: exhale * 1000, useNativeDriver: false }),
-          ]).start(() => { timeout = setTimeout(breathe, 500); });
-        }
+        setPhaseLabel("Exhale"); setCountdown(exhale);
+        Animated.parallel([
+          Animated.timing(scaleAnim, { toValue: 1, duration: exhale * 1000, useNativeDriver: true }),
+          Animated.timing(glowAnim,  { toValue: 0, duration: exhale * 1000, useNativeDriver: true }), // ← fixed
+        ]).start(() => { timeout = setTimeout(breathe, 500); });
       });
-    };
+    } else {
+      setPhaseLabel("Exhale"); setCountdown(exhale);
+      Animated.parallel([
+        Animated.timing(scaleAnim, { toValue: 1, duration: exhale * 1000, useNativeDriver: true }),
+        Animated.timing(glowAnim,  { toValue: 0, duration: exhale * 1000, useNativeDriver: true }), // ← fixed
+      ]).start(() => { timeout = setTimeout(breathe, 500); });
+    }
+  });
+};
+
+
     breathe();
     return () => { runningRef.current = false; clearTimeout(timeout); };
   }, [running, modeIdx]);
 
-  const glowColor = glowAnim.interpolate({ inputRange: [0, 1], outputRange: ["rgba(0,73,39,0.1)", mode.colors[0] + "44"] });
+ const glowColor = glowAnim.interpolate({ inputRange: [0, 1], outputRange: ["rgba(0,73,39,0.1)", mode.colors[0] + "44"] });
 
   return (
     <View style={ex.wrap}>
@@ -308,14 +317,21 @@ function BreathingExercise() {
           </TouchableOpacity>
         ))}
       </View>
-      <View style={ex.circleArea}>
-        <Animated.View style={[ex.glow, { backgroundColor: glowColor, transform: [{ scale: scaleAnim }] }]} />
-        <Animated.View style={[ex.circle, { transform: [{ scale: scaleAnim }] }]}>
-          <LinearGradient colors={mode.colors} style={ex.circleGrad} />
-        </Animated.View>
-        <View style={ex.circleRing} />
-        {countdown > 0 && <View style={ex.countOverlay}><Text style={ex.countText}>{countdown}</Text></View>}
-      </View>
+<View style={ex.circleArea}>
+  <Animated.View style={[ex.glow, { transform: [{ scale: scaleAnim }] }]}>
+    <Animated.View
+      style={[
+        StyleSheet.absoluteFill,
+        { backgroundColor: mode.colors[0] + "44", borderRadius: 80, opacity: glowAnim },
+      ]}
+    />
+  </Animated.View>
+  <Animated.View style={[ex.circle, { transform: [{ scale: scaleAnim }] }]}>
+    <LinearGradient colors={mode.colors} style={ex.circleGrad} />
+  </Animated.View>
+  <View style={ex.circleRing} />
+  {countdown > 0 && <View style={ex.countOverlay}><Text style={ex.countText}>{countdown}</Text></View>}
+</View>
       <Text style={ex.phaseText}>{phaseLabel}</Text>
       <Text style={ex.tipText}>
         {mode.phases[1] > 0 ? `${mode.phases[0]}s In · ${mode.phases[1]}s Hold · ${mode.phases[2]}s Out` : `${mode.phases[0]}s In · ${mode.phases[2]}s Out`}
@@ -327,80 +343,122 @@ function BreathingExercise() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 2. EYE TRACKING
+// 2. EYE TRACKING — smooth curved boundary-to-boundary motion (Lissajous path)
 // ══════════════════════════════════════════════════════════════════════════════
 
-const EYE_PATTERNS = [
-  { key: "lr", label: "L & R" },
-  { key: "ud", label: "U & D" },
-  { key: "zz", label: "Zig Zag" },
-] as const;
+
+// Builds a smooth, non-linear, boundary-to-boundary path by sampling a
+// Lissajous curve. Because the whole path is pre-computed and fed to
+// Animated as an interpolation table, the dot glides continuously along a
+// curve instead of jumping between random points ("dancing").
+
+
+const CURVE_SAMPLES = 100;
+
+function buildPerimeterCurve(w: number, h: number) {
+  const inputs: number[] = [];
+  const xs: number[] = [];
+  const ys: number[] = [];
+
+  // Corners are the actual translateX/Y values (dot sits at left:0, top:0,
+  // so its position IS the translate value) — not centered, but 0..w / 0..h.
+  const path = [
+    { x: 0, y: 0 }, // Top-Left  (start)
+    { x: w, y: 0 }, // Top-Right
+    { x: w, y: h }, // Bottom-Right
+    { x: 0, y: h }, // Bottom-Left
+    { x: 0, y: 0 }, // back to Top-Left
+  ];
+
+  for (let i = 0; i <= CURVE_SAMPLES; i++) {
+    const t = i / CURVE_SAMPLES;
+    inputs.push(t);
+
+    const segment = Math.min(Math.floor(t * 4), 3);
+    const segmentT = (t * 4) - segment;
+
+    const start = path[segment];
+    const end = path[segment + 1];
+
+    xs.push(start.x + (end.x - start.x) * segmentT);
+    ys.push(start.y + (end.y - start.y) * segmentT);
+  }
+  return { inputs, xs, ys };
+}
 
 function EyeTracking() {
   const [running, setRunning] = useState(false);
-  const [patternIdx, setPatternIdx] = useState(0);
   const [sets, setSets] = useState(0);
-  const dotX = useRef(new Animated.Value(0)).current;
-  const dotY = useRef(new Animated.Value(0)).current;
-  const runningRef = useRef(false);
-  const TRACK_W = width - 75;
-  const TRACK_H = 150;
+  const t = useRef(new Animated.Value(0)).current;
+  const loopIdRef = useRef(0); // identifies the "current" loop chain
+
+  const TRACK_W = width - 73;
+  const TRACK_H = 220;
+  const DOT_SIZE = 30;
+
+  const ampX = TRACK_W - DOT_SIZE;
+  const ampY = TRACK_H - DOT_SIZE;
+  const [curve] = useState(() => buildPerimeterCurve(ampX, ampY));
 
   useEffect(() => {
-    runningRef.current = running;
-    if (!running) { dotX.setValue(0); dotY.setValue(TRACK_H / 500); setSets(0); return; }
-    let set = 0;
-    const lr = () => {
-      if (!runningRef.current) return;
-      Animated.sequence([
-        Animated.timing(dotX, { toValue: TRACK_W, duration: 1800, useNativeDriver: false, easing: Easing.inOut(Easing.quad) }),
-        Animated.timing(dotX, { toValue: 0, duration: 1800, useNativeDriver: false, easing: Easing.inOut(Easing.quad) }),
-      ]).start(({ finished }) => { if (finished && runningRef.current) { set++; setSets(set); lr(); } });
-    };
-    const ud = () => {
-      if (!runningRef.current) return;
-      Animated.sequence([
-        Animated.timing(dotY, { toValue: TRACK_H - 36, duration: 1800, useNativeDriver: false, easing: Easing.inOut(Easing.quad) }),
-        Animated.timing(dotY, { toValue: 0, duration: 1800, useNativeDriver: false, easing: Easing.inOut(Easing.quad) }),
-      ]).start(({ finished }) => { if (finished && runningRef.current) { set++; setSets(set); ud(); } });
-    };
-    const zz = () => {
-      if (!runningRef.current) return;
-      const steps = [[0, 0], [TRACK_W, TRACK_H - 36], [0, TRACK_H - 36], [TRACK_W, 0], [0, 0]];
-      const anims = steps.map(([x, y]) => Animated.parallel([
-        Animated.timing(dotX, { toValue: x, duration: 900, useNativeDriver: false }),
-        Animated.timing(dotY, { toValue: y, duration: 900, useNativeDriver: false }),
-      ]));
-      Animated.sequence(anims).start(({ finished }) => { if (finished && runningRef.current) { set++; setSets(set); zz(); } });
-    };
-    dotX.setValue(0); dotY.setValue(0);
-    if (patternIdx === 0) lr(); else if (patternIdx === 1) ud(); else zz();
-    return () => { runningRef.current = false; };
-  }, [running, patternIdx]);
+    if (running) {
+      const runId = ++loopIdRef.current; // stamp this run
+
+      const runLoop = () => {
+        if (loopIdRef.current !== runId) return; // a newer/older run — ignore
+        t.setValue(0);
+        Animated.timing(t, {
+          toValue: 1,
+          duration: 5000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished && loopIdRef.current === runId) {
+            setSets(s => s + 1);
+            runLoop();
+          }
+        });
+      };
+
+      runLoop();
+      return () => {
+        loopIdRef.current++; // invalidate this chain on cleanup
+        t.stopAnimation();
+      };
+    } else {
+      loopIdRef.current++; // invalidate any in-flight chain
+      t.stopAnimation();
+      t.setValue(0);
+      setSets(0);
+    }
+  }, [running]);
+
+  const translateX = t.interpolate({ inputRange: curve.inputs, outputRange: curve.xs });
+  const translateY = t.interpolate({ inputRange: curve.inputs, outputRange: curve.ys });
 
   return (
     <View style={ex.wrap}>
       <Text style={s.titleText}>Eye Tracking</Text>
-      <Text style={s.desText}>Keep head still · Follow with eyes only</Text>
-      <View style={ex.modeRow}>
-        {EYE_PATTERNS.map((p, i) => (
-          <TouchableOpacity key={p.key} onPress={() => { if (!running) setPatternIdx(i); }} style={[ex.modePill, i === patternIdx && ex.modePillActive]}>
-            <Text style={[ex.modePillText, i === patternIdx && ex.modePillTextActive]}>{p.label}</Text>
-          </TouchableOpacity>
-        ))}
+      <Text style={s.desText}>Keep head still · Follow the glow with your eyes.</Text>
+      <View style={[eye.track, { width: TRACK_W + 3, height: TRACK_H + 2 }]}>
+        <Animated.View style={[eye.dot, { transform: [{ translateX }, { translateY }] }]} />
       </View>
-      <View style={[eye.track, { height: TRACK_H }]}>
-        <Animated.View style={[eye.dot, { left: dotX, top: dotY }]} />
-      </View>
-      <View style={eye.stats}><ScorePill score={sets} label="sets" /></View>
-      <SessionBtn running={running} onPress={() => setRunning(r => !r)} />
+      <View style={eye.stats}><ScorePill score={sets} label="loops" /></View>
+      <TouchableOpacity
+        style={[btn.root, running && btn.stop]}
+        onPress={() => setRunning(r => !r)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name={running ? "stop" : "play"} size={14} color="#fff" />
+        <Text style={btn.text}>{running ? "End" : "Start"}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const eye = StyleSheet.create({
-  track: { width: "100%", borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(74,222,128,0.12)", position: "relative", overflow: "hidden", marginVertical: 20 },
-  dot: { position: "absolute", width: 34, height: 34, borderRadius: 17, backgroundColor: "#4ade80", shadowColor: "#4ade80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 10 },
+  track: { borderRadius: 15, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(74,222,128,0.12)", position: "relative", overflow: "hidden", marginBottom: 15 },
+  dot: { shadowColor: "#4ade80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius:30, position: "absolute", left: 0, top: 0, width: 30, height: 30, borderRadius: 15, backgroundColor: "#4ade80" },
   stats: { marginBottom: 20 },
 });
 
@@ -416,42 +474,55 @@ function FocusDot({ addScore }: { addScore: (g: string, p: number) => void }) {
   const [elapsed, setElapsed] = useState(0);
   const [streak, setStreak] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim  = useRef(new Animated.Value(0.4)).current;
+const glowAnim  = useRef(new Animated.Value(0)).current; // now drives opacity only, native-safe
   const intervalRef = useRef<any>(null);
   const dur = FOCUS_DURATIONS[durIdx];
 
-  useEffect(() => {
-    if (running) {
-      Animated.loop(Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.25, duration: 1200, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1,    duration: 1200, useNativeDriver: true }),
-      ])).start();
-      Animated.loop(Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 0.9, duration: 1200, useNativeDriver: false }),
-        Animated.timing(glowAnim, { toValue: 0.3, duration: 1200, useNativeDriver: false }),
-      ])).start();
-      setElapsed(0);
-      intervalRef.current = setInterval(() => {
-        setElapsed(e => {
-          if (e + 1 >= dur) {
-            clearInterval(intervalRef.current);
-            setRunning(false);
-            setStreak(s => s + 1);
-            const pts = dur === 30 ? 10 : dur === 60 ? 25 : 60;
-            addScore("Focus Dot", pts);
-          }
-          return e + 1;
-        });
-      }, 1000);
-    } else {
-      pulseAnim.stopAnimation(); glowAnim.stopAnimation();
-      clearInterval(intervalRef.current);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [running]);
+useEffect(() => {
+  if (running) {
+    Animated.loop(Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 1.25, duration: 1200, useNativeDriver: true }),
+      Animated.timing(pulseAnim, { toValue: 1,    duration: 1200, useNativeDriver: true }),
+    ])).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(glowAnim, { toValue: 0.9, duration: 1200, useNativeDriver: true }),
+      Animated.timing(glowAnim, { toValue: 0.3, duration: 1200, useNativeDriver: true }),
+    ])).start();
+    setElapsed(0);
+    intervalRef.current = setInterval(() => {
+      // Pure update — only returns the next number, no side effects here.
+      setElapsed(e => e + 1);
+    }, 1000);
+  } else {
+    pulseAnim.stopAnimation(); glowAnim.stopAnimation();
+    clearInterval(intervalRef.current);
+  }
+  return () => clearInterval(intervalRef.current);
+}, [running]);
+
+// Watches elapsed separately — side effects (stopping the run, awarding
+// points, updating streak) happen here, outside the setElapsed updater,
+// so React never sees a setState-during-render conflict.
+useEffect(() => {
+  if (!running) return;
+  if (elapsed >= dur) {
+    clearInterval(intervalRef.current);
+    setRunning(false);
+    setStreak(s => s + 1);
+    const pts = dur === 30 ? 10 : dur === 60 ? 25 : 60;
+    addScore("Focus Dot", pts);
+  }
+}, [elapsed, running, dur]);
 
   const progress = elapsed / dur;
-
+const handleToggle = () => {
+  if (running) {
+    setRunning(false);
+  } else {
+    setElapsed(0);   // reset BEFORE running flips true, same render
+    setRunning(true);
+  }
+};
   return (
     <View style={ex.wrap}>
       <Text style={s.titleText}>Focus Challenge</Text>
@@ -463,11 +534,18 @@ function FocusDot({ addScore }: { addScore: (g: string, p: number) => void }) {
           </TouchableOpacity>
         ))}
       </View>
-      <View style={fd.dotWrap}>
-        <Animated.View style={[fd.glow, { opacity: glowAnim, transform: [{ scale: pulseAnim }] }]} />
-        <Animated.View style={[fd.dot, { transform: [{ scale: pulseAnim }] }]} />
-        <View style={fd.progressRing} />
-      </View>
+<View style={fd.dotWrap}>
+  <Animated.View style={[fd.glow, { transform: [{ scale: pulseAnim }] }]}>
+    <Animated.View
+      style={[
+        StyleSheet.absoluteFill,
+        { opacity: glowAnim, borderRadius: 55, backgroundColor: "rgba(74,222,128,0.25)" },
+      ]}
+    />
+  </Animated.View>
+  <Animated.View style={[fd.dot, { transform: [{ scale: pulseAnim }] }]} />
+  <View style={fd.progressRing} />
+</View>
       <View style={fd.timerRow}>
         <Text style={fd.timer}>{elapsed}s</Text>
         <Text style={fd.timerOf}>/ {dur}s</Text>
@@ -478,25 +556,25 @@ function FocusDot({ addScore }: { addScore: (g: string, p: number) => void }) {
       <View style={{ flexDirection: "row", gap: 12, alignItems: "center", marginBottom: 20 }}>
         <ScorePill score={streak} label="streak" />
       </View>
-      <SessionBtn running={running} onPress={() => setRunning(r => !r)} label="Focus" />
+     <SessionBtn running={running} onPress={handleToggle} label="Focus" />
     </View>
   );
 }
 
 const fd = StyleSheet.create({
-  dotWrap: { width: 110, height: 110, alignItems: "center", justifyContent: "center", marginTop: 20, marginBottom: 5 },
-  glow: { position: "absolute", width: 110, height: 110, borderRadius: 55, backgroundColor: "rgba(74,222,128,0.25)" },
-  dot: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#4ade80", shadowColor: "#4ade80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 18 },
+  dotWrap: { width: 100, height: 100, alignItems: "center", justifyContent: "center", marginTop: 20, marginBottom: 5 },
+  glow: { position: "absolute", width: 100, height: 100, borderRadius: 55, backgroundColor: "rgba(74,222,128,0.25)" },
+  dot: { width: 15, height: 15, borderRadius: 22, backgroundColor: "#4ade80", shadowColor: "#4ade80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 18 },
   progressRing: { position: "absolute", width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: "rgba(74,222,128,0.2)" },
   timerRow: { flexDirection: "row", alignItems: "baseline", gap: 4, marginBottom: 5 },
   timer: { color: "#4ade80", fontSize: 28, fontFamily: "Poppins_500Medium" },
   timerOf: { color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: "Poppins_400Regular" },
-  progressTrack: { width: "100%", height: 3, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2, marginBottom: 20 },
+  progressTrack: { width: "100%", height: 3, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2, marginBottom: 15 },
   progressFill: { height: "100%", backgroundColor: "#4ade80", borderRadius: 2 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 4. COLOR CALM
+// 4. COLOR CALM — full-screen immersive mode, with a clear exit control
 // ══════════════════════════════════════════════════════════════════════════════
 
 const COLOR_SETS: [string, string][] = [
@@ -505,6 +583,7 @@ const COLOR_SETS: [string, string][] = [
 ];
 
 function ColorCalm() {
+  const insets = useSafeAreaInsets();
   const [running, setRunning] = useState(false);
   const [colorIdx, setColorIdx] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -513,11 +592,11 @@ function ColorCalm() {
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
-        Animated.timing(fadeAnim, { toValue: 0, duration: 1200, useNativeDriver: false }).start(() => {
+        Animated.timing(fadeAnim, { toValue: 0, duration: 1400, useNativeDriver: false }).start(() => {
           setColorIdx(i => (i + 1) % COLOR_SETS.length);
-          Animated.timing(fadeAnim, { toValue: 1, duration: 1200, useNativeDriver: false }).start();
+          Animated.timing(fadeAnim, { toValue: 1, duration: 1400, useNativeDriver: false }).start();
         });
-      }, 4000);
+      }, 4200);
     } else { clearInterval(intervalRef.current); }
     return () => clearInterval(intervalRef.current);
   }, [running]);
@@ -528,39 +607,85 @@ function ColorCalm() {
     <View style={ex.wrap}>
       <Text style={s.titleText}>Color Relaxation</Text>
       <Text style={s.desText}>Watch soothing color transitions designed to promote calmness and reduce anxiety.</Text>
-      <View style={{ width: 150, height: 150, borderRadius: 75, overflow: "hidden" }}>
-        <LinearGradient colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,1)", "rgba(0,0,0,0.1)"]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFillObject} />
-        <LinearGradient colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,1)", "rgba(0,0,0,0.1)"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFillObject} />
-        <Animated.View style={[cc.canvas, { opacity: fadeAnim }]}>
-          <LinearGradient colors={[colors[0] + "55", colors[1] + "55"]} style={cc.grad} />
-        </Animated.View>
-      </View>
-      <Text style={[cc.centerText, { color: colors[0] }]}>{running ? "Breathe Naturally" : "Watch & Relax"}</Text>
+
+      <TouchableOpacity activeOpacity={0.85} onPress={() => setRunning(true)} style={cc.preview}>
+        <LinearGradient colors={[colors[0] + "cc", colors[1] + "cc"]} style={StyleSheet.absoluteFillObject} />
+        <View style={cc.previewOverlay}>
+          <Ionicons name="expand-outline" size={20} color="rgba(255,255,255,0.9)" />
+        </View>
+      </TouchableOpacity>
+      <Text style={[cc.centerText, { color: colors[0] }]}>Tap to go full screen</Text>
       <Text style={cc.subText}>Let colors wash over you</Text>
       <View style={{ height: 16 }} />
       <View style={cc.swatches}>
-        {COLOR_SETS.map((cs, i) => (
-          <View key={i} style={[cc.swatch, i === colorIdx && cc.swatchActive, { backgroundColor: cs[0] }]} />
+        {COLOR_SETS.map((cset, i) => (
+          <View key={i} style={[cc.swatch, i === colorIdx && cc.swatchActive, { backgroundColor: cset[0] }]} />
         ))}
       </View>
       <View style={{ height: 25 }} />
-      <SessionBtn running={running} onPress={() => setRunning(r => !r)} label="Start Colors" />
+      <TouchableOpacity style={btn.root} onPress={() => setRunning(true)} activeOpacity={0.8}>
+        <Ionicons name="play" size={14} color="#fff" />
+        <Text style={btn.text}>Start Colors</Text>
+      </TouchableOpacity>
+
+      <Modal visible={running} animationType="fade" statusBarTranslucent onRequestClose={() => setRunning(false)}>
+        <View style={cc.fullRoot}>
+          <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: fadeAnim }]}>
+            <LinearGradient colors={[colors[0], colors[1]]} style={StyleSheet.absoluteFillObject} />
+          </Animated.View>
+          <View style={[cc.fullOverlay, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 28 }]}>
+            <View>
+              <Text style={cc.fullTitle}>Breathe Naturally</Text>
+              <Text style={cc.fullSub}>Let colors wash over you</Text>
+            </View>
+            <TouchableOpacity style={cc.exitBtn} onPress={() => setRunning(false)} activeOpacity={0.85}>
+              <Ionicons name="stop" size={16} color="#fff" />
+              <Text style={cc.exitBtnText}>Stop</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const cc = StyleSheet.create({
-  canvas: { width: 150, height: 150, borderRadius: 200, overflow: "hidden" },
-  grad: { flex: 1 },
+  preview: { width: 150, height: 150, borderRadius: 75, overflow: "hidden" },
+  previewOverlay: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.12)" },
   centerText: { fontSize: 18, fontFamily: "Poppins_500Medium", marginTop: 15 },
-  subText: { color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: "Poppins_400Regular", marginTop: 5 },
+  subText: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", marginTop: 5 },
   swatches: { flexDirection: "row", gap: 15, marginTop: 5 },
   swatch: { width: 18, height: 18, borderRadius: 9, opacity: 0.7 },
   swatchActive: { opacity: 1, transform: [{ scale: 1.3 }], borderWidth: 2, borderColor: "#fff" },
+  fullRoot: { flex: 1, backgroundColor: "#050f09" },
+  fullOverlay: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between", alignItems: "center" },
+  fullTitle: { color: "#fff", fontSize: 22, fontFamily: "Poppins_500Medium", textAlign: "center" },
+  fullSub: { color: "rgba(255,255,255,0.75)", fontSize: 13, fontFamily: "Poppins_400Regular", marginTop: 6, textAlign: "center" },
+  exitBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(0,0,0,0.35)", paddingHorizontal: 22, paddingVertical: 12, borderRadius: 24, borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
+  exitBtnText: { color: "#fff", fontSize: 14, fontFamily: "Poppins_500Medium" },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 5. MEMORY BOOST
+// SHARED: LIVES INDICATOR (dots instead of hearts/emoji)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function LivesDots({ lives, total = 3 }: { lives: number; total?: number }) {
+  return (
+    <View style={mg.livesRow}>
+      <Ionicons 
+  name="flash" // Or "bolt", "thunderstorm", "power"
+  size={15} 
+  color="#4ade80" 
+/>
+      {Array.from({ length: total }, (_, i) => (
+        <View key={i} style={[mg.lifeDot, i < lives ? mg.lifeDotFull : mg.lifeDotEmpty]} />
+      ))}
+    </View>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 5. MEMORY BOOST — 3 lives, auto-advance, dot lives + bottom End/Clear row
 // ══════════════════════════════════════════════════════════════════════════════
 
 function generateSeq(len: number) {
@@ -571,79 +696,151 @@ function MemoryBoost({ addScore, onRecord }: {
   addScore: (g: string, p: number) => void;
   onRecord: (pts: number) => void;
 }) {
-  const [phase, setPhase] = useState<"idle" | "show" | "input" | "result">("idle");
+  const [phase, setPhase] = useState<"idle" | "show" | "input" | "feedback" | "over">("idle");
   const [seq, setSeq] = useState<number[]>([]);
   const [input, setInput] = useState<number[]>([]);
   const [level, setLevel] = useState(4);
+  const [lives, setLives] = useState(3);
   const [correct, setCorrect] = useState<boolean | null>(null);
   const [sessionBest, setSessionBest] = useState(0);
+  const [levelBanner, setLevelBanner] = useState("");
+
+  const beginLevel = (lvl: number, banner?: string) => {
+    const seqArr = generateSeq(lvl);
+    setSeq(seqArr); setInput([]); setCorrect(null);
+    if (banner) setLevelBanner(banner);
+    setPhase("show");
+    setTimeout(() => { setLevelBanner(""); setPhase("input"); }, 3000);
+  };
 
   const start = () => {
-    const s = generateSeq(level); setSeq(s); setInput([]); setCorrect(null);
-    setPhase("show");
-    setTimeout(() => setPhase("input"), 3000);
+    setLives(3); setSessionBest(0); setLevel(4);
+    beginLevel(4);
+  };
+
+  const endGame = (finalScore: number) => {
+    if (finalScore > 0) onRecord(finalScore);
+    setPhase("over");
   };
 
   const tap = (n: number) => {
+    if (phase !== "input") return;
     const next = [...input, n]; setInput(next);
     if (next.length === seq.length) {
       const ok = next.every((v, i) => v === seq[i]);
-      setCorrect(ok); setPhase("result");
+      setCorrect(ok); setPhase("feedback");
       if (ok) {
         const pts = level * 10;
         addScore("Memory Boost", pts);
-        const newBest = Math.max(sessionBest, pts);
+        // Session total = SUM of every level cleared this run (not just the
+        // single highest level), so the score saved as "highest" at game
+        // over reflects the true cumulative total, not one level's points.
+        const newBest = sessionBest + pts;
         setSessionBest(newBest);
-        onRecord(newBest);
-        setLevel(l => Math.min(l + 1, 8));
-      } else { setLevel(l => Math.max(l - 1, 3)); }
+        const nextLevel = Math.min(level + 1, 9);
+        setTimeout(() => { setLevel(nextLevel); beginLevel(nextLevel, `Level ${nextLevel - 3}`); }, 900);
+      } else {
+        const remaining = lives - 1;
+        setLives(remaining);
+        if (remaining <= 0) {
+          setTimeout(() => endGame(sessionBest), 900);
+        } else {
+          setTimeout(() => beginLevel(level), 900);
+        }
+      }
     }
   };
+
+const clearInput = () => setInput(prev => prev.slice(0, -1));
 
   return (
     <View style={ex.wrap}>
       {phase === "idle" && (
         <>
           <Text style={mg.title}>Memorize the sequence</Text>
-          <Text style={mg.sub}>You have 3 seconds</Text>
-          <View style={{ height: 12 }} />
+          <Text style={mg.sub}>3 lives · 3 seconds to memorize</Text>
+          <View style={{ height: 20 }} />
           <TouchableOpacity style={btn.root} onPress={start}>
             <Ionicons name="play" size={14} color="#fff" />
-            <Text style={btn.text}>Level {level - 3 + 1} · {level} numbers</Text>
+            <Text style={btn.text}>Start</Text>
           </TouchableOpacity>
         </>
       )}
-      {phase === "show" && (
+
+      {(phase === "show" || phase === "input" || phase === "feedback") && (
         <>
-          <Text style={mg.title}>Remember this!</Text>
-          <View style={mg.seqRow}>{seq.map((n, i) => <View key={i} style={mg.seqNum}><Text style={mg.seqNumText}>{n}</Text></View>)}</View>
-        </>
-      )}
-      {phase === "input" && (
-        <>
-          <Text style={mg.title}>Type the sequence</Text>
-          <View style={mg.seqRow}>
-            {Array.from({ length: seq.length }, (_, i) => (
-              <View key={i} style={[mg.seqNum, mg.inputSlot, input[i] !== undefined && mg.inputFilled]}>
-                <Text style={mg.seqNumText}>{input[i] ?? "?"}</Text>
+          <View style={mg.statusRow}>
+            <LivesDots lives={lives} />
+          </View>
+          {levelBanner ? <Text style={mg.levelBanner}>{levelBanner}</Text> : null}
+
+          {phase === "show" && (
+            <>
+              <Text style={mg.title}>Remember this!</Text>
+              <View style={mg.seqRow}>{seq.map((n, i) => <View key={i} style={mg.seqNum}><Text style={mg.seqNumText}>{n}</Text></View>)}</View>
+            </>
+          )}
+
+          {phase === "input" && (
+            <>
+              <Text style={mg.title}>Type the sequence</Text>
+              <View style={mg.seqRow}>
+                {Array.from({ length: seq.length }, (_, i) => (
+                  <View key={i} style={[mg.seqNum, mg.inputSlot, input[i] !== undefined && mg.inputFilled]}>
+                    <Text style={mg.seqNumText}>{input[i] ?? "?"}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-          <View style={mg.numpad}>
-            {[1,2,3,4,5,6,7,8,9].map(n => (
-              <TouchableOpacity key={n} style={mg.numKey} onPress={() => tap(n)}>
-                <Text style={mg.numKeyText}>{n}</Text>
+              <View style={mg.numpad}>
+                {[1,2,3,4,5,6,7,8,9].map(n => (
+                  <TouchableOpacity key={n} style={mg.numKey} onPress={() => tap(n)}>
+                    <Text style={mg.numKeyText}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={mg.bottomRow}>
+                <TouchableOpacity style={mg.endBtnBottom} onPress={() => endGame(sessionBest)} activeOpacity={0.8}>
+                
+                  <Text style={mg.endBtnBottomText}>End</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={mg.clearBtn} onPress={clearInput} activeOpacity={0.8}>
+                
+                  <Text style={mg.clearBtnText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {phase === "feedback" && (
+            <>
+              <Text style={[mg.resultText, { color: correct ? "#4ade80" : "#f87171" }]}>
+                {correct ? "Correct!" : "Wrong"}
+              </Text>
+              <TouchableOpacity style={[mg.endBtnBottom, { marginTop: 14 }]} onPress={() => endGame(sessionBest)} activeOpacity={0.8}>
+                
+                <Text style={mg.endBtnBottomText}>End</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </>
+          )}
+
+          {phase === "show" && (
+            <TouchableOpacity style={[mg.endBtnBottom, { marginTop: 14 }]} onPress={() => endGame(sessionBest)} activeOpacity={0.8}>
+              
+              <Text style={mg.endBtnBottomText}>End</Text>
+            </TouchableOpacity>
+          )}
         </>
       )}
-      {phase === "result" && (
+
+      {phase === "over" && (
         <>
-          <Text style={[mg.resultText, { color: correct ? "#4ade80" : "#f87171" }]}>{correct ? "✓ Correct!" : "✗ Try Again"}</Text>
-          {correct && <Text style={mg.sub}>+{level * 10} pts</Text>}
-          <View style={{ height: 12 }} />
-          <TouchableOpacity style={btn.root} onPress={start}><Text style={btn.text}>{correct ? "Next Level" : "Retry"}</Text></TouchableOpacity>
+          <Text style={[mg.resultText, { color: "#f87171" }]}>Session Complete</Text>
+          <Text style={mg.sub}>Total this round: {sessionBest} pts</Text>
+          <View style={{ height: 20 }} />
+          <TouchableOpacity style={btn.root} onPress={start}>
+            <Ionicons name="play" size={14} color="#fff" />
+            <Text style={btn.text}>Start</Text>
+          </TouchableOpacity>
         </>
       )}
     </View>
@@ -651,9 +848,9 @@ function MemoryBoost({ addScore, onRecord }: {
 }
 
 const mg = StyleSheet.create({
-  title: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium", marginBottom: 6, textAlign: "center" },
-  sub: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center" },
-  seqRow: { flexDirection: "row", gap: 8, marginVertical: 14, flexWrap: "wrap", justifyContent: "center" },
+  title: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium",  textAlign: "center",marginBottom: 5 },
+  sub: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center" },
+  seqRow: { flexDirection: "row", gap: 8, marginVertical: 20, flexWrap: "wrap", justifyContent: "center" },
   seqNum: { width: 36, height: 36, borderRadius: 8, backgroundColor: "#004927", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(74,222,128,0.3)" },
   seqNumText: { color: "#4ade80", fontSize: 16, fontFamily: "Poppins_500Medium", fontWeight: "700" },
   inputSlot: { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)" },
@@ -661,7 +858,18 @@ const mg = StyleSheet.create({
   numpad: { flexDirection: "row", flexWrap: "wrap", gap: 8, width: 160, justifyContent: "center", marginTop: 6 },
   numKey: { width: 44, height: 44, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   numKeyText: { color: "#fff", fontSize: 16, fontFamily: "Poppins_500Medium" },
-  resultText: { fontSize: 20, fontFamily: "Poppins_500Medium", fontWeight: "700", marginBottom: 4 },
+  resultText: { fontSize: 20, fontFamily: "Poppins_500Medium", marginBottom: 4 },
+  statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 15 },
+  levelBanner: { color: "#4ade80", fontSize: 16, fontFamily: "Poppins_500Medium", marginBottom: 8 },
+  clearBtn: { width: 70, alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  clearBtnText: { color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  bottomRow: { flexDirection: "row", justifyContent: "space-between", width: 150, marginTop: 10 },
+  endBtnBottom: { width: 70, alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: "rgba(248,113,113,0.12)", borderWidth: 1, borderColor: "rgba(248,113,113,0.3)" },
+  endBtnBottomText: { color: "#f87171", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: 'center' },
+  livesRow: { flexDirection: "row", gap: 6, justifyContent: 'center', alignItems: 'center' },
+  lifeDot: { width: 15, height: 15, borderRadius: 20 },
+  lifeDotFull: { backgroundColor: "#4ade80", shadowColor: "#4ade80", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 4 },
+  lifeDotEmpty: {   backgroundColor: "rgba(255,255,255,0.08)", },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -699,12 +907,12 @@ function StroopTest({ addScore, onRecord }: {
     setFeedback(ok ? "correct" : "wrong");
     if (ok) {
       const pts = 15 + streak * 5;
-      setScore(s => {
-        const next = s + pts;
+      setScore(sc => {
+        const next = sc + pts;
         onRecord(next);
         return next;
       });
-      setStreak(s => s + 1);
+      setStreak(sc => sc + 1);
       addScore("Stroop", pts);
     } else { setStreak(0); }
     feedbackTimeout.current = setTimeout(() => { setItem(generateStroop()); setFeedback(null); }, 500);
@@ -739,7 +947,7 @@ function StroopTest({ addScore, onRecord }: {
 }
 
 const st = StyleSheet.create({
-  instruction: { color: "rgba(255,255,255,0.4)", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center", marginBottom: 20 },
+  instruction: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center", marginBottom: 20 },
   wordBox: { width: "100%", paddingVertical: 16, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", marginBottom: 20 },
   correct: { borderColor: "rgba(74,222,128,0.5)", backgroundColor: "rgba(74,222,128,0.08)" },
   wrong: { borderColor: "rgba(248,113,113,0.5)", backgroundColor: "rgba(248,113,113,0.08)" },
@@ -751,11 +959,24 @@ const st = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 7. COLOR SEQUENCE
+// 7. COLOR SEQUENCE (SIMON) — grid layout now reshuffles every level/round
 // ══════════════════════════════════════════════════════════════════════════════
 
-const SEQ_COLORS = ["#4ade80", "#60a5fa", "#f87171", "#facc15"];
-const SEQ_LABELS = ["G", "B", "R", "Y"];
+const SEQ_COLORS = [
+  "#4ade80", "#60a5fa", "#f87171", "#facc15",
+  "#c084fc", "#34d399", "#fb923c", "#a78bfa", "#38bdf8",
+];
+const SEQ_LABELS = ["G", "B", "R", "Y", "P", "T", "O", "V", "C"];
+const NUM_PADS = SEQ_COLORS.length;
+
+function shufflePadOrder(): number[] {
+  const arr = SEQ_COLORS.map((_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 function ColorSequence({ addScore, onRecord }: {
   addScore: (g: string, p: number) => void;
@@ -764,69 +985,135 @@ function ColorSequence({ addScore, onRecord }: {
   const [seq, setSeq] = useState<number[]>([]);
   const [showing, setShowing] = useState(-1);
   const [inputSeq, setInputSeq] = useState<number[]>([]);
-  const [phase, setPhase] = useState<"idle" | "showing" | "input" | "result">("idle");
+  const [phase, setPhase] = useState<"idle" | "showing" | "input" | "feedback" | "over">("idle");
   const [correct, setCorrect] = useState(false);
   const [totalPts, setTotalPts] = useState(0);
-
-  const startSeq = () => {
-    const newSeq = [...seq, Math.floor(Math.random() * 4)];
-    setSeq(newSeq); setInputSeq([]); setPhase("showing");
+  const [lives, setLives] = useState(3);
+  const [levelBanner, setLevelBanner] = useState("");
+  // Grid layout order — reshuffled every round so the same color doesn't
+  // always sit in the same pad, forcing players to truly watch the glow
+  // rather than memorize a fixed position.
+  const [padOrder, setPadOrder] = useState<number[]>(() => shufflePadOrder());
+const phaseText =
+  phase === "idle"
+    ? ""
+    : phase === "showing"
+    ? "Watch..."
+    : phase === "input"
+    ? "Repeat!"
+    : phase === "feedback"
+    ? (correct ? "Correct!" : "Wrong")
+    : "Game Over";
+  const playSequence = (fullSeq: number[]) => {
+    setPadOrder(shufflePadOrder());
+    setPhase("showing");
     let i = 0;
     const show = () => {
-      if (i >= newSeq.length) { setShowing(-1); setPhase("input"); return; }
-      setShowing(newSeq[i]);
-      setTimeout(() => { setShowing(-1); setTimeout(() => { i++; show(); }, 300); }, 700);
+      if (i >= fullSeq.length) { setShowing(-1); setPhase("input"); return; }
+      setShowing(fullSeq[i]);
+      setTimeout(() => { setShowing(-1); setTimeout(() => { i++; show(); }, 250); }, 550);
     };
     show();
+  };
+
+  const startGame = () => {
+    setLives(3); setTotalPts(0);
+    const first = [Math.floor(Math.random() * NUM_PADS)];
+    setSeq(first); setInputSeq([]);
+    playSequence(first);
+  };
+
+  const nextLevel = (base: number[]) => {
+    const extended = [...base, Math.floor(Math.random() * NUM_PADS)];
+    setSeq(extended); setInputSeq([]);
+    setLevelBanner(`Level ${extended.length}`);
+    setTimeout(() => setLevelBanner(""), 1200);
+    playSequence(extended);
+  };
+
+  const endGame = () => {
+    if (totalPts > 0) onRecord(totalPts);
+    setPhase("over");
   };
 
   const tap = (idx: number) => {
     if (phase !== "input") return;
     const next = [...inputSeq, idx]; setInputSeq(next);
+    const i = next.length - 1;
+
+    if (next[i] !== seq[i]) {
+      setCorrect(false); setPhase("feedback");
+      const remaining = lives - 1;
+      setLives(remaining);
+      setTimeout(() => {
+        if (remaining <= 0) {
+          endGame();
+        } else {
+          setInputSeq([]);
+          playSequence(seq); // replay same level, don't lose progress on first mistake
+        }
+      }, 900);
+      return;
+    }
+
     if (next.length === seq.length) {
-      const ok = next.every((v, i) => v === seq[i]);
-      setCorrect(ok); setPhase("result");
-      if (ok) {
-        const pts = seq.length * 12;
-        addScore("Color Seq", pts);
-        const newTotal = totalPts + pts;
-        setTotalPts(newTotal);
-        onRecord(newTotal);
-      } else { setSeq([]); setTotalPts(0); }
+      setCorrect(true); setPhase("feedback");
+      const pts = seq.length * 12;
+      addScore("Color Seq", pts);
+      const newTotal = totalPts + pts;
+      setTotalPts(newTotal);
+      setTimeout(() => nextLevel(seq), 900);
     }
   };
-
+const phaseColor =
+  phase === "feedback"
+    ? (correct ? "#4ade80" : "#f87171")
+    : phase === "over"
+    ? "#f87171"
+    : "#fff";
   return (
     <View style={ex.wrap}>
       <Text style={s.titleText}>Sequence Recall</Text>
-      <Text style={s.desText}>Follow the glowing sequences by remembering and repeating increasingly complex patterns.</Text>
-      <Text style={csq.title}>
-        {phase === "idle" ? "Simon Says" : phase === "showing" ? "Watch..." : phase === "input" ? "Repeat!" : correct ? "✓ Perfect!" : "✗ Wrong"}
-      </Text>
+      <Text style={s.desText}>Follow the glowing sequence and repeat it back — it grows one step longer each round.</Text>
+
+      {phase !== "idle" && phase !== "over" && (
+        <View style={mg.statusRow}>
+
+          <LivesDots lives={lives} />
+        </View>
+      )}
+      {/* {levelBanner ? <Text style={mg.levelBanner}>{levelBanner}</Text> : null} */}
+
+{phaseText ? (
+  <Text style={[csq.title, { color: phaseColor }]}>
+    {phaseText}
+  </Text>
+) : null}
       <View style={csq.grid}>
-        {SEQ_COLORS.map((c, i) => (
-          <TouchableOpacity key={i} onPress={() => tap(i)} activeOpacity={0.7}
-            style={[csq.pad, { backgroundColor: i === showing ? c : c + "33", borderColor: c + "66", transform: [{ scale: i === showing ? 1.1 : 1 }] }]}>
-            <Text style={csq.padLabel}>{SEQ_LABELS[i]}</Text>
+        {padOrder.map(idx => (
+          <TouchableOpacity key={idx} onPress={() => tap(idx)} activeOpacity={0.7}
+            style={[csq.pad, { backgroundColor: idx === showing ? SEQ_COLORS[idx] : SEQ_COLORS[idx] + "33", borderColor: SEQ_COLORS[idx] + "66", transform: [{ scale: idx === showing ? 1.1 : 1 }] }]}>
+            <Text style={csq.padLabel}>{SEQ_LABELS[idx]}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      <Text style={csq.level}>Level {seq.length}</Text>
-      {phase === "idle" || phase === "result" ? (
-        <TouchableOpacity style={btn.root} onPress={correct || phase === "idle" ? startSeq : () => { setSeq([]); setPhase("idle"); }}>
-          <Text style={btn.text}>{phase === "idle" ? "Start" : correct ? "Next Level" : "Try Again"}</Text>
+      <Text style={csq.level}>Level {seq.length || 0}</Text>
+      {(phase === "idle" || phase === "over") && (
+        <TouchableOpacity style={btn.root} onPress={startGame}>
+          <Ionicons name="play" size={14} color="#fff" />
+          <Text style={btn.text}>{phase === "over" ? "Play Again" : "Start"}</Text>
         </TouchableOpacity>
-      ) : null}
+      )}
     </View>
   );
 }
 
 const csq = StyleSheet.create({
   title: { color: "#fff", fontSize: 16, fontFamily: "Poppins_500Medium", marginBottom: 20, textAlign: "center" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 15, width: 150, justifyContent: "center", marginBottom: 20 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 15, width: 210, justifyContent: "center", marginBottom: 15 },
   pad: { width: 60, height: 60, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   padLabel: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium" },
-  level: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontFamily: "Poppins_400Regular", marginBottom: 20 },
+  level: { color: "#aaa", fontSize: 12, fontFamily: "Poppins_400Regular", marginBottom: 20 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -867,8 +1154,8 @@ function TapStar({ addScore, onRecord }: {
 
   const tapStar = (id: number) => {
     setStars(prev => prev.filter(s => s.id !== id));
-    setScore(s => {
-      const next = s + 10;
+    setScore(sc => {
+      const next = sc + 10;
       onRecord(next);
       return next;
     });
@@ -903,91 +1190,160 @@ const ts = StyleSheet.create({
   area: { width: "100%", borderRadius: 12, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", position: "relative", overflow: "hidden", alignItems: "center", justifyContent: "center" },
   star: { position: "absolute", width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   starIcon: { fontSize: 24 },
-  placeholder: { color: "rgba(255,255,255,0.15)", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  placeholder: { color: "#aaa", fontSize: 12, fontFamily: "Poppins_400Regular" },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 9. REVERSE SEQUENCE
+// 9. REVERSE SEQUENCE — 3 lives, auto-advance, dot lives + bottom End/Clear row
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ReverseSequence({ addScore, onRecord }: {
   addScore: (g: string, p: number) => void;
   onRecord: (pts: number) => void;
 }) {
+  const [phase, setPhase] = useState<"idle" | "show" | "input" | "feedback" | "over">("idle");
   const [seq, setSeq] = useState<number[]>([]);
   const [input, setInput] = useState<number[]>([]);
-  const [phase, setPhase] = useState<"idle" | "show" | "input" | "result">("idle");
-  const [correct, setCorrect] = useState(false);
   const [level, setLevel] = useState(4);
+  const [lives, setLives] = useState(3);
+  const [correct, setCorrect] = useState(false);
   const [sessionBest, setSessionBest] = useState(0);
+  const [levelBanner, setLevelBanner] = useState("");
+
+  const beginLevel = (lvl: number, banner?: string) => {
+    const s2 = generateSeq(lvl); setSeq(s2); setInput([]); setCorrect(false);
+    if (banner) setLevelBanner(banner);
+    setPhase("show");
+    setTimeout(() => { setLevelBanner(""); setPhase("input"); }, 3000);
+  };
 
   const start = () => {
-    const s = generateSeq(level); setSeq(s); setInput([]); setCorrect(false);
-    setPhase("show");
-    setTimeout(() => setPhase("input"), 3000);
+    setLives(3); setSessionBest(0); setLevel(4);
+    beginLevel(4);
+  };
+
+  const endGame = (finalScore: number) => {
+    if (finalScore > 0) onRecord(finalScore);
+    setPhase("over");
   };
 
   const tap = (n: number) => {
+    if (phase !== "input") return;
     const next = [...input, n]; setInput(next);
     if (next.length === seq.length) {
       const rev = [...seq].reverse();
       const ok = next.every((v, i) => v === rev[i]);
-      setCorrect(ok); setPhase("result");
+      setCorrect(ok); setPhase("feedback");
       if (ok) {
         const pts = level * 15;
         addScore("Reverse Seq", pts);
-        const newBest = Math.max(sessionBest, pts);
+        // Same fix as Memory Boost: sum every level cleared this run, not
+        // just the max of a single level's points.
+        const newBest = sessionBest + pts;
         setSessionBest(newBest);
-        onRecord(newBest);
-        setLevel(l => Math.min(l + 1, 7));
-      } else { setLevel(l => Math.max(l - 1, 3)); }
+        const nextLvl = Math.min(level + 1, 8);
+        setTimeout(() => { setLevel(nextLvl); beginLevel(nextLvl, `Level ${nextLvl - 3}`); }, 900);
+      } else {
+        const remaining = lives - 1;
+        setLives(remaining);
+        if (remaining <= 0) {
+          setTimeout(() => endGame(sessionBest), 900);
+        } else {
+          setTimeout(() => beginLevel(level), 900);
+        }
+      }
     }
   };
 
+  const clearInput = () => setInput([]);
   const reversed = [...seq].reverse();
 
   return (
     <View style={ex.wrap}>
       {phase === "idle" && (
         <>
-          <Text style={mg.title}>Enter sequence in REVERSE</Text>
-          <Text style={mg.sub}>3 seconds to memorize</Text>
-          <View style={{ height: 12 }} />
+          <Text style={mg.title}>Enter the sequence in REVERSE</Text>
+          <Text style={mg.sub}>3 lives · 3 seconds to memorize</Text>
+          <View style={{ height: 20 }} />
           <TouchableOpacity style={btn.root} onPress={start}>
-            <Text style={btn.text}>Level {level - 3 + 1} · {level} digits</Text>
+            <Ionicons name="play" size={14} color="#fff" />
+            <Text style={btn.text}>Start</Text>
           </TouchableOpacity>
         </>
       )}
-      {phase === "show" && (
+
+      {(phase === "show" || phase === "input" || phase === "feedback") && (
         <>
-          <Text style={mg.title}>Memorize (Enter backwards!)</Text>
-          <View style={mg.seqRow}>{seq.map((n, i) => <View key={i} style={mg.seqNum}><Text style={mg.seqNumText}>{n}</Text></View>)}</View>
-        </>
-      )}
-      {phase === "input" && (
-        <>
-          <Text style={mg.title}>Type it backwards ←</Text>
-          <View style={mg.seqRow}>
-            {Array.from({ length: seq.length }, (_, i) => (
-              <View key={i} style={[mg.seqNum, mg.inputSlot, input[i] !== undefined && mg.inputFilled]}>
-                <Text style={mg.seqNumText}>{input[i] ?? "?"}</Text>
-              </View>
-            ))}
+          <View style={mg.statusRow}>
+            <LivesDots lives={lives} />
           </View>
-          <View style={mg.numpad}>
-            {[1,2,3,4,5,6,7,8,9].map(n => (
-              <TouchableOpacity key={n} style={mg.numKey} onPress={() => tap(n)}>
-                <Text style={mg.numKeyText}>{n}</Text>
+          {levelBanner ? <Text style={mg.levelBanner}>{levelBanner}</Text> : null}
+
+          {phase === "show" && (
+            <>
+              <Text style={mg.title}>Memorize (enter backwards!)</Text>
+              <View style={mg.seqRow}>{seq.map((n, i) => <View key={i} style={mg.seqNum}><Text style={mg.seqNumText}>{n}</Text></View>)}</View>
+              <TouchableOpacity style={[mg.endBtnBottom, { marginTop: 14 }]} onPress={() => endGame(sessionBest)} activeOpacity={0.8}>
+                
+                <Text style={mg.endBtnBottomText}>End</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </>
+          )}
+
+          {phase === "input" && (
+            <>
+              <Text style={mg.title}>Type it backwards ←</Text>
+              <View style={mg.seqRow}>
+                {Array.from({ length: seq.length }, (_, i) => (
+                  <View key={i} style={[mg.seqNum, mg.inputSlot, input[i] !== undefined && mg.inputFilled]}>
+                    <Text style={mg.seqNumText}>{input[i] ?? "?"}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={mg.numpad}>
+                {[1,2,3,4,5,6,7,8,9].map(n => (
+                  <TouchableOpacity key={n} style={mg.numKey} onPress={() => tap(n)}>
+                    <Text style={mg.numKeyText}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={mg.bottomRow}>
+                <TouchableOpacity style={mg.endBtnBottom} onPress={() => endGame(sessionBest)} activeOpacity={0.8}>
+                  
+                  <Text style={mg.endBtnBottomText}>End</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={mg.clearBtn} onPress={clearInput} activeOpacity={0.8}>
+                  <Ionicons name="backspace-outline" size={14} color="rgba(255,255,255,0.6)" />
+                  <Text style={mg.clearBtnText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {phase === "feedback" && (
+            <>
+              <Text style={[mg.resultText, { color: correct ? "#4ade80" : "#f87171" }]}>
+                {correct ? "Reversed!" : "Wrong"}
+              </Text>
+              <View style={mg.seqRow}>{reversed.map((n, i) => <View key={i} style={mg.seqNum}><Text style={mg.seqNumText}>{n}</Text></View>)}</View>
+              <TouchableOpacity style={[mg.endBtnBottom, { marginTop: 6 }]} onPress={() => endGame(sessionBest)} activeOpacity={0.8}>
+                
+                <Text style={mg.endBtnBottomText}>End</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </>
       )}
-      {phase === "result" && (
+
+      {phase === "over" && (
         <>
-          <Text style={[mg.resultText, { color: correct ? "#4ade80" : "#f87171" }]}>{correct ? "✓ Reversed!" : "✗ Wrong"}</Text>
-          <View style={mg.seqRow}>{reversed.map((n, i) => <View key={i} style={mg.seqNum}><Text style={mg.seqNumText}>{n}</Text></View>)}</View>
-          <TouchableOpacity style={btn.root} onPress={start}><Text style={btn.text}>{correct ? "Next" : "Retry"}</Text></TouchableOpacity>
+          <Text style={[mg.resultText, { color: "#f87171" }]}>Session Complete</Text>
+          <Text style={mg.sub}>Total this round: {sessionBest} pts</Text>
+          <View style={{ height: 12 }} />
+          <TouchableOpacity style={btn.root} onPress={start}>
+            <Ionicons name="play" size={14} color="#fff" />
+            <Text style={btn.text}>Start</Text>
+          </TouchableOpacity>
         </>
       )}
     </View>
@@ -995,7 +1351,7 @@ function ReverseSequence({ addScore, onRecord }: {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 10. GRATITUDE MATCH
+// 10. GRATITUDE MATCH — 10 wrong attempts allowed before game over
 // ══════════════════════════════════════════════════════════════════════════════
 
 const GRATITUDE_WORDS = ["Hope", "Joy", "Peace", "Gratitude", "Love", "Kindness", "Calm", "Growth"];
@@ -1010,8 +1366,11 @@ function GratitudeMatch({ addScore, onRecord }: {
   const [cards, setCards] = useState<GCard[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
   const [won, setWon] = useState(false);
+  const [lost, setLost] = useState(false);
   const lockRef = useRef(false);
+  const MAX_WRONG = 10;
 
   const init = () => {
     const pairs: GCard[] = [];
@@ -1020,13 +1379,13 @@ function GratitudeMatch({ addScore, onRecord }: {
       pairs.push({ id: i * 2 + 1, word: w, color: GRATITUDE_COLORS[i], flipped: false, matched: false });
     });
     setCards(pairs.sort(() => Math.random() - 0.5));
-    setSelected([]); setMoves(0); setWon(false); lockRef.current = false;
+    setSelected([]); setMoves(0); setWrongAttempts(0); setWon(false); setLost(false); lockRef.current = false;
   };
 
   useEffect(() => { init(); }, []);
 
   const tap = (id: number) => {
-    if (lockRef.current) return;
+    if (lockRef.current || lost || won) return;
     const card = cards.find(c => c.id === id);
     if (!card || card.flipped || card.matched) return;
     const newCards = cards.map(c => c.id === id ? { ...c, flipped: true } : c);
@@ -1048,10 +1407,15 @@ function GratitudeMatch({ addScore, onRecord }: {
           onRecord(pts);
         }
       } else {
+        const attempts = wrongAttempts + 1;
+        setWrongAttempts(attempts);
         setTimeout(() => {
           setCards(prev => prev.map(c => newSel.includes(c.id) ? { ...c, flipped: false } : c));
           setSelected([]);
           lockRef.current = false;
+          if (attempts >= MAX_WRONG) {
+            setLost(true);
+          }
         }, 900);
       }
     } else { setSelected(newSel); }
@@ -1059,8 +1423,7 @@ function GratitudeMatch({ addScore, onRecord }: {
 
   return (
     <View style={ex.wrap}>
-      <Text style={s.titleText}>Gratitude Practice</Text>
-      <Text style={s.desText}>Find the matching word pairs hidden in the cards.</Text>
+    
       {won ? (
         <>
           <Text style={[mg.resultText, { color: "#4ade80" }]}>🎉 All Matched!</Text>
@@ -1068,9 +1431,21 @@ function GratitudeMatch({ addScore, onRecord }: {
           <View style={{ height: 12 }} />
           <TouchableOpacity style={btn.root} onPress={init}><Text style={btn.text}>Play Again</Text></TouchableOpacity>
         </>
+      ) : lost ? (
+        <>
+          <Text style={[mg.resultText, { color: "#f87171" }]}>Game Over</Text>
+          <Text style={mg.sub}>Too many mismatches — try again</Text>
+          <View style={{ height: 12 }} />
+          <TouchableOpacity style={btn.root} onPress={init}><Text style={btn.text}>Play Again</Text></TouchableOpacity>
+        </>
       ) : (
         <>
-          <Text style={gm.moves}>{moves} moves</Text>
+          <Text style={s.titleText}>Gratitude Practice</Text>
+      <Text style={s.desText}>Find the matching word pairs hidden in the cards.</Text>
+          <View style={[mg.statusRow, {justifyContent: 'space-between', width: '80%'}]}>
+            <Text style={gm.moves}>{moves} moves</Text>
+            <Text style={gm.attemptsLeft}>{MAX_WRONG - wrongAttempts} attempts left</Text>
+          </View>
           <View style={gm.grid}>
             {cards.map(card => (
               <TouchableOpacity key={card.id} style={[gm.card,
@@ -1090,7 +1465,8 @@ function GratitudeMatch({ addScore, onRecord }: {
 }
 
 const gm = StyleSheet.create({
-  moves: { color: "rgba(255,255,255,0.3)", fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 15 },
+  moves: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  attemptsLeft: { color: "rgba(248,113,113,0.7)", fontSize: 12, fontFamily: "Poppins_400Regular" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 7, justifyContent: "center", width: width - 80 },
   card: { width: (width - 80 - 35) / 4, height: 55, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   cardText: { fontSize: 8.5, fontFamily: "Poppins_500Medium", textAlign: "center" },
@@ -1100,35 +1476,35 @@ const gm = StyleSheet.create({
 // ─── SHARED EXERCISE WRAPPER STYLES ──────────────────────────────────────────
 
 const ex = StyleSheet.create({
-  wrap: { alignItems: "center", flex: 1, justifyContent: "center", marginBottom: 80 },
+  wrap: { alignItems: "center", flex: 1, justifyContent: "center", marginBottom: 100 },
   circleArea: { width: 160, height: 160, alignItems: "center", justifyContent: "center", marginBottom: 10, marginTop: 15 },
   glow: { position: "absolute", width: 160, height: 160, borderRadius: 80 },
   circle: { width: 100, height: 100, borderRadius: 50, overflow: "hidden", zIndex: 2 },
   circleGrad: { flex: 1 },
   circleRing: { position: "absolute", width: 145, height: 145, borderRadius: 72.5, borderWidth: 1.5, borderColor: "rgba(74,222,128,0.18)", zIndex: 1 },
   phaseText: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium" },
-  tipText: { color: "rgba(255,255,255,0.3)", fontSize: 12, fontFamily: "Poppins_400Regular", marginTop: 5, letterSpacing: 0.5 },
+  tipText: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", marginTop: 5, letterSpacing: 0.5 },
   countOverlay: { position: "absolute", zIndex: 3, alignItems: "center", justifyContent: "center" },
-  countText: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium" },
+  countText: { color: "#fff", fontSize: 20, fontFamily: "Poppins_400Regular" },
   modeRow: { flexDirection: "row", gap: 15 },
   modePill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.04)" },
   modePillActive: { backgroundColor: "#004927", borderColor: "rgba(74,222,128,0.3)" },
-  modePillText: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "Poppins_400Regular" },
-  modePillTextActive: { color: "#fff", fontFamily: "Poppins_500Medium" },
+  modePillText: { color: "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "Poppins_400Regular" },
+  modePillTextActive: { color: "#fff", fontFamily: "Poppins_400Regular" },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SCOREBOARD MODAL
+// SCOREBOARD MODAL — BlurView removed, plain View with matching dark theme
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ScoreboardModal({ visible, onClose, scores, totalScore }: { visible: boolean; onClose: () => void; scores: ScoreEntry[]; totalScore: number }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={sm.overlay}>
-        <BlurView intensity={60} tint="dark" style={sm.sheet}>
+        <View style={sm.sheet}>
           <View style={sm.header}>
             <Text style={sm.headerTitle}>🏆 Scoreboard</Text>
-            <TouchableOpacity onPress={onClose}><Ionicons name="close" size={20} color="rgba(255,255,255,0.4)" /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Ionicons name="close" size={20} color="#999" /></TouchableOpacity>
           </View>
           <View style={sm.totalWrap}>
             <Text style={sm.totalNum}>{totalScore}</Text>
@@ -1148,7 +1524,7 @@ function ScoreboardModal({ visible, onClose, scores, totalScore }: { visible: bo
             )}
             ListEmptyComponent={<Text style={sm.empty}>No scores yet. Play a game!</Text>}
           />
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -1156,18 +1532,23 @@ function ScoreboardModal({ visible, onClose, scores, totalScore }: { visible: bo
 
 const sm = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
-  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: "hidden", paddingHorizontal: 20, paddingBottom: 30, paddingTop: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
+  sheet: {
+    borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: "hidden",
+    paddingHorizontal: 20, paddingBottom: 30, paddingTop: 20,
+    backgroundColor: "rgba(5,15,10,0.97)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.07)",
+  },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
-  headerTitle: { color: "#fff", fontSize: 18, fontFamily: "Poppins_500Medium", fontWeight: "700" },
+  headerTitle: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium", },
   totalWrap: { alignItems: "center", marginBottom: 18 },
-  totalNum: { color: "#4ade80", fontSize: 44, fontFamily: "Poppins_500Medium", fontWeight: "700", lineHeight: 50 },
-  totalLabel: { color: "rgba(255,255,255,0.3)", fontSize: 11, fontFamily: "Poppins_400Regular" },
+  totalNum: { color: "#4ade80", fontSize: 44, fontFamily: "Poppins_500Medium",  lineHeight: 50 },
+  totalLabel: { color: "#aaa", fontSize: 11, fontFamily: "Poppins_400Regular" },
   row: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
-  rank: { color: "rgba(255,255,255,0.25)", fontSize: 11, fontFamily: "Poppins_400Regular", width: 24 },
-  game: { flex: 1, color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Poppins_400Regular" },
-  pts: { color: "#4ade80", fontSize: 14, fontFamily: "Poppins_500Medium", fontWeight: "700" },
-  time: { color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "Poppins_400Regular" },
-  empty: { color: "rgba(255,255,255,0.25)", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center", marginVertical: 20 },
+  rank: { color: "#555", fontSize: 11, fontFamily: "Poppins_400Regular", width: 24 },
+  game: { flex: 1, color: "#aaa", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  pts: { color: "#4ade80", fontSize: 14, fontFamily: "Poppins_500Medium"},
+  time: { color: "#555", fontSize: 10, fontFamily: "Poppins_400Regular" },
+  empty: { color: "#555", fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center", marginVertical: 20 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1189,13 +1570,12 @@ export default function Meditation({ route }: any) {
 
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
   const { scores, totalScore, addScore } = useScoreStore();
-  const { todayScores, prevScores, recordScore } = useGameScores();
+  const { recordScore, getHighest } = useGameScores();
   useScreenTimeTracker();
 
   const isScoreTab = SCORE_TABS.has(activeTab);
   const gameKey = activeTab as GameKey;
-  const todayVal = isScoreTab ? (todayScores[gameKey] ?? 0) : null;
-  const prevVal  = isScoreTab ? (prevScores[gameKey] ?? null) : null;
+  const highestVal = isScoreTab ? getHighest(gameKey) : 0;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1219,24 +1599,16 @@ export default function Meditation({ route }: any) {
         <LinearGradient colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.93)"]} style={StyleSheet.absoluteFill} />
         <View style={s.glowTop} />
         <View style={s.glowBottom} />
-        <View style={[s.screen, { paddingTop: 20 }]}>
+        <View style={[s.screen, { paddingTop: 40 }]}>
 
           <View style={s.headerRow}>
             <Text style={s.pageTitle}>Exercises</Text>
             <View style={s.headerRight}>
               {isScoreTab && (
-                <>
-                  <View style={s.scorePillWrap}>
-                    <Text style={s.scorePillLabel}>Highest</Text>
-                    <Text style={s.scorePillNum}>{todayVal}</Text>
-                  </View>
-                  {/* {prevVal != null && prevVal > 0 && (
-                    <View style={[s.scorePillWrap, s.scorePillPrev]}>
-                      <Text style={[s.scorePillLabel, s.scorePillLabelPrev]}>BEST</Text>
-                      <Text style={[s.scorePillNum, s.scorePillNumPrev]}>{prevVal}</Text>
-                    </View>
-                  )} */}
-                </>
+                <View style={s.scorePillWrap}>
+                  <Text style={s.scorePillLabel}>Highest</Text>
+                  <Text style={s.scorePillNum}>{highestVal}</Text>
+                </View>
               )}
               <TouchableOpacity style={s.scoreBadge} onPress={() => setScoreboardOpen(true)} activeOpacity={0.8}>
                 <Ionicons name="trophy-outline" size={14} color="#facc15" />
@@ -1268,22 +1640,22 @@ export default function Meditation({ route }: any) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#050f09" },
-  bg: { flex: 1 },
+  bg: { flex: 1, height: "100%", width: "100%" },
   glowTop: { position: "absolute", top: -80, left: -60, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none" },
   glowBottom: { position: "absolute", bottom: -60, right: -40, width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(0,73,39,0.12)", pointerEvents: "none" },
-  screen: { flex: 1, paddingHorizontal: 20 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  screen: { flex: 1, paddingHorizontal: 20, paddingBottom: 10 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 15 },
   pageTitle: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium" },
   scoreBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(250,204,21,0.12)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: "rgba(250,204,21,0.2)" },
-  titleText: { fontSize: 20, color: "#fff", fontFamily: "Poppins_500Medium", marginBottom: 10 },
-  desText: { fontSize: 12, color: "#fff", fontFamily: "Poppins_400Regular", textAlign: "center", marginBottom: 30 },
+  titleText: { fontSize: 20, color: "#fff", fontFamily: "Poppins_500Medium", marginBottom: 5 },
+  desText: { fontSize: 12, color: "#999", fontFamily: "Poppins_400Regular", textAlign: "center", marginBottom: 30 },
   scoreNum: { color: "#facc15", fontSize: 14, fontFamily: "Poppins_500Medium", fontWeight: "700" },
   tabScroll: { flexGrow: 0, marginBottom: 14 },
   tabRow: { alignItems: "center", gap: 15, paddingRight: 4 },
-  tab: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.04)" },
-  tabActive: { backgroundColor: "#004927", borderColor: "rgba(74,222,128,0.28)", shadowColor: "#004927", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 6 },
-  tabText: { color: "rgba(255,255,255,0.38)", fontSize: 11, fontFamily: "Poppins_400Regular" },
-  tabTextActive: { color: "#fff", fontFamily: "Poppins_500Medium" },
+  tab: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(0, 26, 17, 0.53)", },
+  tabActive: { backgroundColor: "#004927", borderColor: "rgba(74,222,128,0.3)", shadowColor: "#004927", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 6 },
+  tabText: { color: "#999", fontSize: 11, fontFamily: "Poppins_400Regular" },
+  tabTextActive: { color: "#fff", fontFamily: "Poppins_400Regular" },
   content: { flex: 1 },
   headerRight: {
     flexDirection: "row", alignItems: "center", gap: 15,
@@ -1295,20 +1667,13 @@ const s = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 1, borderColor: "rgba(74,222,128,0.25)",
     flexDirection: "row", gap: 5,
-
-  },
-  scorePillPrev: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: "rgba(255,255,255,0.1)",
   },
   scorePillLabel: {
     color: "rgba(74,222,128,0.7)", fontSize: 7,
     fontFamily: "Poppins_400Regular", letterSpacing: 0.7,
   },
-  scorePillLabelPrev: { color: "rgba(255,255,255,0.3)" },
   scorePillNum: {
     color: "#4ade80", fontSize: 15,
     fontFamily: "Poppins_500Medium", fontWeight: "700",
   },
-  scorePillNumPrev: { color: "rgba(255,255,255,0.45)" },
 });

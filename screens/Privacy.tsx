@@ -76,7 +76,7 @@ const Privacy = () => {
                 <View style={styles.glowTop} />
                 <View style={styles.overlay}>
 
-        <BlurView intensity={50} tint="dark" style={styles.card}>
+        <View style={styles.card}>
 
           <Text style={styles.title}>
             Privacy & Emotional Safety
@@ -99,7 +99,7 @@ const Privacy = () => {
             />
           </View>
 
-        </BlurView>
+        </View>
 
       </View>
     </ImageBackground>
@@ -127,8 +127,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 15,
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+   backgroundColor: "rgba(0, 26, 17, 0.50)",
   },
 
   title: {

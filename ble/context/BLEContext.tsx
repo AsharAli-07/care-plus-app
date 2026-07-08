@@ -3,17 +3,19 @@ import { Alert, Platform, NativeModules } from 'react-native';
 import { BleManager, Device } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BASE_URL } from '../../api';
 
 import { AvailableDevice, WatchData } from '../types';
-import { SERVICE_UUID, CHAR_UUID, TIME_SYNC_UUID, SPO2_BUFFER_SIZE } from '../constants';
+import { SERVICE_UUID, CHAR_UUID, TIME_SYNC_UUID, SPO2_BUFFER_SIZE,  MOVEMENT_DB_VALUES } from '../constants';
 import { requestBluetoothPermissions } from '../utils/permissions';
 import { parseWatchData } from '../utils/parser';
 import { calculateSpO2 } from '../utils/calculate_spo2';
+// import { SERVICE_UUID, CHAR_UUID, TIME_SYNC_UUID, SPO2_BUFFER_SIZE, MOVEMENT_DB_VALUES } from '../constants';
 
-// ─── Native Module for Foreground Service ─────────────────────────────────────
 const { BLEForegroundService } = NativeModules;
 
-// ─── Context Types ────────────────────────────────────────────────────────────
 interface BLEContextType {
   isScanning: boolean;
   isConnected: boolean;
@@ -46,12 +48,16 @@ const BLEContext = createContext<BLEContextType>({
   disconnect: () => { },
 });
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
 export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [availableDevices, setAvailableDevices] = useState<AvailableDevice[]>([]);
   const [watchData, setWatchData] = useState<WatchData>(defaultWatchData);
+  const SAVE_INTERVAL_MS = 60000;
+  const SIGNIFICANT_HR_DELTA = 15;
+  const SIGNIFICANT_SPO2_DELTA = 3;
+  const lastSavedRef = useRef<WatchData | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
 
   const managerRef = useRef<BleManager | null>(null);
   const deviceRef = useRef<Device | null>(null);
@@ -63,7 +69,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const lastUpdateRef = useRef<number>(0);
   const latestWatchDataRef = useRef<WatchData>(defaultWatchData);
 
-  // ── Start / Stop Foreground Service (Android only) ────────────────────────
   const startForegroundService = async () => {
     if (Platform.OS === 'android' && BLEForegroundService) {
       try {
@@ -74,6 +79,38 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
   };
+
+const shouldSaveNow = () => {
+  return Date.now() - lastSaveTimeRef.current >= SAVE_INTERVAL_MS;
+};
+
+const saveVitalsToBackend = async (data: WatchData) => {
+  if (data.heartRate === "--" || data.spo2 === "--" || data.temperature === "--") return;
+
+  try {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) return;
+
+    const movementValue = data.watchStatus && MOVEMENT_DB_VALUES[data.watchStatus]
+      ? MOVEMENT_DB_VALUES[data.watchStatus]
+      : "still";
+
+    await axios.post(
+      `${BASE_URL}/health-monitoring`,
+      {
+        heart_rate_bpm: Math.round(parseFloat(data.heartRate)),
+        temperature_fahrenheit: parseFloat(data.temperature),
+        blood_oxygen_percent: Math.round(parseFloat(data.spo2)),
+        movement: movementValue,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    lastSaveTimeRef.current = Date.now();
+  } catch (err) {
+    console.log("Vitals save error:", err);
+  }
+};
 
   const stopForegroundService = async () => {
     if (Platform.OS === 'android' && BLEForegroundService) {
@@ -86,7 +123,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // ── Initialize BLE Manager (once, at App root mount) ──────────────────────
   useEffect(() => {
     managerRef.current = new BleManager();
     return () => {
@@ -97,7 +133,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // ── Scan ──────────────────────────────────────────────────────────────────
   const scanForDevices = async () => {
     if (!managerRef.current) return;
 
@@ -156,7 +191,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 10000);
   };
 
-  // ── Connect ───────────────────────────────────────────────────────────────
   const connectToDevice = async (device: Device) => {
     if (!managerRef.current) return;
 
@@ -173,7 +207,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deviceRef.current = connectedDevice;
       setIsConnected(true);
 
-      // Start foreground service to keep connection alive
       await startForegroundService();
 
       connectedDevice.onDisconnected(() => {
@@ -211,7 +244,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       );
-
     } catch (error) {
       console.log("Connection failed:", error);
       Alert.alert("Connection Failed", "Could not connect to the watch. Please try again.");
@@ -220,7 +252,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // ── Process Data ──────────────────────────────────────────────────────────
   const processIncomingData = (rawData: string) => {
     const parsed = parseWatchData(rawData) as any;
     if (!parsed) return;
@@ -262,16 +293,17 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     latestWatchDataRef.current = newWatchData;
 
-    // Trigger state update every 1 second
     const now = Date.now();
     if (now - lastUpdateRef.current >= 1000) {
       setWatchData(newWatchData);
       lastUpdateRef.current = now;
-      console.log("Live Watch JSON Updated:", JSON.stringify(newWatchData));
     }
+
+if (shouldSaveNow()) {
+  saveVitalsToBackend(newWatchData);
+}
   };
 
-  // ── Time Sync ─────────────────────────────────────────────────────────────
   const sendTimeSync = async (device: Device) => {
     try {
       const now = new Date();
@@ -295,7 +327,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // ── Disconnect ────────────────────────────────────────────────────────────
   const disconnect = () => {
     if (deviceRef.current) {
       deviceRef.current.cancelConnection().catch(() => { });
@@ -323,5 +354,6 @@ export const BLEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
-// ─── Hook to consume BLE context ────────────────────────────────────────────
-export const useBLEContext = () => useContext(BLEContext);
+export const useBLE = () => useContext(BLEContext);
+// Alias — other screens (Therapy.tsx, ConnectWatch.tsx) import `useBLEContext`.
+export const useBLEContext = useBLE;

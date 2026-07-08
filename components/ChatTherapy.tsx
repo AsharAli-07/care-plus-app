@@ -128,7 +128,7 @@ const ChatTherapy = ({ navigation, route }: any) => {
       try {
         const openingPrompt = session
           ? `You are greeting the user for their booked session: "${session.title}". Acknowledge the session topic warmly, mention you've reviewed their latest wellness data, and ask one gentle opening question. Keep it to 2-3 sentences.`
-          : `Introduce yourself as Sera. Mention you have access to the user's wellness data and you're ready to support them. Ask one caring open question about how they're feeling. Keep it to 2-3 warm sentences.`;
+          : `Introduce yourself as Sera. Mention you're ready to support them. Ask one caring open question about how they're feeling. Keep it to 2-3 warm sentences.`;
 
         const reply = await callSera(
           [{ role: "user", content: openingPrompt }],
@@ -146,7 +146,7 @@ const ChatTherapy = ({ navigation, route }: any) => {
         setMessages([{
           id: "0",
           role: "assistant",
-          content: "Hi, I'm Sera 🌿 I'm here to support you and I have access to your wellness data to give you personalised help. How are you feeling right now?",
+          content: "Hi, I'm Sera 🌿 I'm here to support you and I will give you personalised help. How are you feeling right now?",
           timestamp: new Date(),
         }]);
         setSessionStarted(true);
@@ -238,7 +238,7 @@ const ChatTherapy = ({ navigation, route }: any) => {
       <StatusBar barStyle="light-content" />
       <ImageBackground
         source={require("../assets/images/home-bg.jpg")}
-        style={{ flex: 1 }}
+        style={{ flex: 1, height: '100%', width: '100%' }}
         resizeMode="cover"
       >
         <LinearGradient
@@ -248,7 +248,8 @@ const ChatTherapy = ({ navigation, route }: any) => {
         <View style={styles.glowTop} />
 
         {/* Header */}
-<BlurView intensity={50} tint="dark" style={styles.chatHeader}>
+<View style={styles.chatHeader}>
+  <View style={{flexDirection: 'row'}}>
   <TouchableOpacity onPress={endSession} style={styles.backBtn}>
     <Ionicons name="chevron-back" size={20} color="#fff" />
   </TouchableOpacity>
@@ -257,24 +258,29 @@ const ChatTherapy = ({ navigation, route }: any) => {
     <View style={styles.seraAvatarLarge}>
       <Ionicons name="sparkles" size={14} color="#4ade80" />
     </View>
-    <View>
-      <Text style={styles.seraName}>Sera · AI Companion</Text>
-      <View style={styles.onlineRow}>
+    <View style={{gap: 10}}>
+      
+      <View >
+        <Text style={styles.seraName}>Sera · AI Companion</Text>
+        <View style={styles.onlineRow}>
         <View style={styles.onlineDot} />
         <Text style={styles.onlineText}>
           Data-aware · Always available
         </Text>
+        </View>
       </View>
-    </View>
-  </View>
-
-  {session && (
+ {session && (
     <View style={styles.sessionPill}>
       <Ionicons name="bookmark-outline" size={10} color="#4ade80" />
       <Text style={styles.sessionPillText}>{session.title}</Text>
     </View>
   )}
-</BlurView>
+    </View>
+  </View>
+
+</View>
+ 
+</View>
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -285,13 +291,13 @@ const ChatTherapy = ({ navigation, route }: any) => {
           <ScrollView
             ref={scrollRef}
             style={styles.messageList}
-            contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 15, paddingBottom: 15 }}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={scrollToEnd}
           >
             {/* Privacy mode notice */}
             <View style={styles.privacyNotice}>
-              <Ionicons name="lock-closed-outline" size={10} color="#555" />
+              <Ionicons name="lock-closed-outline" size={10} color="#aaa" />
               <Text style={styles.privacyNoticeText}>
                 Sera has access to your wellness data. If Privacy Mode is on, sensitive data is hidden.
               </Text>
@@ -332,7 +338,7 @@ const ChatTherapy = ({ navigation, route }: any) => {
           )}
 
           {/* Input bar */}
-          <BlurView intensity={50} tint="dark" style={styles.inputBar}>
+          <View style={styles.inputBar}>
             <TextInput
               style={styles.textInput}
               value={input}
@@ -353,7 +359,7 @@ const ChatTherapy = ({ navigation, route }: any) => {
                 : <Ionicons name="send" size={14} color="#4ade80" />
               }
             </TouchableOpacity>
-          </BlurView>
+          </View>
         </KeyboardAvoidingView>
       </ImageBackground>
     </View>
@@ -369,20 +375,21 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none",
   },
 chatHeader: {
-  paddingTop: Platform.OS === "ios" ? 54 : 10,
-  paddingBottom: 10,
+  paddingTop: 40,
+  paddingBottom: 15,
   paddingHorizontal: 10,
   borderBottomWidth: 1,
   borderBottomColor: "rgba(74,222,128,0.1)",
-  alignItems: "center",
+ 
   justifyContent: "center",
   gap: 10,
+
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
 },
 
 backBtn: {
-  position: "absolute",
-  left: 0,
-  top: Platform.OS === "ios" ? 54 : 10,
+
+
   height: 34,
   width: 34,
   justifyContent: "center",
@@ -391,7 +398,7 @@ backBtn: {
 
 seraInfo: {
   flexDirection: "row",
-  alignItems: "center",
+
   gap: 10,
 },
 
@@ -423,12 +430,12 @@ seraAvatarLarge: {
   privacyNotice: {
     flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: "rgba(255,255,255,0.03)",
-    borderRadius: 8, padding: 8, marginBottom: 12,
+    borderRadius: 8, padding: 8, marginBottom: 15,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
   },
-  privacyNoticeText: { color: "#444", fontFamily: "Poppins_400Regular", fontSize: 9, flex: 1 },
+  privacyNoticeText: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 9, flex: 1 },
 
-  bubbleRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 12, gap: 8 },
+  bubbleRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 12, gap: 8, },
   bubbleRowUser: { flexDirection: "row-reverse" },
   seraAvatar: {
     width: 26, height: 26, borderRadius: 13,
@@ -438,12 +445,13 @@ seraAvatarLarge: {
   },
   bubble: { maxWidth: "78%", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
   bubbleAssistant: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: 1, borderColor: "rgba(74,222,128,0.15)",
-    borderBottomLeftRadius: 4,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
-  bubbleUser: { backgroundColor: "#004927", borderBottomRightRadius: 4 },
-  bubbleText: { color: "#dde", fontFamily: "Poppins_400Regular", fontSize: 13, lineHeight: 20 },
+  bubbleUser: { backgroundColor: "#004927", borderBottomRightRadius: 4, shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  bubbleText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12, lineHeight: 20 },
   bubbleTextUser: { color: "#fff" },
   bubbleTime: { color: "#555", fontFamily: "Poppins_400Regular", fontSize: 9, marginTop: 5, textAlign: "right" },
 
@@ -456,21 +464,22 @@ seraAvatarLarge: {
     borderWidth: 1, borderColor: "rgba(74,222,128,0.3)",
     backgroundColor: "rgba(0,73,39,0.2)",
   },
-  quickPromptText: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 11 },
+  quickPromptText: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 10},
 
   inputBar: {
     flexDirection: "row", alignItems: "flex-end",
-    paddingHorizontal: 14, paddingTop: 10, paddingBottom: Platform.OS === "ios" ? 30 : 12,
-    borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)", gap: 10,
+    paddingHorizontal: 20, paddingTop: 15, paddingBottom: 30,
+    borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)", gap: 10, 
   },
   textInput: {
     flex: 1, color: "#fff", fontFamily: "Poppins_400Regular",
-    fontSize: 13, maxHeight: 100, lineHeight: 20,
+    fontSize: 12, height: 50
   },
   sendBtn: {
     width: 34, height: 34, borderRadius: 10,
     backgroundColor: "rgba(74,222,128,0.1)",
     alignItems: "center", justifyContent: "center",
     borderColor: "rgba(74,222,128,0.3)", borderWidth: 1,
+    alignSelf: 'baseline'
   },
 });

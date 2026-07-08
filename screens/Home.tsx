@@ -24,17 +24,30 @@ import YoutubePlayer from "react-native-youtube-iframe";
 
 // 📦 Modular Interface Elements Imports
 import { HeaderSection, NotificationOverlay } from "../components/HeaderSection";
-import { MoodSection } from "../components/MoodSection";
 import { VitalSigns } from "../components/VitalSigns";
 import { useBLEContext } from '../ble';
 import { MetricsCharts } from "../components/MetricsCharts";
 import { SleepSuggestions } from "../components/SleepSuggestions";
-import { DailyQuestions } from "../components/DailyQuestions";
+import { DailyQuestions, DailyQuestion } from "../components/DailyQuestions";
 import { MotivationalSuggestions } from "../components/MotivationalSuggestions";
 import { FooterQuickActions } from "../components/FooterQuickActions";
+import { MoodSelector } from "../components/MoodSelector"
 
 
+// ─── Section Header ───────────────────────────────────────────────────────────
+export const SectionHeader = ({ label, icon, color = "#4ade80" }: any) => (
+  <View style={sh.row}>
+    <View style={[sh.bar, { backgroundColor: color }]} />
+    <Ionicons name={icon} size={14} color={color} />
+    <Text style={[sh.txt, { color }]}>{label}</Text>
+  </View>
+);
 
+const sh = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 15 },
+  bar: { width: 3, height: 16, borderRadius: 2 },
+  txt: { fontSize: 16, fontFamily: "Poppins_500Medium" },
+});
 
 
 type SleepItem = { thumbnail: string; title: string; audioUrl: string };
@@ -111,12 +124,31 @@ const sleepItems: SleepItem[] = [
   },
 ];
 
-const questions = [
-  "How many hours did you sleep today?",
-  "Do you feel stressed today?",
-  "Did you eat properly today?",
-  "How is your mood right now?",
-  "Do you feel anxious or calm?",
+// ─── Daily Check-In question bank ──────────────────────────────────────────
+// Options are ordered worst -> best; calculateDiagnosticResult() scores off
+// the selected option's position in this list, so edit freely as long as the
+// ordering stays worst-to-best.
+const dailyQuestions: DailyQuestion[] = [
+  {
+    text: "How many hours did you sleep last night?",
+    options: ["Less than 4h", "4–6h", "6–8h", "8h or more"],
+  },
+  {
+    text: "Did you drink enough water today?",
+    options: ["Not really", "A little", "Yes, plenty"],
+  },
+  {
+    text: "Did you eat properly today?",
+    options: ["No", "Partially", "Yes"],
+  },
+  {
+    text: "Do you feel stressed today?",
+    options: ["Very stressed", "A little stressed", "Not at all"],
+  },
+  {
+    text: "Do you feel anxious or calm?",
+    options: ["Very anxious", "Somewhat anxious", "Calm"],
+  },
 ];
 
 const videos: VideoItem[] = [
@@ -136,18 +168,140 @@ const formatTime = (sec: number): string => {
 export default function Home({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { isConnected, watchData } = useBLEContext();
+
+  
   const { width } = useWindowDimensions();
+  const [moodEmoji, setMoodEmoji] = useState<string | null>(null);
+  const [moodText, setMoodText] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // === Real wellness data, pulled from the same endpoint the Dashboard uses ===
+  const [wellness, setWellness] = useState<any>(null);
+
+  const loadWellnessData = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/wellness-dashboard`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data;
+      setWellness(data);
+      if (data?.mood) {
+        setMoodEmoji(data.mood.emoji ?? null);
+        setMoodText(data.mood.text ?? null);
+      }
+    } catch (err) {
+      console.log("Wellness Load Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+useEffect(() => {
+  // console.log("[Home] isConnected:", isConnected, "watchData:", watchData);
+}, [isConnected, watchData]);
+  useEffect(() => {
+    loadWellnessData();
+  }, []);
+
+// Home.tsx
+// const [lastVitals, setLastVitals] = useState<any>(null);
+
+// const loadLastVitals = async () => {
+//   try {
+//     const token = await AsyncStorage.getItem("token");
+//     const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
+//       headers: { Authorization: `Bearer ${token}` },
+//     });
+//     setLastVitals(res.data);
+//   } catch (err) {
+//     console.log("Last vitals load error:", err);
+//   }
+// };
+
+// useEffect(() => {
+//   loadLastVitals();
+//   const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
+//   return () => clearInterval(interval);
+// }, []);
+
+// const isLive = isConnected && watchData.heartRate !== "--";
+// const displayHeartRate = isLive ? watchData.heartRate : (lastVitals?.heart_rate_bpm != null ? String(lastVitals.heart_rate_bpm) : "--");
+// const displaySpo2      = isLive ? watchData.spo2      : (lastVitals?.blood_oxygen_percent != null ? String(lastVitals.blood_oxygen_percent) : "--");
+// const displayTemp      = isLive ? watchData.temperature : (lastVitals?.temperature_fahrenheit != null ? String(lastVitals.temperature_fahrenheit) : "--");
+// const vitalsLabel = isLive
+//   ? "Live"
+//   : lastVitals?.updated_at
+//     ? `Last seen ${new Date(lastVitals.uppdated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+//     : "No data yet";
+
+const [lastVitals, setLastVitals] = useState<any>(null);
+
+const loadLastVitals = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setLastVitals(res.data); // { heart_rate_bpm, temperature_celsius, blood_oxygen_percent, movement, recorded_at } or null
+  } catch (err) {
+    console.log("Last vitals load error:", err);
+  }
+};
+
+useEffect(() => {
+  loadLastVitals();
+  const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
+  return () => clearInterval(interval);
+}, []);
+
+const isLive = isConnected && watchData.heartRate !== "--";
+
+const displayHeartRate = isLive
+  ? watchData.heartRate
+  : lastVitals?.heart_rate_bpm != null
+  ? String(lastVitals.heart_rate_bpm)
+  : "--";
+
+const displaySpo2 = isLive
+  ? watchData.spo2
+  : lastVitals?.blood_oxygen_percent != null
+  ? String(lastVitals.blood_oxygen_percent)
+  : "--";
+
+const displayTemp = isLive
+  ? watchData.temperature // already °F from the watch firmware, per your earlier note
+  : lastVitals?.temperature_fahrenheit != null
+  ? String(lastVitals.temperature_fahrenheit)
+  : "--";
+
+const sensorSource: "live" | "last-known" | null = isLive
+  ? "live"
+  : lastVitals?.updated_at
+  ? "last-known"
+  : null;
+
+const lastUpdatedAt = lastVitals?.updated_at ?? null;
+
+
+
+
+
+
+  const foodPct = Math.min(100, Math.round(((wellness?.meals_count ?? 0) / 3) * 100));
+  const sleepPct = Math.min(100, Math.round(((wellness?.sleep_hours ?? 0) / 9) * 100));
+  const hydrationPct = Math.min(100, Math.round(((wellness?.water_intake ?? 0) / 3) * 100));
 
   // === Notification Core State System ===
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // === User Response State Engine ===
-  const [selected, setSelected] = useState(false);
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
 
   // === Diagnostics Survey Tracking State ===
-  const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(""));
+  // null = unanswered, otherwise the index of the selected option for that question
+  const [answers, setAnswers] = useState<(number | null)[]>(
+    Array(dailyQuestions.length).fill(null)
+  );
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
@@ -160,12 +314,8 @@ export default function Home({ navigation }: any) {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
   // === Dynamic Internal Layout Animations Refs ===
-  const textOpacity = useRef(new Animated.Value(1)).current;
-  const emojiOpacity = useRef(new Animated.Value(1)).current;
-  const responseOpacity = useRef(new Animated.Value(1)).current;
-  const startBtnOpacity = useRef(new Animated.Value(1)).current;
   const videoAnim = useRef(new Animated.Value(0)).current;
-  const animatedHeights = useRef(questions.map(() => new Animated.Value(0))).current;
+  const animatedHeights = useRef(dailyQuestions.map(() => new Animated.Value(0))).current;
 
   // === Audio Infrastructure Processing State Engine ===
   const [currentTrack, setCurrentTrack] = useState<AudioItem | null>(null);
@@ -174,7 +324,21 @@ export default function Home({ navigation }: any) {
   const [progress, setProgress] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
   const miniPlayerAnim = useRef(new Animated.Value(100)).current;
+  const moodMap: Record<string, string> = {
+    "😄": "Happy", "🙂": "Good", "😐": "Neutral", "😕": "Sad", "😔": "Very Sad",
+  };
 
+
+
+    const handleMoodPress = async (emoji: string | null) => {
+    if (!emoji) { setMoodEmoji(null); setMoodText(null); return; }
+    setMoodEmoji(emoji);
+    setMoodText(moodMap[emoji]);
+    try {
+      const token = await AsyncStorage.getItem("token");
+      await axios.post(`${BASE_URL}/mood`, { mood_emoji: emoji }, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) { console.log(err); }
+  };
   // --- Network Endpoint side-effects Operations ---
   const loadNotifications = async () => {
     try {
@@ -216,20 +380,7 @@ export default function Home({ navigation }: any) {
 
   const hasUnread = notifications.some((n) => n.read_status === 0);
 
-  const handleEmojiPress = async (item: string) => {
-    try {
-      setSelectedEmoji(item);
-      setSelected(true);
-      const token = await AsyncStorage.getItem("token");
-      await axios.post(
-        `${BASE_URL}/mood`,
-        { mood_emoji: item },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  };
+
 
   // --- Like Toggle ---
   const toggleLike = (id: string) => {
@@ -256,28 +407,34 @@ export default function Home({ navigation }: any) {
     });
   };
 
-  const handleUpdateAnswer = (text: string, index: number) => {
-    const updated = [...answers];
-    updated[index] = text;
-    setAnswers(updated);
+  const handleSelectOption = (questionIndex: number, optionIndex: number) => {
+    setAnswers((prev) => {
+      const updated = [...prev];
+      updated[questionIndex] = optionIndex;
+      return updated;
+    });
   };
 
   const calculateDiagnosticResult = () => {
-    let score = 0;
-    answers.forEach((ans) => {
-      if (!ans) return;
-      const a = ans.toLowerCase();
-      if (a.includes("good") || a.includes("calm") || a.includes("happy")) score += 2;
-      else if (
-        a.includes("bad") ||
-        a.includes("stressed") ||
-        a.includes("anxious") ||
-        a.includes("no")
-      )
-        score += 1;
+    let total = 0;
+    let answeredCount = 0;
+
+    answers.forEach((selectedIndex, qIdx) => {
+      if (selectedIndex === null) return;
+      const optionsCount = dailyQuestions[qIdx].options.length;
+      // Normalize each question to a 0–2 score based on how good the picked option is
+      const normalized = optionsCount > 1 ? selectedIndex / (optionsCount - 1) : 1;
+      total += normalized * 2;
+      answeredCount += 1;
     });
-    if (score >= 8) setResult("🟢 You are mentally healthy and stable");
-    else if (score >= 5) setResult("🟡 Mild stress detected, take rest & relax");
+
+    if (answeredCount === 0) {
+      setResult("Answer at least one question to get a result");
+      return;
+    }
+
+    if (total >= 8) setResult("🟢 You are mentally healthy and stable");
+    else if (total >= 5) setResult("🟡 Mild stress detected, take rest & relax");
     else setResult("🔴 High stress detected, consider self-care or support");
   };
 
@@ -466,36 +623,68 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             />
 
             {/* 2. Personalized Check-In Selection Block */}
-            <MoodSection
-              selected={selected}
-              selectedEmoji={selectedEmoji}
-              textOpacity={textOpacity}
-              emojiOpacity={emojiOpacity}
-              responseOpacity={responseOpacity}
-              startBtnOpacity={startBtnOpacity}
-              onEmojiPress={handleEmojiPress}
-              onStartConversation={() => navigation.navigate("Therapy")}
-            />
+            <SectionHeader label="Today's Mood" icon="happy-outline" color="#4ade80" />
+            <MoodSelector moodEmoji={moodEmoji} moodText={moodText} onMoodPress={handleMoodPress} />
 
             {/* 3. Live Health Watch Data */}
-            <VitalSigns
-              isConnected={isConnected}
-              heartRate={watchData.heartRate}
-              spo2={watchData.spo2}
-              temperature={watchData.temperature}
-              onConnect={() => navigation.navigate('ConnectWatch')}
-            />
+            <View style={styles.sectionRow}>
+              <SectionHeader label="Vital's Sign" icon="happy-outline" color="#4ade80" />
+              {/* <TouchableOpacity
+                style={styles.connectBadge}
+                onPress={() => navigation.navigate("ConnectWatch")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="watch-outline"
+                  size={14}
+                  color="#4ade80"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.connectText}>Connect</Text>
+              </TouchableOpacity> */}
+              <TouchableOpacity
+    style={[
+      styles.connectBadge, 
+      isConnected && { backgroundColor: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.2)" } // Red theme background when connected
+    ]}
+    onPress={() => {navigation.navigate("ConnectWatch");
+    }}
+    activeOpacity={0.8}
+  >
+    <Ionicons
+      name={isConnected ? "watch-outline" : "watch-outline"}
+      size={14}
+      color={isConnected ? "#ef4444" : "#4ade80"} // Switches to theme red if live
+      style={{ marginRight: 6 }}
+    />
+    <Text style={[styles.connectText, { color: isConnected ? "#ef4444" : "#4ade80" }]}>
+      {isConnected ? "Disconnect" : "Connect"}
+    </Text>
+  </TouchableOpacity>
+            </View>
+<VitalSigns
+  isConnected={isConnected}
+  heartRate={displayHeartRate}
+  spo2={displaySpo2}
+  temperature={displayTemp}
+  sensorSource={sensorSource}
+  lastUpdatedAt={lastUpdatedAt}
+  onConnect={() => navigation.navigate("ConnectWatch")}
+/>
 
-            {/* 4. Canvas-drawn Radial Matrix Progression Charts Rows */}
+            {/* 4. Body's Needs — Food / Sleep / Hydration */}
+            <SectionHeader label="Body's Needs" icon="nutrition-outline" color="#4ade80" />
             <MetricsCharts
-              status={isConnected ? "Live" : "Offline"}
-              oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
-              food={70}
-              sleep={80}
-              onCheck={() => navigation.navigate('ConnectWatch')}
+              food={foodPct}
+              sleep={sleepPct}
+              hydration={hydrationPct}
+              onCheck={loadWellnessData}
+              // status={isConnected ? "Live" : "Offline"}
+              // oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
             />
 
             {/* 5. Horizontal Audio Media Stream Carousels Options */}
+            <SectionHeader label="Sleep Sounds" icon="moon-outline" color="#4ade80" />
      <SleepSuggestions
   items={sleepItems}
   currentAudioUrl={currentTrack?.id ?? null}
@@ -504,17 +693,20 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
 />
 
             {/* 6. Accordion Dropdown Health Evaluation Questionnaire Form */}
+            <SectionHeader label="Daily Check-In" icon="clipboard-outline" color="#4ade80" />
             <DailyQuestions
-              questions={questions}
+              questions={dailyQuestions}
               answers={answers}
               animatedHeights={animatedHeights}
               result={result}
+
               onToggleQuestion={handleToggleQuestion}
-              onUpdateAnswer={handleUpdateAnswer}
+              onSelectOption={handleSelectOption}
               onGetResult={calculateDiagnosticResult}
             />
 
             {/* 7. YouTube Embedding Navigation Block Container */}
+            <SectionHeader label="Motivation" icon="play-circle-outline" color="#4ade80" />
             <MotivationalSuggestions
               videos={videos}
               selectedVideo={selectedVideo?.videoId ?? null}
@@ -528,6 +720,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             />
 
             {/* 8. Bottom Auxiliary Actions shortcuts Row */}
+            <SectionHeader label="Quick Actions" icon="flash-outline" color="#4ade80" />
             <FooterQuickActions />
           </View>
         </ScrollView>
@@ -590,11 +783,15 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
       return;
     }
  
-    // ── Meditation / mind notifications ──
+    // ── Meditation / Journal notifications ──
+
+    if (title.includes("Journal")) {
+  navigation.navigate("JournalScreen");
+  return;
+}
     if (
       title.includes("Mind Reset") ||
       title.includes("Meditation") ||
-      title.includes("Journal") ||
       title.includes("Breathing")
     ) {
       navigation.navigate("Meditation");
@@ -635,12 +832,12 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             style={[
               styles.miniPlayer,
               {
-                paddingBottom: insets.bottom,
+                paddingBottom: 0,
                 transform: [{ translateY: miniPlayerAnim }],
               },
             ]}
           >
-            <BlurView intensity={50} tint="dark" style={styles.miniPlayerBlur}>
+            <View style={styles.miniPlayerInner}>
               <View style={styles.miniRow}>
                 <TouchableOpacity
                   style={styles.miniLeft}
@@ -688,7 +885,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
                   </TouchableOpacity>
                 </View>
               </View>
-            </BlurView>
+            </View>
           </Animated.View>
         )}
       </ImageBackground>
@@ -819,7 +1016,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
         onRequestClose={() => setVideoModalOpen(false)}
       >
         <View style={styles.videoModal}>
-          <LinearGradient colors={["#060e0a", "#000"]} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={["#0d2718", "#091410"]} style={StyleSheet.absoluteFill} />
           <View style={styles.modalHandle} />
           <TouchableOpacity
             style={styles.modalClose}
@@ -832,7 +1029,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             <View style={{ paddingTop: 56 }}>
               <Text style={styles.videoModalTitle}>{selectedVideo.title}</Text>
               <View style={styles.videoPlayerWrap}>
-                <YoutubePlayer height={220} play videoId={selectedVideo.videoId} />
+                <YoutubePlayer height={187} play videoId={selectedVideo.videoId} />
               </View>
               <View style={styles.videoMetaRow}>
                 <View style={[styles.videoCatPill, { margin: 0 }]}>
@@ -850,7 +1047,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
 
 const styles = StyleSheet.create({
   overlay: { flex: 1 },
-  InnerCard: { padding: 20, paddingTop: 20, paddingBottom: 80, overflow: "hidden" },
+  InnerCard: { padding: 20, paddingTop: 20, paddingBottom: 170, overflow: "hidden" },
   glowTop: {
     position: "absolute",
     top: -80,
@@ -872,8 +1069,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     borderTopWidth: 1,
     borderTopColor: "rgba(74,222,128,0.3)",
+    height: 170,borderLeftWidth: 1,borderRightWidth: 1,
   },
-  miniPlayerBlur: { paddingHorizontal: 20, paddingBottom: 50 },
+    miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, height: 170 },
   miniRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1066,54 +1264,40 @@ const styles = StyleSheet.create({
 
   // Video Cards
 
-  videoCatPill: {
-    marginTop: 6,
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: "rgba(0,73,39,0.4)",
-  },
-  videoCatText: {
-    color: "#4ade80",
-    fontSize: 10,
-    fontWeight: "600",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    fontFamily: "Poppins_500Medium",
-  },
-  videoMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-    paddingHorizontal: 20,
+  videoGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingBottom: 80 },
+  videoCardHalf: { width: "48%", borderRadius: 12, overflow: "hidden", backgroundColor: "rgba(0,26,17,0.53)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1, marginBottom: 14 },
+  videoThumbWrap: { position: "relative" },
+  videoThumbHalf: { width: "100%", height: 110, resizeMode: "cover" },
+  videoPlayBtn: { position: "absolute", top:0, left:0, right:0, bottom:0, alignItems: "center", justifyContent: "center" },
+  videoPlayCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,73,39,0.85)", alignItems: "center", justifyContent: "center", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
+  videoLikeBtn: { position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
+  videoDurBadge: { position: "absolute", bottom: 6, right: 6, backgroundColor: "rgba(0,0,0,0.7)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  videoDurText: { color: "#fff", fontSize: 10, fontFamily: "Poppins_400Regular" },
+  videoCardInfo: { padding: 10 },
+  videoCardTitle: { color: "#fff", fontSize: 11, fontFamily: "Poppins_400Regular", lineHeight: 16 },
+  videoCatPill: { marginTop: 6, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: "rgba(0,73,39,0.4)" },
+  videoCatText: { color: "#4ade80", fontSize: 10, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: "Poppins_400Regular" },
+  videoMetaRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginTop: 14 },
+  videoMetaDur: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    videoModal: { flex: 1, backgroundColor: "#060e0a" },
+  videoModalTitle: { color: "#fff", fontSize: 14, fontFamily: "Poppins_500Medium", paddingHorizontal: 20, marginBottom: 16, lineHeight: 22 },
+  videoPlayerWrap: { overflow: "hidden", backgroundColor: "#000" },
+connectBadge: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 20,
+   backgroundColor: "rgba(0, 26, 17, 0.53)",
+  borderWidth: 1,
+  borderColor: "rgba(74,222,128,0.30)",
+  marginBottom: 15
+},
 
-  },
-  videoMetaDur: {
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-  },
-
-  // Video Modal
-  videoModal: { flex: 1, backgroundColor: "#060e0a" },
-  videoModalTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Poppins_500Medium",
-    paddingHorizontal: 20,
-    marginBottom: 16,
-    lineHeight: 25,
-  },
-  videoPlayerWrap: {
-    overflow: "hidden",
-    borderRadius: 0,
-    backgroundColor: "#000",
-  },
+connectText: {
+  color: "#4ade80",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
+},
 });
-
-
-
-
-
-

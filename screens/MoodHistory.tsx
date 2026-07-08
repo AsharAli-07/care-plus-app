@@ -137,7 +137,7 @@ if (moods.length === 0) {
                 <View style={styles.glowTop} />
                 <View style={styles.overlay}>
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={false} style={{paddingHorizontal: 20,}}
         >
 
         <Text style={styles.heading}>
@@ -147,10 +147,7 @@ if (moods.length === 0) {
 
           {moods.map((item, index) => (
 
-    <BlurView
-  key={index}
-  intensity={50}
-  tint="dark"
+    <View
   style={styles.card}
 >
 
@@ -180,7 +177,7 @@ if (moods.length === 0) {
     />
   </TouchableOpacity>
 
-</BlurView>
+</View>
 
           ))}
 
@@ -216,7 +213,7 @@ const styles = StyleSheet.create({
 
   overlay: {
     flex: 1,
-    paddingHorizontal: 20,
+    
     
     
   },
@@ -226,18 +223,20 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Poppins_500Medium",
     textAlign: 'center',
-    marginVertical: 20
+    marginTop: 40,
+    paddingBottom: 30
   },
 
   card: {
     flexDirection: "row",
     alignItems: "center",
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 25,
     marginBottom: 15,
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
        shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
   },
 
   emoji: {

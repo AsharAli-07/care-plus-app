@@ -1,404 +1,3 @@
-// import React, { useState } from "react";
-// import {
-//   View, Text, StyleSheet, ImageBackground, ScrollView,
-//   TouchableOpacity, StatusBar, TextInput, Alert,
-//   ActivityIndicator, Platform,
-// } from "react-native";
-// import { Ionicons } from "@expo/vector-icons";
-// import { LinearGradient } from "expo-linear-gradient";
-// import { BlurView } from "expo-blur";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import axios from "axios";
-// import { BASE_URL } from "../api";
-
-// // ─── Data ──────────────────────────────────────────────────────────────────────
-// const THERAPISTS = [
-//   { id: 1, name: "Dr. Aisha Khan", specialty: "Anxiety & Stress", rating: 4.9, sessions: 320, avatar: "🩺" },
-//   { id: 2, name: "Dr. Omar Farooq", specialty: "Sleep & Recovery", rating: 4.8, sessions: 215, avatar: "🌙" },
-//   { id: 3, name: "Dr. Sara Malik", specialty: "Trauma & PTSD", rating: 4.9, sessions: 410, avatar: "💚" },
-//   { id: 4, name: "Dr. Zain Ali", specialty: "Depression & Mood", rating: 4.7, sessions: 178, avatar: "☀️" },
-//   { id: 5, name: "AI Companion (Sera)", specialty: "General Wellness", rating: null, sessions: null, avatar: "✨" },
-// ];
-
-// const SESSION_TYPES = [
-//   { id: "chat", label: "AI Chat", icon: "chatbubble-ellipses-outline", desc: "Text-based, async" },
-//   { id: "voice", label: "Voice AI", icon: "mic-outline", desc: "Live voice session" },
-// ];
-
-// const TIMES = ["9:00 AM", "10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"];
-
-// const SESSION_TOPICS = [
-//   "Anxiety & Stress", "Sleep Issues", "Depression", "Relationships",
-//   "Trauma", "Work Stress", "Grief", "Self-Esteem", "General Wellness",
-// ];
-
-// // Generate next 7 days
-// const getNext7Days = () => {
-//   const days = [];
-//   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-//   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-//   for (let i = 0; i < 7; i++) {
-//     const d = new Date();
-//     d.setDate(d.getDate() + i);
-//     days.push({
-//       label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : dayNames[d.getDay()],
-//       full: `${d.getDate()} ${monthNames[d.getMonth()]}`,
-//       value: d.toISOString().split("T")[0],
-//     });
-//   }
-//   return days;
-// };
-
-// // ─── Step indicator ────────────────────────────────────────────────────────────
-// const StepDot = ({ step, current }: { step: number; current: number }) => (
-//   <View style={[styles.stepDot, step <= current && styles.stepDotActive, step === current && styles.stepDotCurrent]}>
-//     {step < current ? (
-//       <Ionicons name="checkmark" size={10} color="#050f09" />
-//     ) : (
-//       <Text style={[styles.stepDotText, step === current && { color: "#050f09" }]}>{step}</Text>
-//     )}
-//   </View>
-// );
-
-// // ─── Main Screen ───────────────────────────────────────────────────────────────
-// const BookSession = ({ navigation }: any) => {
-//   const [step, setStep] = useState(1); // 1: Therapist  2: Date/Time  3: Details  4: Confirm
-//   const [selectedTherapist, setSelectedTherapist] = useState<typeof THERAPISTS[0] | null>(null);
-//   const [selectedType, setSelectedType] = useState<"chat" | "voice">("chat");
-//   const [selectedDate, setSelectedDate] = useState(getNext7Days()[0]);
-//   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-//   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-//   const [notes, setNotes] = useState("");
-//   const [loading, setLoading] = useState(false);
-//   const days = getNext7Days();
-
-//   const canProceed = () => {
-//     if (step === 1) return !!selectedTherapist;
-//     if (step === 2) return !!selectedTime;
-//     if (step === 3) return !!selectedTopic;
-//     return true;
-//   };
-
-//   const handleBook = async () => {
-//     setLoading(true);
-//     try {
-//       const token = await AsyncStorage.getItem("token");
-//       await axios.post(
-//         `${BASE_URL}/therapy/book`,
-//         {
-//           therapist_name: selectedTherapist?.name,
-//           therapist_id: selectedTherapist?.id,
-//           session_type: selectedType,
-//           session_date: selectedDate.value,
-//           session_time: selectedTime,
-//           title: selectedTopic,
-//           notes: notes || null,
-//           status: "upcoming",
-//         },
-//         { headers: { Authorization: `Bearer ${token}` } }
-//       );
-//       setLoading(false);
-//       Alert.alert(
-//         "Session Booked! 🎉",
-//         `Your ${selectedType === "voice" ? "voice" : "chat"} session with ${selectedTherapist?.name} is confirmed for ${selectedDate.full} at ${selectedTime}.`,
-//         [{ text: "View Sessions", onPress: () => navigation.replace("Therapy") }]
-//       );
-//     } catch (err: any) {
-//       setLoading(false);
-//       // If backend endpoint doesn't exist yet, show success anyway (for testing)
-//       if (err?.response?.status === 404 || err?.code === "ECONNREFUSED") {
-//         Alert.alert(
-//           "Session Booked! 🎉",
-//           `(Demo) Your session with ${selectedTherapist?.name} is confirmed for ${selectedDate.full} at ${selectedTime}.`,
-//           [{ text: "Go Back", onPress: () => navigation.goBack() }]
-//         );
-//       } else {
-//         Alert.alert("Booking Failed", "Please try again. " + (err?.message || ""));
-//       }
-//     }
-//   };
-
-//   const renderStep1 = () => (
-//     <View>
-//       <Text style={styles.stepTitle}>Choose a therapist</Text>
-//       <Text style={styles.stepSub}>Select who you'd like to speak with</Text>
-//       {THERAPISTS.map((t) => (
-//         <TouchableOpacity
-//           key={t.id}
-//           onPress={() => setSelectedTherapist(t)}
-//           activeOpacity={0.8}
-//         >
-//           <BlurView
-//             intensity={45}
-//             tint="dark"
-//             style={[styles.therapistCard, selectedTherapist?.id === t.id && styles.therapistCardActive]}
-//           >
-//             <Text style={styles.therapistAvatar}>{t.avatar}</Text>
-//             <View style={{ flex: 1 }}>
-//               <Text style={styles.therapistName}>{t.name}</Text>
-//               <Text style={styles.therapistSpec}>{t.specialty}</Text>
-//               {t.rating && (
-//                 <View style={styles.ratingRow}>
-//                   <Ionicons name="star" size={11} color="#f59e0b" />
-//                   <Text style={styles.ratingText}>{t.rating} · {t.sessions} sessions</Text>
-//                 </View>
-//               )}
-//             </View>
-//             {selectedTherapist?.id === t.id && (
-//               <View style={styles.selectedCheck}>
-//                 <Ionicons name="checkmark" size={14} color="#050f09" />
-//               </View>
-//             )}
-//           </BlurView>
-//         </TouchableOpacity>
-//       ))}
-
-//       <Text style={[styles.stepTitle, { marginTop: 20 }]}>Session type</Text>
-//       <View style={styles.typeRow}>
-//         {SESSION_TYPES.map((t) => (
-//           <TouchableOpacity
-//             key={t.id}
-//             onPress={() => setSelectedType(t.id as "chat" | "voice")}
-//             style={[styles.typeCard, selectedType === t.id && styles.typeCardActive]}
-//           >
-//             <Ionicons name={t.icon as any} size={22} color={selectedType === t.id ? "#050f09" : "#4ade80"} />
-//             <Text style={[styles.typeLabel, selectedType === t.id && { color: "#050f09" }]}>{t.label}</Text>
-//             <Text style={[styles.typeDesc, selectedType === t.id && { color: "rgba(5,15,9,0.7)" }]}>{t.desc}</Text>
-//           </TouchableOpacity>
-//         ))}
-//       </View>
-//     </View>
-//   );
-
-//   const renderStep2 = () => (
-//     <View>
-//       <Text style={styles.stepTitle}>Pick a date</Text>
-//       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-//         <View style={{ flexDirection: "row", gap: 10 }}>
-//           {days.map((d) => (
-//             <TouchableOpacity
-//               key={d.value}
-//               onPress={() => { setSelectedDate(d); setSelectedTime(null); }}
-//               style={[styles.dateCard, selectedDate.value === d.value && styles.dateCardActive]}
-//             >
-//               <Text style={[styles.dateDayLabel, selectedDate.value === d.value && { color: "#050f09" }]}>{d.label}</Text>
-//               <Text style={[styles.dateFull, selectedDate.value === d.value && { color: "#050f09" }]}>{d.full}</Text>
-//             </TouchableOpacity>
-//           ))}
-//         </View>
-//       </ScrollView>
-
-//       <Text style={styles.stepTitle}>Pick a time</Text>
-//       <View style={styles.timesGrid}>
-//         {TIMES.map((t) => (
-//           <TouchableOpacity
-//             key={t}
-//             onPress={() => setSelectedTime(t)}
-//             style={[styles.timeChip, selectedTime === t && styles.timeChipActive]}
-//           >
-//             <Text style={[styles.timeChipText, selectedTime === t && { color: "#050f09" }]}>{t}</Text>
-//           </TouchableOpacity>
-//         ))}
-//       </View>
-//     </View>
-//   );
-
-//   const renderStep3 = () => (
-//     <View>
-//       <Text style={styles.stepTitle}>What would you like to focus on?</Text>
-//       <Text style={styles.stepSub}>Choose the main topic for your session</Text>
-//       <View style={styles.topicsGrid}>
-//         {SESSION_TOPICS.map((topic) => (
-//           <TouchableOpacity
-//             key={topic}
-//             onPress={() => setSelectedTopic(topic)}
-//             style={[styles.topicChip, selectedTopic === topic && styles.topicChipActive]}
-//           >
-//             <Text style={[styles.topicChipText, selectedTopic === topic && { color: "#050f09" }]}>{topic}</Text>
-//           </TouchableOpacity>
-//         ))}
-//       </View>
-
-//       <Text style={[styles.stepTitle, { marginTop: 24 }]}>Any notes? (optional)</Text>
-//       <BlurView intensity={40} tint="dark" style={styles.notesBox}>
-//         <TextInput
-//           style={styles.notesInput}
-//           value={notes}
-//           onChangeText={setNotes}
-//           placeholder="Share anything you'd like your therapist to know beforehand…"
-//           placeholderTextColor="#555"
-//           multiline
-//           maxLength={500}
-//         />
-//       </BlurView>
-//     </View>
-//   );
-
-//   const renderStep4 = () => (
-//     <View>
-//       <Text style={styles.stepTitle}>Review & Confirm</Text>
-//       <BlurView intensity={45} tint="dark" style={styles.confirmCard}>
-//         {[
-//           { label: "Therapist", value: selectedTherapist?.name || "" },
-//           { label: "Session Type", value: selectedType === "voice" ? "🎙️ Voice AI" : "💬 AI Chat" },
-//           { label: "Date", value: `${selectedDate.label}, ${selectedDate.full}` },
-//           { label: "Time", value: selectedTime || "" },
-//           { label: "Topic", value: selectedTopic || "" },
-//         ].map((row) => (
-//           <View key={row.label} style={styles.confirmRow}>
-//             <Text style={styles.confirmLabel}>{row.label}</Text>
-//             <Text style={styles.confirmValue}>{row.value}</Text>
-//           </View>
-//         ))}
-//         {notes ? (
-//           <View style={[styles.confirmRow, { borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)", marginTop: 6, paddingTop: 12 }]}>
-//             <Text style={styles.confirmLabel}>Notes</Text>
-//             <Text style={[styles.confirmValue, { flex: 1, textAlign: "right", flexWrap: "wrap" }]}>{notes}</Text>
-//           </View>
-//         ) : null}
-//       </BlurView>
-
-//       <BlurView intensity={30} tint="dark" style={styles.freeNotice}>
-//         <Ionicons name="information-circle-outline" size={16} color="#4ade80" />
-//         <Text style={styles.freeNoticeText}>
-//           AI sessions are free and private. Human therapist sessions may require a subscription.
-//         </Text>
-//       </BlurView>
-//     </View>
-//   );
-
-//   return (
-//     <View style={{ flex: 1, backgroundColor: "#050f09" }}>
-//       <StatusBar barStyle="light-content" />
-//       <ImageBackground source={require("../assets/images/home-bg.jpg")} style={{ flex: 1 }} resizeMode="cover">
-//         <LinearGradient colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.93)"]} style={StyleSheet.absoluteFill} />
-//         <View style={styles.glowTop} />
-
-//         {/* ── Header ── */}
-//         <BlurView intensity={55} tint="dark" style={styles.header}>
-//           <TouchableOpacity onPress={() => (step > 1 ? setStep(step - 1) : navigation.goBack())} style={styles.backBtn}>
-//             <Ionicons name="chevron-back" size={22} color="#fff" />
-//           </TouchableOpacity>
-//           <Text style={styles.headerTitle}>Book a Session</Text>
-//           <View style={styles.stepsRow}>
-//             {[1, 2, 3, 4].map((s) => (
-//               <React.Fragment key={s}>
-//                 <StepDot step={s} current={step} />
-//                 {s < 4 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
-//               </React.Fragment>
-//             ))}
-//           </View>
-//         </BlurView>
-
-//         <ScrollView
-//           showsVerticalScrollIndicator={false}
-//           contentContainerStyle={styles.scroll}
-//           keyboardShouldPersistTaps="handled"
-//         >
-//           {step === 1 && renderStep1()}
-//           {step === 2 && renderStep2()}
-//           {step === 3 && renderStep3()}
-//           {step === 4 && renderStep4()}
-//           <View style={{ height: 100 }} />
-//         </ScrollView>
-
-//         {/* ── Bottom CTA ── */}
-//         <BlurView intensity={70} tint="dark" style={styles.bottomBar}>
-//           <TouchableOpacity
-//             style={[styles.ctaBtn, !canProceed() && { opacity: 0.4 }]}
-//             disabled={!canProceed() || loading}
-//             onPress={step < 4 ? () => setStep(step + 1) : handleBook}
-//           >
-//             {loading ? (
-//               <ActivityIndicator color="#050f09" />
-//             ) : (
-//               <>
-//                 <Text style={styles.ctaBtnText}>{step < 4 ? "Continue" : "Confirm Booking"}</Text>
-//                 <Ionicons name={step < 4 ? "arrow-forward" : "checkmark"} size={18} color="#050f09" />
-//               </>
-//             )}
-//           </TouchableOpacity>
-//         </BlurView>
-//       </ImageBackground>
-//     </View>
-//   );
-// };
-
-// export default BookSession;
-
-// const styles = StyleSheet.create({
-//   glowTop: { position: "absolute", top: -80, left: -60, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none" },
-//   scroll: { paddingHorizontal: 20, paddingTop: 20 },
-
-//   header: { paddingTop: Platform.OS === "ios" ? 54 : 40, paddingBottom: 14, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: "rgba(74,222,128,0.1)", gap: 12 },
-//   backBtn: { padding: 4 },
-//   headerTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 16, marginBottom: 14 },
-//   stepsRow: { flexDirection: "row", alignItems: "center" },
-//   stepDot: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: "#444", alignItems: "center", justifyContent: "center" },
-//   stepDotActive: { borderColor: "#4ade80", backgroundColor: "#4ade80" },
-//   stepDotCurrent: { borderColor: "#4ade80", backgroundColor: "#4ade80" },
-//   stepDotText: { color: "#555", fontFamily: "Poppins_500Medium", fontSize: 10 },
-//   stepLine: { width: 28, height: 1.5, backgroundColor: "#333" },
-//   stepLineActive: { backgroundColor: "#4ade80" },
-
-//   stepTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15, marginBottom: 6 },
-//   stepSub: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 12, marginBottom: 16 },
-
-//   // Therapist
-//   therapistCard: { flexDirection: "row", alignItems: "center", borderRadius: 14, overflow: "hidden", padding: 14, marginBottom: 10, borderWidth: 1, borderColor: "rgba(74,222,128,0.15)", gap: 12 },
-//   therapistCardActive: { borderColor: "#4ade80", backgroundColor: "rgba(74,222,128,0.08)" },
-//   therapistAvatar: { fontSize: 28 },
-//   therapistName: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 13, marginBottom: 2 },
-//   therapistSpec: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 11 },
-//   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 },
-//   ratingText: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 10 },
-//   selectedCheck: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#4ade80", alignItems: "center", justifyContent: "center" },
-
-//   // Type
-//   typeRow: { flexDirection: "row", gap: 12 },
-//   typeCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: "center", gap: 6, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", backgroundColor: "rgba(0,73,39,0.1)" },
-//   typeCardActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
-//   typeLabel: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 13 },
-//   typeDesc: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 10 },
-
-//   // Date
-//   dateCard: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", backgroundColor: "rgba(0,73,39,0.1)", alignItems: "center", minWidth: 80 },
-//   dateCardActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
-//   dateDayLabel: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 10, letterSpacing: 0.5 },
-//   dateFull: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 13, marginTop: 2 },
-
-//   // Time
-//   timesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-//   timeChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", backgroundColor: "rgba(0,73,39,0.1)" },
-//   timeChipActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
-//   timeChipText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
-
-//   // Topic
-//   topicsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-//   topicChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", backgroundColor: "rgba(0,73,39,0.1)" },
-//   topicChipActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
-//   topicChipText: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 11 },
-
-//   // Notes
-//   notesBox: { borderRadius: 14, overflow: "hidden", borderWidth: 1, borderColor: "rgba(74,222,128,0.15)", padding: 12 },
-//   notesInput: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 13, minHeight: 90, textAlignVertical: "top" },
-
-//   // Confirm
-//   confirmCard: { borderRadius: 16, overflow: "hidden", padding: 16, borderWidth: 1, borderColor: "rgba(74,222,128,0.2)", marginBottom: 14, gap: 12 },
-//   confirmRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-//   confirmLabel: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 12 },
-//   confirmValue: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 12 },
-
-//   freeNotice: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "rgba(74,222,128,0.12)" },
-//   freeNoticeText: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 11, flex: 1, lineHeight: 17 },
-
-//   // Bottom
-//   bottomBar: { paddingHorizontal: 20, paddingVertical: 14, paddingBottom: Platform.OS === "ios" ? 32 : 14, borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)" },
-//   ctaBtn: { backgroundColor: "#4ade80", borderRadius: 14, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-//   ctaBtnText: { color: "#050f09", fontFamily: "Poppins_500Medium", fontSize: 15 },
-// });
-
-
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, ImageBackground, ScrollView,
@@ -418,7 +17,7 @@ const SESSION_TYPES = [
     id: "chat",
     label: "Chat with Sera",
     icon: "chatbubble-ellipses-outline",
-    desc: "Text-based • Private • Available 24/7",
+    desc: "Text-based • Private",
     tag: "Mood & data aware",
     color: "#4ade80",
     gradient: ["rgba(0,73,39,0.75)", "rgba(0,40,20,0.95)"] as const,
@@ -427,9 +26,10 @@ const SESSION_TYPES = [
     id: "voice",
     label: "Talk to Sera",
     icon: "mic-outline",
-    desc: "Live voice conversation • Guided by your health data",
+    desc: "Live voice conversation",
     tag: "Biometric aware",
     color: "#38bdf8",
+  
     gradient: ["rgba(0,40,65,0.75)", "rgba(0,20,45,0.95)"] as const,
   },
 ];
@@ -479,9 +79,9 @@ const StepDot = ({ step, current }: { step: number; current: number }) => (
     step === current && styles.stepDotCurrent,
   ]}>
     {step < current ? (
-      <Ionicons name="checkmark" size={10} color="#050f09" />
+      <Ionicons name="checkmark" size={10} color="#fff" />
     ) : (
-      <Text style={[styles.stepDotText, step === current && { color: "#050f09" }]}>{step}</Text>
+      <Text style={[styles.stepDotText, step === current && { color: "#fff" }]}>{step}</Text>
     )}
   </View>
 );
@@ -548,31 +148,31 @@ const BookSession = ({ navigation }: any) => {
       </Text>
 
       {/* Sera intro card */}
-      <BlurView intensity={45} tint="dark" style={styles.seraIntroCard}>
-        <View style={styles.seraAvatarWrap}>
+      <View style={styles.seraIntroCard}>
+        {/* <View style={styles.seraAvatarWrap}>
           <Ionicons name="sparkles" size={22} color="#4ade80" />
-        </View>
+        </View> */}
         <View style={{ flex: 1 }}>
           <Text style={styles.seraIntroName}>Sera · AI Companion</Text>
           <Text style={styles.seraIntroDesc}>
             Sera knows your mood, sleep, stress, heart rate and wellness data — so every session is personal to you, not generic.
           </Text>
         </View>
-      </BlurView>
+      </View>
 
       {/* Capability badges */}
       <View style={styles.badgeRow}>
         {[
-          { icon: "heart-outline", label: "Reads vitals" },
-          { icon: "moon-outline", label: "Knows your sleep" },
-          { icon: "happy-outline", label: "Tracks mood" },
-          { icon: "lock-closed-outline", label: "Privacy safe" },
-        ].map((b) => (
-          <BlurView key={b.label} intensity={30} tint="dark" style={styles.badge}>
-            <Ionicons name={b.icon as any} size={12} color="#4ade80" />
-            <Text style={styles.badgeText}>{b.label}</Text>
-          </BlurView>
-        ))}
+  { icon: "heart-outline", label: "Reads vitals" },
+  { icon: "moon-outline", label: "Knows your sleep" },
+  { icon: "happy-outline", label: "Tracks mood" },
+  { icon: "lock-closed-outline", label: "Privacy safe" },
+].map((b) => (
+  <View key={b.label} style={styles.badge}>
+    <Ionicons name={b.icon as any} size={12} color="#4ade80" />
+    <Text style={styles.badgeText}>{b.label}</Text>
+  </View>
+))}
       </View>
 
       {/* Session type cards */}
@@ -593,9 +193,9 @@ const BookSession = ({ navigation }: any) => {
                 <TypeCardContent t={t} isSelected={isSelected} />
               </LinearGradient>
             ) : (
-              <BlurView intensity={45} tint="dark" style={[styles.typeCard, { borderColor: "rgba(255,255,255,0.1)", borderWidth: 1 }]}>
+              <View style={styles.typeCard}>
                 <TypeCardContent t={t} isSelected={isSelected} />
-              </BlurView>
+              </View>
             )}
           </TouchableOpacity>
         );
@@ -610,8 +210,8 @@ const BookSession = ({ navigation }: any) => {
       <Text style={styles.stepSub}>Pick a date and time that works for you</Text>
 
       {/* Date picker */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 28 }}>
-        <View style={{ flexDirection: "row", gap: 10 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 30 }}>
+        <View style={{ flexDirection: "row", gap: 15 }}>
           {days.map((d) => {
             const isSelected = selectedDate.value === d.value;
             return (
@@ -620,8 +220,8 @@ const BookSession = ({ navigation }: any) => {
                 onPress={() => { setSelectedDate(d); setSelectedTime(null); }}
                 style={[styles.dateCard, isSelected && styles.dateCardActive]}
               >
-                <Text style={[styles.dateDayLabel, isSelected && { color: "#050f09" }]}>{d.label}</Text>
-                <Text style={[styles.dateFull, isSelected && { color: "#050f09" }]}>{d.full}</Text>
+                <Text style={[styles.dateDayLabel, isSelected && { color: "#fff" }]}>{d.label}</Text>
+                <Text style={[styles.dateFull, isSelected && { color: "#fff" }]}>{d.full}</Text>
               </TouchableOpacity>
             );
           })}
@@ -629,7 +229,7 @@ const BookSession = ({ navigation }: any) => {
       </ScrollView>
 
       {/* Time picker */}
-      <Text style={[styles.stepTitle, { marginBottom: 14 }]}>Select a time</Text>
+      <Text style={[styles.stepTitle, { marginBottom: 15 }]}>Select a time</Text>
       <View style={styles.timesGrid}>
         {TIMES.map((t) => {
           const isSelected = selectedTime === t;
@@ -639,7 +239,7 @@ const BookSession = ({ navigation }: any) => {
               onPress={() => setSelectedTime(t)}
               style={[styles.timeChip, isSelected && styles.timeChipActive]}
             >
-              <Text style={[styles.timeChipText, isSelected && { color: "#050f09", fontFamily: "Poppins_500Medium" }]}>
+              <Text style={[styles.timeChipText, isSelected && { color: "#fff", fontFamily: "Poppins_400Regular" }]}>
                 {t}
               </Text>
             </TouchableOpacity>
@@ -665,7 +265,7 @@ const BookSession = ({ navigation }: any) => {
               onPress={() => setSelectedTopic(topic)}
               style={[styles.topicChip, isSelected && styles.topicChipActive]}
             >
-              <Text style={[styles.topicChipText, isSelected && { color: "#050f09", fontFamily: "Poppins_500Medium" }]}>
+              <Text style={[styles.topicChipText, isSelected && { color: "#fff", fontFamily: "Poppins_400Regular" }]}>
                 {topic}
               </Text>
             </TouchableOpacity>
@@ -673,21 +273,21 @@ const BookSession = ({ navigation }: any) => {
         })}
       </View>
 
-      <Text style={[styles.stepTitle, { marginTop: 28, marginBottom: 12 }]}>
-        Anything Sera should know? <Text style={{ color: "#666", fontSize: 12 }}>(optional)</Text>
+      <Text style={[styles.stepTitle, { marginTop: 28, marginBottom: 15 }]}>
+        Anything Sera should know? <Text style={{ color: "#999", fontSize: 12 }}>(optional)</Text>
       </Text>
-      <BlurView intensity={40} tint="dark" style={styles.notesBox}>
+      <View style={styles.notesBox}>
         <TextInput
           style={styles.notesInput}
           value={notes}
           onChangeText={setNotes}
           placeholder="e.g. I've been struggling with sleep this week and feeling anxious at work…"
-          placeholderTextColor="#444"
+          placeholderTextColor="#999"
           multiline
           maxLength={500}
         />
         <Text style={styles.charCount}>{notes.length}/500</Text>
-      </BlurView>
+      </View>
     </View>
   );
 
@@ -697,7 +297,7 @@ const BookSession = ({ navigation }: any) => {
       <Text style={styles.stepTitle}>Review & Confirm</Text>
       <Text style={styles.stepSub}>Check your session details before confirming</Text>
 
-      <BlurView intensity={45} tint="dark" style={styles.confirmCard}>
+      <View style={styles.confirmCard}>
         <View style={styles.confirmHeader}>
           <View style={styles.seraAvatarSmall}>
             <Ionicons name="sparkles" size={14} color="#4ade80" />
@@ -737,29 +337,29 @@ const BookSession = ({ navigation }: any) => {
             </View>
           </>
         ) : null}
-      </BlurView>
+      </View>
 
       {/* Info notices */}
-      <BlurView intensity={30} tint="dark" style={styles.noticeCard}>
+      <View style={styles.noticeCard}>
         <Ionicons name="notifications-outline" size={15} color="#4ade80" />
         <Text style={styles.noticeText}>
           You'll receive a reminder notification 30 minutes and 5 minutes before your session starts.
         </Text>
-      </BlurView>
+      </View>
 
-      <BlurView intensity={30} tint="dark" style={[styles.noticeCard, { marginTop: 10 }]}>
+      <View style={[styles.noticeCard, { marginTop: 10 }]}>
         <Ionicons name="lock-closed-outline" size={15} color="#4ade80" />
         <Text style={styles.noticeText}>
           Sessions with Sera are completely free, private, and protected by your privacy settings.
         </Text>
-      </BlurView>
+      </View>
 
-      <BlurView intensity={30} tint="dark" style={[styles.noticeCard, { marginTop: 10 }]}>
+      <View style={[styles.noticeCard, { marginTop: 10, marginBottom: 10 }]}>
         <Ionicons name="sparkles-outline" size={15} color="#4ade80" />
         <Text style={styles.noticeText}>
           Sera will review your latest wellness data, vitals, and mood before your session for a truly personalised experience.
         </Text>
-      </BlurView>
+      </View>
     </View>
   );
 
@@ -768,7 +368,7 @@ const BookSession = ({ navigation }: any) => {
       <StatusBar barStyle="light-content" />
       <ImageBackground
         source={require("../assets/images/home-bg.jpg")}
-        style={{ flex: 1 }}
+        style={{ flex: 1, height: '100%',  width: '100%' }}
         resizeMode="cover"
       >
         <LinearGradient
@@ -778,18 +378,20 @@ const BookSession = ({ navigation }: any) => {
         <View style={styles.glowTop} />
 
         {/* Header */}
-        <BlurView intensity={55} tint="dark" style={styles.header}>
+        <View style={styles.header}>
+          <View style ={{flexDirection: 'row', alignItems: 'center', marginBottom: 15}}>
           <TouchableOpacity
             onPress={() => (step > 1 ? setStep(step - 1) : navigation.goBack())}
             style={styles.backBtn}
           >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Book a Session</Text>
             <Text style={styles.headerSub}>
               {step === 1 ? "Choose session type" : step === 2 ? "Pick date & time" : step === 3 ? "Select topic" : "Confirm booking"}
             </Text>
+          </View>
           </View>
           {/* Step indicators */}
           <View style={styles.stepsRow}>
@@ -800,7 +402,7 @@ const BookSession = ({ navigation }: any) => {
               </React.Fragment>
             ))}
           </View>
-        </BlurView>
+        </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -811,18 +413,18 @@ const BookSession = ({ navigation }: any) => {
           {step === 2 && renderStep2()}
           {step === 3 && renderStep3()}
           {step === 4 && renderStep4()}
-          <View style={{ height: 110 }} />
+         
         </ScrollView>
 
         {/* Bottom CTA */}
-        <BlurView intensity={70} tint="dark" style={styles.bottomBar}>
+        
           <TouchableOpacity
-            style={[styles.ctaBtn, !canProceed() && { opacity: 0.35 }]}
+            style={[styles.ctaBtn, !canProceed() && { display: 'none' }]}
             disabled={!canProceed() || loading}
             onPress={step < 4 ? () => setStep(step + 1) : handleBook}
           >
             {loading ? (
-              <ActivityIndicator color="#050f09" />
+              <ActivityIndicator color="#ffffffff" />
             ) : (
               <>
                 <Text style={styles.ctaBtnText}>
@@ -831,12 +433,12 @@ const BookSession = ({ navigation }: any) => {
                 <Ionicons
                   name={step < 4 ? "arrow-forward" : "checkmark-circle"}
                   size={18}
-                  color="#050f09"
+                  color="#ffffffff"
                 />
               </>
             )}
           </TouchableOpacity>
-        </BlurView>
+      
       </ImageBackground>
     </View>
   );
@@ -846,11 +448,11 @@ const BookSession = ({ navigation }: any) => {
 const TypeCardContent = ({ t, isSelected }: { t: typeof SESSION_TYPES[0]; isSelected: boolean }) => (
   <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
     <View style={[styles.typeIconWrap, { backgroundColor: isSelected ? `${t.color}22` : "rgba(255,255,255,0.06)" }]}>
-      <Ionicons name={t.icon as any} size={24} color={isSelected ? t.color : "#aaa"} />
+      <Ionicons name={t.icon as any} size={24} color={isSelected ? t.color : "#999"} />
     </View>
     <View style={{ flex: 1 }}>
       <Text style={[styles.typeLabel, isSelected && { color: "#fff" }]}>{t.label}</Text>
-      <Text style={[styles.typeDesc, isSelected && { color: "#bbb" }]}>{t.desc}</Text>
+      <Text style={[styles.typeDesc, isSelected && { color: "#999" }]}>{t.desc}</Text>
       <View style={[styles.typeTag, { backgroundColor: `${t.color}18` }]}>
         <Text style={[styles.typeTagText, { color: t.color }]}>{t.tag}</Text>
       </View>
@@ -871,40 +473,43 @@ const styles = StyleSheet.create({
     width: 280, height: 280, borderRadius: 140,
     backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none",
   },
-  scroll: { paddingHorizontal: 20, paddingTop: 20 },
+  scroll: { paddingHorizontal: 20, paddingTop: 15, marginBottom: 80 },
 
   // Header
   header: {
-    paddingTop: Platform.OS === "ios" ? 54 : 40,
-    paddingBottom: 16, paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 15, paddingHorizontal: 20,
     borderBottomWidth: 1, borderBottomColor: "rgba(74,222,128,0.1)",
-    gap: 4,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
+  
   },
-  backBtn: { padding: 4, marginBottom: 4 },
+  backBtn: {  marginRight: 15 },
   headerTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 16 },
-  headerSub: { color: "#666", fontFamily: "Poppins_400Regular", fontSize: 11, marginBottom: 14 },
+  headerSub: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 10, },
   stepsRow: { flexDirection: "row", alignItems: "center" },
   stepDot: {
     width: 24, height: 24, borderRadius: 12,
-    borderWidth: 1.5, borderColor: "#333",
+    borderWidth: 1, borderColor: "#999",
     alignItems: "center", justifyContent: "center",
   },
-  stepDotActive: { borderColor: "#4ade80", backgroundColor: "#4ade80" },
-  stepDotCurrent: { borderColor: "#4ade80", backgroundColor: "#4ade80" },
-  stepDotText: { color: "#555", fontFamily: "Poppins_500Medium", fontSize: 10 },
-  stepLine: { width: 26, height: 1.5, backgroundColor: "#333" },
-  stepLineActive: { backgroundColor: "#4ade80" },
+  stepDotActive: { borderColor: "rgba(74,222,128,0.3)",  backgroundColor: "rgba(74,222,128,0.10)" },
+  stepDotCurrent: { borderColor: "rgba(74,222,128,0.3)",  backgroundColor: "rgba(74,222,128,0.10)" },
+  stepDotText: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 10 },
+  stepLine: { width: 26, height: 1.3, backgroundColor: "#999" },
+  stepLineActive: { backgroundColor: "rgba(74,222,128,0.3)", color: "#fff" },
 
-  stepTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15, marginBottom: 6 },
-  stepSub: { color: "#777", fontFamily: "Poppins_400Regular", fontSize: 12, marginBottom: 20, lineHeight: 18 },
+  stepTitle: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 14, marginBottom: 6 },
+  stepSub: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 12, marginBottom: 20, lineHeight: 18 },
 
   // Sera intro
   seraIntroCard: {
     flexDirection: "row", alignItems: "flex-start",
     borderRadius: 16, overflow: "hidden",
     padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: "rgba(74,222,128,0.25)",
-    backgroundColor: "rgba(74,222,128,0.04)", gap: 12,
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, 
   },
   seraAvatarWrap: {
     width: 44, height: 44, borderRadius: 22,
@@ -912,8 +517,8 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(74,222,128,0.3)",
   },
-  seraIntroName: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 13, marginBottom: 4 },
-  seraIntroDesc: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 11, lineHeight: 17 },
+  seraIntroName: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 14, marginBottom: 4 },
+  seraIntroDesc: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 11, lineHeight: 17 },
 
   // Capability badges
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 },
@@ -921,70 +526,101 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 10, paddingVertical: 6,
     borderRadius: 20, overflow: "hidden",
-    borderWidth: 1, borderColor: "rgba(74,222,128,0.15)",
+        borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
   },
-  badgeText: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 10 },
+  badgeText: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 10 },
 
   // Session type cards
   typeCardTouch: { marginBottom: 12, borderRadius: 16, overflow: "hidden" },
-  typeCard: { padding: 16, borderRadius: 16 },
+  typeCard: { padding: 15, borderRadius: 16,     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,  },
+
+    
   typeIconWrap: {
     width: 50, height: 50, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
+       
+ 
+  },
+
+    typeIconWrapblue: {
+    width: 50, height: 50, borderRadius: 14,
+    alignItems: "center", justifyContent: "center",
+        borderColor: "rgba(74, 205, 222, 0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, 
   },
   typeLabel: { color: "#bbb", fontFamily: "Poppins_500Medium", fontSize: 14, marginBottom: 3 },
   typeDesc: { color: "#666", fontFamily: "Poppins_400Regular", fontSize: 11, marginBottom: 8 },
   typeTag: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
   typeTagText: { fontFamily: "Poppins_400Regular", fontSize: 9, letterSpacing: 0.3 },
-  checkWrap: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  checkWrap: { width: 20, height: 20, borderRadius: 13, alignItems: "center", justifyContent: "center" },
 
   // Date
   dateCard: {
-    paddingHorizontal: 18, paddingVertical: 13, borderRadius: 13,
+    paddingHorizontal: 10, paddingVertical: 13, borderRadius: 12,
     borderWidth: 1, borderColor: "rgba(74,222,128,0.2)",
-    backgroundColor: "rgba(0,73,39,0.1)", alignItems: "center", minWidth: 82,
+     backgroundColor: "rgba(0, 26, 17, 0.53)", alignItems: "center", minWidth: 70,
   },
-  dateCardActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
+  dateCardActive: {  backgroundColor: "#004927",   borderColor: "rgba(74,222,128,0.3)",  },
   dateDayLabel: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 10, letterSpacing: 0.5 },
-  dateFull: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 13, marginTop: 3 },
+  dateFull: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 14, marginTop: 3,
+    
+   },
+
 
   // Time
-  timesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  timesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 15, marginBottom: 40 },
   timeChip: {
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
+     paddingVertical: 10, borderRadius: 10,
     borderWidth: 1, borderColor: "rgba(74,222,128,0.2)",
-    backgroundColor: "rgba(0,73,39,0.1)",
+  backgroundColor: "rgba(0, 26, 17, 0.53)",
+  width: 87,
+  alignItems: "center"
+ 
   },
-  timeChipActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
-  timeChipText: { color: "#ccc", fontFamily: "Poppins_400Regular", fontSize: 12 },
+  timeChipActive: { backgroundColor: "#004927",},
+  timeChipText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
 
   // Topics
   topicsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   topicChip: {
     paddingHorizontal: 14, paddingVertical: 9, borderRadius: 22,
-    borderWidth: 1, borderColor: "rgba(74,222,128,0.2)",
-    backgroundColor: "rgba(0,73,39,0.1)",
+    borderWidth: 1,borderColor: "rgba(74,222,128,0.3)",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
   },
-  topicChipActive: { backgroundColor: "#4ade80", borderColor: "#4ade80" },
-  topicChipText: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 11 },
+  topicChipActive: { backgroundColor: "#004927", borderColor: "rgba(74,222,128,0.3)", },
+  topicChipText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 10 },
 
   // Notes
   notesBox: {
     borderRadius: 14, overflow: "hidden",
     borderWidth: 1, borderColor: "rgba(74,222,128,0.15)",
     padding: 14,
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    marginBottom: 10
   },
   notesInput: {
     color: "#fff", fontFamily: "Poppins_400Regular",
-    fontSize: 13, minHeight: 90, textAlignVertical: "top",
+    fontSize: 12, minHeight: 50, textAlignVertical: "top",
   },
-  charCount: { color: "#444", fontFamily: "Poppins_400Regular", fontSize: 10, textAlign: "right", marginTop: 4 },
+  charCount: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 10, textAlign: "right", marginTop: 4 },
 
   // Confirm
   confirmCard: {
     borderRadius: 18, overflow: "hidden",
     padding: 18, borderWidth: 1,
-    borderColor: "rgba(74,222,128,0.2)", marginBottom: 14,
+    borderColor: "rgba(74,222,128,0.3)", marginBottom: 14,
+     backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+
   },
   confirmHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   seraAvatarSmall: {
@@ -998,26 +634,44 @@ const styles = StyleSheet.create({
   confirmDivider: { height: 1, backgroundColor: "rgba(74,222,128,0.1)", marginVertical: 12 },
   confirmRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   confirmLabelWrap: { flexDirection: "row", alignItems: "center", gap: 6 },
-  confirmLabel: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 12 },
-  confirmValue: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 12 },
+  confirmLabel: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 12 },
+  confirmValue: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
 
   noticeCard: {
     flexDirection: "row", alignItems: "flex-start", gap: 10,
     padding: 13, borderRadius: 13, overflow: "hidden",
-    borderWidth: 1, borderColor: "rgba(74,222,128,0.12)",
+    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+ backgroundColor: "rgba(0, 26, 17, 0.53)",
+  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
-  noticeText: { color: "#888", fontFamily: "Poppins_400Regular", fontSize: 11, flex: 1, lineHeight: 17 },
+  noticeText: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 11, flex: 1, lineHeight: 17 },
 
   // Bottom bar
-  bottomBar: {
-    paddingHorizontal: 20, paddingVertical: 14,
-    paddingBottom: Platform.OS === "ios" ? 34 : 14,
-    borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.1)",
-  },
+
   ctaBtn: {
-    backgroundColor: "#4ade80", borderRadius: 14,
-    paddingVertical: 15, flexDirection: "row",
-    alignItems: "center", justifyContent: "center", gap: 8,
+   
+     flexDirection: "row",
+    justifyContent: "center", gap: 10,
+    alignSelf: "center",
+   position: 'absolute',
+   bottom: 40,
+
+
+ 
+    backgroundColor: "#004927ff",
+  padding: 10,
+  borderRadius: 12,
+  alignItems: "center",
+
+
+   
+
+  width: "88%",
+
+   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
-  ctaBtnText: { color: "#050f09", fontFamily: "Poppins_500Medium", fontSize: 15 },
+  ctaBtnText: { color: "#ffffffff", fontFamily: "Poppins_400Regular", fontSize: 12 },
 });

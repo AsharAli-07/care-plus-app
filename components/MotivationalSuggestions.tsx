@@ -33,8 +33,8 @@ export const MotivationalSuggestions: React.FC<MotivationalSuggestionsProps> = (
   onOpenVideo,
 }) => {
   return (
-    <View style={{ marginBottom: 20 }}>
-      <Text style={styles.sectionHeading}>Motivational Suggestions</Text>
+    <View style={{ marginBottom: 30 }}>
+
 
       <ScrollView
         horizontal
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
     borderRadius: 14,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
     borderColor: "rgba(74,222,128,0.3)",
     borderWidth: 1,
   },

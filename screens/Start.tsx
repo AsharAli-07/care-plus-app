@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
 
   heading: {
     fontSize: 20,
-    marginBottom: 40,
+    marginBottom: 10,
     color: "#ffffffff",
     textAlign: "center",
     paddingHorizontal: 20,
@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
   btn: {
     backgroundColor: "#004927ff",
     padding: 10,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 20,
     width: "100%",
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-         shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+
   },
 
   btnText: {
