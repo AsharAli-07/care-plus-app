@@ -4022,16 +4022,20 @@ app.delete("/therapy/session/:id", authMiddleware, async (req, res) => {
 });
 
 // ─── Shared persona prompt (used by both chat and voice) ───────────────────
-const BASE_PERSONA_PROMPT = `A compassionate AI mental wellness companion. You are NOT a licensed psychiatrist, psychologist, or medical doctor, and you never claim to be one.
+const BASE_PERSONA_PROMPT = `You are Sera, a compassionate AI mental wellness companion inside the Care Plus app. You are NOT a licensed psychiatrist, psychologist, or medical doctor, and you never claim to be one.
 
-## LANGUAGE & TONE
-- Detect the user's language automatically. If they write in English, reply in English. If they write in Roman Urdu (Urdu words in English script) or mixed Urdu-English, reply in the same natural Roman Urdu style — the way a caring friend or therapist would text in Pakistan.
+## LANGUAGE & TONE (CRITICAL — FOLLOW STRICTLY)
+- CRITICAL RULE: Detect the language of EACH user message independently and ALWAYS reply in the SAME language.
+- If the user writes in ENGLISH → you MUST reply ENTIRELY in English. Do NOT mix in any Urdu words.
+- If the user writes in Roman Urdu (Urdu words in English script like "mujhe neend nahi aati") → reply in the same natural Roman Urdu style.
+- If the user writes in mixed Urdu-English → reply in the same mixed style.
+- NEVER default to one language. ALWAYS match the user's language in each message.
 - Never sound robotic or clinical. Speak warmly, like a real human therapist: calm, unhurried, present.
 - Use short sentences. Don't lecture. Don't dump paragraphs of advice unless asked.
 - Mirror the user's emotional tone.
 
 ## THERAPEUTIC STYLE
-- Lead with listening, not solutions. Reflect back what you hear before offering guidance ("Lagta hai aap kaafi thak gaye hain is sab se...").
+- Lead with listening, not solutions. Reflect back what you hear before offering guidance.
 - Ask at most one gentle follow-up question per message — never interrogate.
 - Use evidence-based approaches (CBT-style reframing, grounding, breathing) naturally, not as a checklist.
 - Validate feelings without validating harmful beliefs or behaviors.
@@ -4052,7 +4056,7 @@ const BASE_PERSONA_PROMPT = `A compassionate AI mental wellness companion. You a
 ## GOAL
 Make every user feel heard, safe, and a little lighter after talking to you.`;
 
-// ─── Mistral — used for text chat ──────────────────────────────────────────
+// ─── Mistral — kept for backwards compatibility but no longer primary ──────
 async function callMistral(systemPrompt, messages, maxTokens = 600) {
   const response = await axios.post(
     "https://api.mistral.ai/v1/chat/completions",
@@ -4232,7 +4236,7 @@ DATA RULES:
 - Reference upcoming sessions naturally if relevant.
 - Keep responses concise: 2-4 sentences unless asked for more.`;
 
-    const reply = await callMistral(systemPrompt, messages, 600);
+    const reply = await callOpenAI(systemPrompt, messages, 600);
     if (!reply) return res.status(500).json({ message: "Sera is unavailable right now. Please try again." });
     res.json({ reply });
   } catch (error) {
@@ -4307,26 +4311,100 @@ ${alertContext}`;
   }
 });
 
-// Mint a short-lived ephemeral token for the future full Realtime API build.
-// Not used by VoiceTherapy.tsx yet — reserved for the WebRTC voice rebuild.
+// ─── Mint ephemeral token for OpenAI Realtime API WebRTC voice sessions ────
+// Returns an ephemeral key with Sera persona + user wellness data baked in.
 app.post("/api/therapy/realtime-session", authMiddleware, async (req, res) => {
   try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/realtime/sessions",
+    const userId = req.userId;
+    const { session } = req.body || {};
+
+    // Fetch user data for the realtime session context
+    const [
+      [userRows], [wellnessRows], [moodRows], [vitalsRows], [streakRows], [prefRows],
+    ] = await Promise.all([
+      db.execute("SELECT name, privacy_mode FROM users WHERE id = ?", [userId]),
+      db.execute("SELECT * FROM wellness_logs WHERE user_id = ? AND log_date = CURDATE() LIMIT 1", [userId]),
+      db.execute("SELECT mood_emoji, mood_text FROM moods WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", [userId]),
+      db.execute("SELECT heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, movement FROM health_monitoring_live WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1", [userId]),
+      db.execute("SELECT current_streak, longest_streak FROM wellness_streaks WHERE user_id = ? LIMIT 1", [userId]),
+      db.execute("SELECT sleep_goal, water_goal FROM wellness_preferences WHERE user_id = ?", [userId]),
+    ]);
+
+    const user = userRows[0] || null;
+    const isPrivate = !!user?.privacy_mode;
+    const name = isPrivate ? "friend" : (user?.name?.split(" ")[0] || "friend");
+    const wellness = wellnessRows[0] || null;
+    const vitals = vitalsRows[0] || null;
+    const mood = moodRows[0] || null;
+    const streak = streakRows[0] || null;
+    const prefs = prefRows[0] || null;
+
+    let dataBlock = isPrivate
+      ? "Privacy Mode is ON — do not reference any specific health numbers or labels."
+      : `Mood: ${mood ? `${mood.mood_emoji} ${mood.mood_text}` : "Not logged"} | Sleep: ${wellness?.sleep_hours ?? "?"}h/${prefs?.sleep_goal ?? "8h"} goal | Water: ${wellness?.water_intake ?? "?"}L/${prefs?.water_goal ?? "2L"} goal | Stress: ${wellness?.stress_level ?? "?"}/10 | Anxiety: ${wellness?.anxiety_level ?? "?"}/10 | Energy: ${wellness?.energy_level ?? "?"}/10 | HR: ${vitals?.heart_rate_bpm ?? "?"}bpm | SpO₂: ${vitals?.blood_oxygen_percent ?? "?"}% | Temp: ${vitals?.temperature_fahrenheit ?? "?"}°F | Streak: ${streak?.current_streak ?? 0} days`;
+
+    let alertContext = "";
+    if (!isPrivate && wellness && (wellness.stress_level || 0) >= 7) {
+      alertContext += "\n⚠️ PRIORITY: High stress. Use grounding immediately.";
+    }
+    if (!isPrivate && vitals && vitals.heart_rate_bpm > 100) {
+      alertContext += "\n⚠️ PRIORITY: Elevated heart rate. Guide 4-7-8 breathing.";
+    }
+
+    const realtimeInstructions = `${BASE_PERSONA_PROMPT}
+
+This is a REAL-TIME VOICE conversation. Follow these voice-specific rules on top of everything above:
+1. Speak in SHORT, calm sentences — max 2-3 sentences per response.
+2. LANGUAGE: Detect the user's spoken language automatically. If they speak Urdu, respond in Urdu. If they speak English, respond in English. Never mix languages unless the user does.
+3. Use natural breathing cues when appropriate: "breathe in slowly... and out."
+4. If HR is elevated, guide 4-7-8 breathing immediately.
+5. If stress/anxiety is high, use grounding: "Name 5 things you can see right now."
+6. NO markdown, NO bullet points, NO lists — pure natural spoken language only.
+7. Speak as if sitting right beside the person.
+8. End with one gentle question or short instruction.
+
+USER: ${name}
+DATA: ${dataBlock}
+${session ? `SESSION: "${session.title}"` : "GENERAL voice session"}
+${alertContext}`;
+
+    // Request ephemeral key from OpenAI Realtime API
+    const response = await fetch(
+      "https://api.openai.com/v1/realtime/client_secrets",
       {
-        model: "gpt-4o-realtime-preview",
-        voice: "verse",
-      },
-      {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          session: {
+            type: "realtime",
+            model: "gpt-4o-mini-realtime-preview",
+            voice: "verse",
+            instructions: realtimeInstructions,
+            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
+            turn_detection: {
+              type: "server_vad",
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500,
+            },
+          },
+        }),
       }
     );
-    res.json(response.data);
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      console.error("Realtime session error:", errBody);
+      return res.status(500).json({ message: "Failed to start voice session" });
+    }
+
+    const data = await response.json();
+    res.json(data);
   } catch (err) {
-    console.error("Realtime session error:", err?.response?.data || err.message);
+    console.error("Realtime session error:", err?.response?.data || err?.message || err);
     res.status(500).json({ message: "Failed to start voice session" });
   }
 });
