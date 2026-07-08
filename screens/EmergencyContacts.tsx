@@ -93,17 +93,21 @@ export default function EmergencyContacts({ navigation, route }: any) {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
             {/* Header */}
-            <View style={styles.headerWrap}>
-              <View style={styles.iconWrap}>
-                <Ionicons name={isEditing ? "create-outline" : "person-add-outline"} size={28} color="#4ade80" />
-              </View>
-              <Text style={styles.title}>{isEditing ? "Edit Contact" : "Add Emergency Contact"}</Text>
-              <Text style={styles.subtitle}>
-                {isEditing ? "Update this contact's information" : "Add someone who can be reached in an emergency"}
-              </Text>
-            </View>
+
 
             <View style={styles.card}>
+                    <Ionicons
+  name="person-add-outline"
+  size={60}
+  color="#4ade80"
+  style={{ alignSelf: "center", marginBottom: 15 }}
+/>
+
+<Text style={styles.title}>Add Emergency Contacts</Text>
+
+<Text style={styles.subtitle}>
+  Add trusted family members or friends who can be contacted quickly during an emergency or when urgent assistance is needed.
+</Text>
               {error ? (
                 <View style={styles.errorWrap}>
                   <Ionicons name="alert-circle-outline" size={16} color="#f87171" />
@@ -120,11 +124,11 @@ export default function EmergencyContacts({ navigation, route }: any) {
               {/* Name */}
               <Text style={styles.label}>Full Name *</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="person-outline" size={16} color="rgba(255,255,255,0.4)" />
+                <Ionicons name="person-outline" size={16} color="#999" />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter full name"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor="#999"
                   value={name}
                   onChangeText={setName}
                 />
@@ -133,11 +137,11 @@ export default function EmergencyContacts({ navigation, route }: any) {
               {/* Phone */}
               <Text style={styles.label}>Phone Number *</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="call-outline" size={16} color="rgba(255,255,255,0.4)" />
+                <Ionicons name="call-outline" size={16} color="#999" />
                 <TextInput
                   style={styles.input}
                   placeholder="0300 1234567"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor="#999"
                   keyboardType="numeric"
                   value={phone}
                   onChangeText={(t) => setPhone(formatDisplayPhone(t))}
@@ -147,11 +151,11 @@ export default function EmergencyContacts({ navigation, route }: any) {
               {/* Email */}
               <Text style={styles.label}>Email Address *</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="mail-outline" size={16} color="rgba(255,255,255,0.4)" />
+                <Ionicons name="mail-outline" size={16} color="#999" />
                 <TextInput
                   style={styles.input}
                   placeholder="email@example.com"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor="#999"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
@@ -175,11 +179,11 @@ export default function EmergencyContacts({ navigation, route }: any) {
               {/* Custom relationship input */}
               {!RELATIONSHIP_OPTIONS.includes(relationship) ? (
                 <View style={[styles.inputWrap, { marginTop: 10 }]}>
-                  <Ionicons name="heart-outline" size={16} color="rgba(255,255,255,0.4)" />
+                  <Ionicons name="heart-outline" size={16} color="#999" />
                   <TextInput
                     style={styles.input}
                     placeholder="Or type a relationship"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    placeholderTextColor="#999"
                     value={relationship}
                     onChangeText={setRelationship}
                   />
@@ -193,7 +197,7 @@ export default function EmergencyContacts({ navigation, route }: any) {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="#052e16" />
+                  <ActivityIndicator color="#fff" />
                 ) : (
                   <>
                     <Ionicons name={isEditing ? "checkmark-circle-outline" : "person-add-outline"} size={18} color="#ffffffff" />
@@ -230,18 +234,17 @@ const styles = StyleSheet.create({
     borderColor: "rgba(74,222,128,0.30)",
     alignItems: "center", justifyContent: "center", marginBottom: 15,
   },
-  title: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium", marginBottom: 6 },
+  title: { color: "#fff", fontSize: 20, fontFamily: "Poppins_500Medium", marginBottom: 5, textAlign: 'center' },
   subtitle: {
     color: "#aaa", fontSize: 12,
     fontFamily: "Poppins_400Regular", textAlign: "center",
      lineHeight: 18,
+     marginBottom: 30
   },
 
   card: {
     borderColor: "rgba(74,222,128,0.3)", borderWidth: 1,
-    backgroundColor: "rgba(0,26,17,0.53)",
-    shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+  backgroundColor: "rgba(0, 26, 17, 0.50)",
     borderRadius: 25, padding: 20,
   },
 
@@ -262,24 +265,22 @@ const styles = StyleSheet.create({
   label: { color: "#fff", fontSize: 12, fontFamily: "Poppins_500Medium", marginBottom: 8 },
 
   inputWrap: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-     width: "100%",
-  padding: 10,
-  marginBottom: 15,
-
-  borderRadius: 12,
-  backgroundColor: "rgba(255,255,255,0.08)",
-
-  color: "#fff",
-  fontSize: 12,
-  fontFamily: "Poppins_400Regular",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginBottom: 15,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   input: {
     flex: 1, color: "#fff", fontSize: 13,
     fontFamily: "Poppins_400Regular",
   },
 
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 15, marginBottom: 10 },
   chip: {
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 30,
     backgroundColor: "rgba(255,255,255,0.05)",
@@ -295,13 +296,13 @@ const styles = StyleSheet.create({
   saveBtn: {
     flexDirection: "row",   backgroundColor: "#004927ff",
   padding: 10,
-  borderRadius: 12,
+  paddingVertical: 12,
+  borderRadius: 13,
   alignItems: "center",
   width: "100%",
-  marginTop: 15,
+  marginTop: 10,
    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, gap: 10,
+     gap: 10,
     justifyContent: 'center'
   },
   saveBtnText: { color: "#ffffffff", fontSize: 12, fontFamily: "Poppins_400Regular" },

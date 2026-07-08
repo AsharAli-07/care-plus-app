@@ -25,12 +25,18 @@ import BookSession from './components/BookSession';
 import VoiceTherapy from './components/VoiceTherapy';
 import ChatTherapy from './components/ChatTherapy';
 import DownloadHealthData from './screens/DownloadHealthData';
+import Dashboard from './screens/Dashboard';
+import AboutWatch from './screens/AboutWatch';
+import Therapy from './screens/Therapy';
+import Home from './screens/Home';
+
 
 
 import ResetPasswordScreen from './screens/Resetpasswordscreen';
 import VerifyOTP from './screens/Verifyotp';
 import ConnectWatch from './screens/ConnectWatch';
 import { BLEProvider } from './ble';
+import JournalScreen from './screens/JournalScreen';
 
 import { 
   useFonts,  
@@ -67,6 +73,10 @@ export type RootStackParamList = {
   Meditation: undefined;
   Therapy: undefined;
   DownloadHealthData: undefined;
+  JournalScreen: undefined;
+  AboutWatch: undefined;
+  Home: undefined;
+ 
 
   VerifyOTP: { email: string };
 ResetPasswordScreen: { resetToken: string };
@@ -110,7 +120,7 @@ useEffect(() => {
   return (
     <BLEProvider>
     <NavigationContainer ref={navigationRef}>
-<Stack.Navigator >
+<Stack.Navigator screenOptions={{ headerShown: false }}>
 {/* <Stack.Navigator > */}
 
         {/* Auth & Setup Stack */}
@@ -137,6 +147,16 @@ useEffect(() => {
          <Stack.Screen name="VerifyOTP" component={VerifyOTP} />
          <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
          <Stack.Screen name="DownloadHealthData" component={DownloadHealthData} />
+         <Stack.Screen name="Dashboard" component={Dashboard} />
+         <Stack.Screen name="JournalScreen" component={JournalScreen} />
+         <Stack.Screen name="AboutWatch" component={AboutWatch} />
+         <Stack.Screen name="Therapy" component={Therapy} />
+         <Stack.Screen name="Home" component={Home} />
+
+
+
+
+
 
 
         <Stack.Screen name="ConnectWatch" component={ConnectWatch} />

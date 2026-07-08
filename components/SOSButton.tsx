@@ -15,10 +15,7 @@ export default function SOSButton({ onPress }: any) {
 
         <TouchableOpacity onPress={onPress}>
         <View style={styles.textWrap}>
-          <Text style={styles.title}>Panic Button</Text>
-          <Text style={styles.subtitle}>
-            or press panic button from your watch
-          </Text>
+          
         </View>
  </TouchableOpacity>
       </View>
@@ -43,6 +40,8 @@ const styles = StyleSheet.create({
 
   textWrap: {
     flex: 1,
+
+
   },
 
   title: {

@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ImageBackground, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  TouchableOpacity,
   StatusBar,
   Modal,
   FlatList,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useBLEContext } from '../ble';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = width * 0.89;
 
 const ConnectWatch = ({ navigation }: any) => {
   const {
@@ -47,58 +50,58 @@ const ConnectWatch = ({ navigation }: any) => {
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.glowTop} />
-        
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Connect Watch</Text>
-          <View style={{ width: 24 }} />
-        </View>
 
         <ScrollView contentContainerStyle={styles.container}>
-          <BlurView intensity={50} tint="dark" style={styles.card}>
-            <Ionicons 
-              name={isConnected ? "watch" : "watch-outline"} 
-              size={80} 
-              color={isConnected ? "#4caf50" : "#4ade80"} 
-              style={styles.watchIcon} 
+          <View style={styles.card}>
+            <Ionicons
+              name={isConnected ? "watch" : "watch-outline"}
+              size={60}
+              color={isConnected ? "#4ade80" : "#4ade80"}
+              style={styles.watchIcon}
             />
-            
-            <Text style={styles.title}>
-              {isConnected ? "Watch Connected" : "No Watch Connected"}
-            </Text>
-            
-            {!isConnected && (
-              <Text style={styles.subtitle}>
-                Connect your smartwatch to sync health data, monitor vitals, and get real-time alerts.
-              </Text>
-            )}
 
-            {!isConnected ? (
-              <TouchableOpacity style={styles.connectButton} onPress={handleScanPress}>
-                <Text style={styles.connectButtonText}>Scan for Devices</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={[styles.connectButton, { backgroundColor: '#f44336', borderColor: '#ff7961' }]} onPress={disconnect}>
-                <Text style={styles.connectButtonText}>Disconnect</Text>
-              </TouchableOpacity>
-            )}
-          </BlurView>
+<Text style={styles.title}>
+  {isConnected ? "Watch Connected" : "No Watch Connected"}
+</Text>
+
+<Text style={styles.subtitle}>
+  {isConnected
+    ? "Please wear it and stay still for a few moments while the sensors calibrate and begin reading your vitals."
+    : "Connect your smartwatch to sync health data, monitor vitals, and get real-time alerts."}
+</Text>
+
+{!isConnected ? (
+  <TouchableOpacity style={styles.button} onPress={handleScanPress}>
+    <Text style={styles.buttonText}>Scan for Devices</Text>
+  </TouchableOpacity>
+) : (
+  <TouchableOpacity
+    style={[styles.button, styles.disconnectButton]}
+    onPress={disconnect}
+  >
+    <Text style={styles.buttonText}>Disconnect</Text>
+  </TouchableOpacity>
+)}
+
+            <TouchableOpacity
+              style={[styles.button, styles.exploreButton]}
+              onPress={() => navigation.replace("BottomTabs")}
+            >
+              <Text style={styles.buttonText}>Explore Dashboard</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* JSON Data Display When Connected */}
           {isConnected && (
-            <BlurView intensity={50} tint="dark" style={[styles.card, { marginTop: 20, alignItems: 'flex-start' }]}>
-              <Text style={[styles.title, { marginBottom: 15, fontSize: 16 }]}>Live Watch Data (JSON)</Text>
+            <View style={[styles.card, { marginTop: 20, alignItems: 'flex-start' }]}>
+              <Text style={[styles.title, { marginBottom: 25, fontSize: 20 }]}>Live Watch Data (JSON)</Text>
               <View style={styles.jsonContainer}>
                 <Text style={styles.jsonText}>
                   {JSON.stringify(watchData, null, 2)}
                 </Text>
               </View>
-            </BlurView>
+            </View>
           )}
-
         </ScrollView>
 
         {/* Device Selection Modal */}
@@ -113,7 +116,7 @@ const ConnectWatch = ({ navigation }: any) => {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Available Devices</Text>
                 <TouchableOpacity onPress={() => setShowDeviceModal(false)}>
-                  <MaterialCommunityIcons name="close" size={28} color="#fff" />
+                  <MaterialCommunityIcons name="close" size={28} color="#999" />
                 </TouchableOpacity>
               </View>
 
@@ -146,7 +149,7 @@ const ConnectWatch = ({ navigation }: any) => {
                 ListEmptyComponent={
                   !isScanning ? (
                     <View style={styles.emptyList}>
-                      <MaterialCommunityIcons name="watch-variant" size={64} color="#ccc" />
+                      <MaterialCommunityIcons name="watch-variant" size={64} color="#999" />
                       <Text style={styles.emptyText}>No devices found</Text>
                       <Text style={styles.emptySubtext}>Make sure your watch is on</Text>
                     </View>
@@ -156,7 +159,6 @@ const ConnectWatch = ({ navigation }: any) => {
             </View>
           </View>
         </Modal>
-
       </ImageBackground>
     </View>
   );
@@ -173,71 +175,64 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,73,39,0.22)",
     pointerEvents: "none",
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.2)',
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'Poppins_600SemiBold',
-  },
   container: {
     flexGrow: 1,
-    padding: 20,
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
   },
   card: {
-    padding: 30,
-    borderRadius: 24,
+    width: CARD_WIDTH,
+    padding: 20,
+    borderRadius: 25,
     alignItems: 'center',
-    borderWidth: 1,
+    justifyContent: 'center',
     borderColor: 'rgba(74,222,128,0.3)',
-    overflow: 'hidden',
+    borderWidth: 1,
+    backgroundColor: 'rgba(0, 26, 17, 0.50)',
   },
   watchIcon: {
-    marginBottom: 20,
+    marginBottom: 15,
   },
   title: {
     fontSize: 20,
     color: '#fff',
-    fontFamily: 'Poppins_600SemiBold',
-    marginBottom: 10,
+    fontFamily: 'Poppins_500Medium',
+    marginBottom: 5,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#aaa',
     fontFamily: 'Poppins_400Regular',
     textAlign: 'center',
     marginBottom: 30,
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  connectButton: {
-    backgroundColor: '#004927',
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.4)',
-    width: '100%',
+  button: {
+    backgroundColor: '#004927ff',
+    padding: 10,
+    borderRadius: 12,
     alignItems: 'center',
+    width: '100%',
+    borderColor: 'rgba(74,222,128,0.3)',
+    borderWidth: 1,
+    paddingVertical: 12,
+ 
   },
-  connectButtonText: {
+  buttonText: {
     color: '#fff',
-    fontSize: 14,
-    fontFamily: 'Poppins_500Medium',
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+  },
+  disconnectButton: {
+    backgroundColor: '#f44336',
+    borderColor: '#ff7961',
+  },
+  exploreButton: {
+    marginTop: 20,
   },
   jsonContainer: {
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -249,6 +244,7 @@ const styles = StyleSheet.create({
     color: '#4ade80',
     fontFamily: 'monospace',
     fontSize: 12,
+    lineHeight: 20
   },
   modalOverlay: {
     flex: 1,
@@ -257,9 +253,9 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#0a1a10',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    paddingBottom: 60,
     maxHeight: '70%',
     borderWidth: 1,
     borderColor: 'rgba(74,222,128,0.3)',
@@ -274,7 +270,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Poppins_500Medium',
     color: '#fff',
   },
   scanningIndicator: {
@@ -282,22 +278,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanningText: {
-    marginTop: 12,
-    fontSize: 14,
+    marginTop: 15,
+    fontSize: 12,
     fontFamily: 'Poppins_400Regular',
     color: '#aaa',
   },
   deviceItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 6,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    padding: 15,
+    marginHorizontal: 20,
+    marginTop: 30,
+      backgroundColor: "rgba(255,255,255,0.05)",
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.2)',
+
   },
   deviceInfo: {
     flex: 1,
@@ -306,11 +303,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Poppins_500Medium',
     color: '#fff',
-    marginBottom: 4,
+  
   },
   deviceId: {
-    fontSize: 13,
-    color: '#888',
+    fontSize: 12,
+    color: '#aaa',
     fontFamily: 'Poppins_400Regular',
   },
   emptyList: {
@@ -319,7 +316,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Poppins_500Medium',
     color: '#ccc',
     marginTop: 16,
   },

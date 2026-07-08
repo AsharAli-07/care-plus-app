@@ -106,7 +106,18 @@ export default function DownloadHealthData() {
         <View style={styles.glowTop} />
 
         <ScrollView contentContainerStyle={styles.overlay} showsVerticalScrollIndicator={false}>
-          <Text style={styles.heading}>Download My Data</Text>
+          <Ionicons
+  name="download-outline"
+  size={60}
+  color="#4ade80"
+  style={{ alignSelf: "center", marginBottom: 15 }}
+/>
+
+<Text style={styles.heading}>Download My Data</Text>
+
+<Text style={styles.subtitle}>
+  Download a copy of your health records, activity history, and account information for your personal records.
+</Text>
         
 
           <View style={styles.selectRow}>
@@ -128,13 +139,13 @@ export default function DownloadHealthData() {
                 activeOpacity={1}
               >
                 <View style={styles.leftRow}>
-                  <Ionicons name={cat.icon as any} size={18} color="#4ade80" />
+                  <Ionicons name={cat.icon as any} size={18} color="#fff" />
                   <Text style={styles.itemText}>{cat.label}</Text>
                 </View>
                 <Ionicons
                   name={isChecked ? "checkmark-circle" : "checkmark-circle-outline"}
                   size={20}
-                  color={isChecked ? "#4ade80" : "#aaa"}
+                  color={isChecked ? "#4ade80" : "#999"}
                 />
               </TouchableOpacity>
             );
@@ -186,12 +197,17 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 20, color: "#fff", fontFamily: "Poppins_500Medium",
-    marginBottom: 30, alignSelf: "center",
+    marginBottom: 5, alignSelf: "center",
   },
-  subheading: {
-    fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "Poppins_400Regular",
-    textAlign: "center", marginBottom: 20, paddingHorizontal: 10,
-  },
+  subtitle:{
+     fontSize: 12,
+    color: '#999',
+    fontFamily: 'Poppins_400Regular',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 22,
+},
+
   selectRow: {
     flexDirection: "row", justifyContent: "flex-end", gap: 16, marginBottom: 15,
   },
@@ -212,14 +228,14 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     padding: 10,
     borderRadius: 12,
+    paddingVertical: 12,
     width: "100%",
-    marginTop: 15,
+    marginTop: 5,
     borderColor: "rgba(74,222,128,0.3)", borderWidth: 1,
-    shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+
   },
   emailBtn: { backgroundColor: "#004927" },
   emailBtnText: { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular" },
-  downloadBtn: {   flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,    marginTop: 15,},
+  downloadBtn: {   flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,    marginTop: 20,},
   downloadBtnText: { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular" },
 });

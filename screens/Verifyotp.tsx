@@ -256,10 +256,9 @@ const styles = StyleSheet.create({
   borderRadius: 12,
   alignItems: "center",
   width: "100%",
+  paddingVertical: 12,
  
    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
   },
   submitText: {
     color: "#fff",

@@ -168,6 +168,8 @@ const formatTime = (sec: number): string => {
 export default function Home({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { isConnected, watchData } = useBLEContext();
+
+  
   const { width } = useWindowDimensions();
   const [moodEmoji, setMoodEmoji] = useState<string | null>(null);
   const [moodText, setMoodText] = useState<string | null>(null);
@@ -195,19 +197,96 @@ export default function Home({ navigation }: any) {
       setLoading(false);
     }
   };
-
+useEffect(() => {
+  // console.log("[Home] isConnected:", isConnected, "watchData:", watchData);
+}, [isConnected, watchData]);
   useEffect(() => {
     loadWellnessData();
   }, []);
 
-  // NOTE on field names: heart_rate / temperature / oxygen_level are assumed
-  // names for vitals that aren't in the current /wellness-dashboard payload
-  // shown in Dashboard.tsx (that screen hardcodes them). Confirm the real field
-  // names your backend returns and adjust the lines below — everything else
-  // (sleep_hours, water_intake, meals_count) already matches what Dashboard.tsx uses.
-  const heartRate = wellness?.heart_rate ?? "72";
-  const temperature = wellness?.temperature ?? "36.6";
-  const oxygenLevel = wellness?.oxygen_level ?? 95;
+// Home.tsx
+// const [lastVitals, setLastVitals] = useState<any>(null);
+
+// const loadLastVitals = async () => {
+//   try {
+//     const token = await AsyncStorage.getItem("token");
+//     const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
+//       headers: { Authorization: `Bearer ${token}` },
+//     });
+//     setLastVitals(res.data);
+//   } catch (err) {
+//     console.log("Last vitals load error:", err);
+//   }
+// };
+
+// useEffect(() => {
+//   loadLastVitals();
+//   const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
+//   return () => clearInterval(interval);
+// }, []);
+
+// const isLive = isConnected && watchData.heartRate !== "--";
+// const displayHeartRate = isLive ? watchData.heartRate : (lastVitals?.heart_rate_bpm != null ? String(lastVitals.heart_rate_bpm) : "--");
+// const displaySpo2      = isLive ? watchData.spo2      : (lastVitals?.blood_oxygen_percent != null ? String(lastVitals.blood_oxygen_percent) : "--");
+// const displayTemp      = isLive ? watchData.temperature : (lastVitals?.temperature_fahrenheit != null ? String(lastVitals.temperature_fahrenheit) : "--");
+// const vitalsLabel = isLive
+//   ? "Live"
+//   : lastVitals?.updated_at
+//     ? `Last seen ${new Date(lastVitals.uppdated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+//     : "No data yet";
+
+const [lastVitals, setLastVitals] = useState<any>(null);
+
+const loadLastVitals = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setLastVitals(res.data); // { heart_rate_bpm, temperature_celsius, blood_oxygen_percent, movement, recorded_at } or null
+  } catch (err) {
+    console.log("Last vitals load error:", err);
+  }
+};
+
+useEffect(() => {
+  loadLastVitals();
+  const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
+  return () => clearInterval(interval);
+}, []);
+
+const isLive = isConnected && watchData.heartRate !== "--";
+
+const displayHeartRate = isLive
+  ? watchData.heartRate
+  : lastVitals?.heart_rate_bpm != null
+  ? String(lastVitals.heart_rate_bpm)
+  : "--";
+
+const displaySpo2 = isLive
+  ? watchData.spo2
+  : lastVitals?.blood_oxygen_percent != null
+  ? String(lastVitals.blood_oxygen_percent)
+  : "--";
+
+const displayTemp = isLive
+  ? watchData.temperature // already °F from the watch firmware, per your earlier note
+  : lastVitals?.temperature_fahrenheit != null
+  ? String(lastVitals.temperature_fahrenheit)
+  : "--";
+
+const sensorSource: "live" | "last-known" | null = isLive
+  ? "live"
+  : lastVitals?.updated_at
+  ? "last-known"
+  : null;
+
+const lastUpdatedAt = lastVitals?.updated_at ?? null;
+
+
+
+
+
 
   const foodPct = Math.min(100, Math.round(((wellness?.meals_count ?? 0) / 3) * 100));
   const sleepPct = Math.min(100, Math.round(((wellness?.sleep_hours ?? 0) / 9) * 100));
@@ -544,75 +623,64 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             />
 
             {/* 2. Personalized Check-In Selection Block */}
-            
-             <SectionHeader label="Today's Mood" icon="happy-outline" color="#4ade80" />
-           <MoodSelector moodEmoji={moodEmoji} moodText={moodText} onMoodPress={handleMoodPress} />
+            <SectionHeader label="Today's Mood" icon="happy-outline" color="#4ade80" />
+            <MoodSelector moodEmoji={moodEmoji} moodText={moodText} onMoodPress={handleMoodPress} />
 
-            {/* 3. Vital Signs — now includes Oxygen below the main row */}
-
-            
-        
-                <View style={styles.sectionRow}>
-                          <SectionHeader label="Vital's Sign" icon="happy-outline" color="#4ade80" />
-                          
-                            <TouchableOpacity
-    style={styles.connectBadge}
-    onPress={() => {
-      // Navigate to Connect Watch screen
-      // navigation.navigate("ConnectWatch");
+            {/* 3. Live Health Watch Data */}
+            <View style={styles.sectionRow}>
+              <SectionHeader label="Vital's Sign" icon="happy-outline" color="#4ade80" />
+              {/* <TouchableOpacity
+                style={styles.connectBadge}
+                onPress={() => navigation.navigate("ConnectWatch")}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="watch-outline"
+                  size={14}
+                  color="#4ade80"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.connectText}>Connect</Text>
+              </TouchableOpacity> */}
+              <TouchableOpacity
+    style={[
+      styles.connectBadge, 
+      isConnected && { backgroundColor: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.2)" } // Red theme background when connected
+    ]}
+    onPress={() => {navigation.navigate("ConnectWatch");
     }}
     activeOpacity={0.8}
   >
     <Ionicons
-      name="watch-outline"
+      name={isConnected ? "watch-outline" : "watch-outline"}
       size={14}
-      color="#4ade80"
+      color={isConnected ? "#ef4444" : "#4ade80"} // Switches to theme red if live
       style={{ marginRight: 6 }}
     />
-    <Text style={styles.connectText}>Connect</Text>
+    <Text style={[styles.connectText, { color: isConnected ? "#ef4444" : "#4ade80" }]}>
+      {isConnected ? "Disconnect" : "Connect"}
+    </Text>
   </TouchableOpacity>
-                          
-                        </View>
-     <VitalSigns
-              status={wellness?.vitals_status ?? "Good"}
-              heartRate={heartRate}
-              temperature={temperature}
-              oxygen={oxygenLevel}
-              onCheck={loadWellnessData}
-            <MoodSection
-              selected={selected}
-              selectedEmoji={selectedEmoji}
-              textOpacity={textOpacity}
-              emojiOpacity={emojiOpacity}
-              responseOpacity={responseOpacity}
-              startBtnOpacity={startBtnOpacity}
-              onEmojiPress={handleEmojiPress}
-              onStartConversation={() => navigation.navigate("Therapy")}
-            />
+            </View>
+<VitalSigns
+  isConnected={isConnected}
+  heartRate={displayHeartRate}
+  spo2={displaySpo2}
+  temperature={displayTemp}
+  sensorSource={sensorSource}
+  lastUpdatedAt={lastUpdatedAt}
+  onConnect={() => navigation.navigate("ConnectWatch")}
+/>
 
-            {/* 3. Live Health Watch Data */}
-            <VitalSigns
-              isConnected={isConnected}
-              heartRate={watchData.heartRate}
-              spo2={watchData.spo2}
-              temperature={watchData.temperature}
-              onConnect={() => navigation.navigate('ConnectWatch')}
-            />
-                       
-       
-
-            {/* 4. Body's Needs — Food / Sleep / Hydration (Oxygen moved to Vital Signs) */}
-             <SectionHeader label="Body's Needs" icon="nutrition-outline" color="#4ade80" />
+            {/* 4. Body's Needs — Food / Sleep / Hydration */}
+            <SectionHeader label="Body's Needs" icon="nutrition-outline" color="#4ade80" />
             <MetricsCharts
               food={foodPct}
               sleep={sleepPct}
               hydration={hydrationPct}
               onCheck={loadWellnessData}
-              status={isConnected ? "Live" : "Offline"}
-              oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
-              food={70}
-              sleep={80}
-              onCheck={() => navigation.navigate('ConnectWatch')}
+              // status={isConnected ? "Live" : "Offline"}
+              // oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
             />
 
             {/* 5. Horizontal Audio Media Stream Carousels Options */}
@@ -715,11 +783,15 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
       return;
     }
  
-    // ── Meditation / mind notifications ──
+    // ── Meditation / Journal notifications ──
+
+    if (title.includes("Journal")) {
+  navigation.navigate("JournalScreen");
+  return;
+}
     if (
       title.includes("Mind Reset") ||
       title.includes("Meditation") ||
-      title.includes("Journal") ||
       title.includes("Breathing")
     ) {
       navigation.navigate("Meditation");
@@ -760,7 +832,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             style={[
               styles.miniPlayer,
               {
-                paddingBottom: insets.bottom,
+                paddingBottom: 0,
                 transform: [{ translateY: miniPlayerAnim }],
               },
             ]}
@@ -975,7 +1047,7 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
 
 const styles = StyleSheet.create({
   overlay: { flex: 1 },
-  InnerCard: { padding: 20, paddingTop: 20, paddingBottom: 100, overflow: "hidden" },
+  InnerCard: { padding: 20, paddingTop: 20, paddingBottom: 170, overflow: "hidden" },
   glowTop: {
     position: "absolute",
     top: -80,
@@ -997,8 +1069,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     borderTopWidth: 1,
     borderTopColor: "rgba(74,222,128,0.3)",
+    height: 170,borderLeftWidth: 1,borderRightWidth: 1,
   },
-    miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, paddingBottom: 90 },
+    miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, height: 170 },
   miniRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1224,7 +1297,7 @@ connectBadge: {
 
 connectText: {
   color: "#4ade80",
-  fontSize: 11,
-  fontFamily: "Poppins_500Medium",
+  fontSize: 12,
+  fontFamily: "Poppins_400Regular",
 },
 });

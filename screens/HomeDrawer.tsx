@@ -5,7 +5,7 @@ import Home from "./Home";
 import Dashboard from "./Dashboard";
 import WellnessTracker from "./WellnessTracker";
 import CustomDrawer from "../components/CustomDrawer";
-import { Watch } from "./Watch";
+import ConnectWatch from "./ConnectWatch";
 
 const Drawer = createDrawerNavigator();
 
@@ -25,7 +25,7 @@ export default function HomeDrawer() {
       }}
     >
       <Drawer.Screen name="HomeScreen"      component={Home}           />
-           <Drawer.Screen name="Watch"      component={Watch}           />
+           <Drawer.Screen name="Watch"      component={ConnectWatch}           />
       <Drawer.Screen name="Dashboard"       component={Dashboard}      />
       <Drawer.Screen name="WellnessTracker" component={WellnessTracker} />
     </Drawer.Navigator>

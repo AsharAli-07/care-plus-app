@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     color: "#ff6b6b",
-    fontFamily: "Poppins_500Medium",
-    fontSize: 13,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
   },
 });

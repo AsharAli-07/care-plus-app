@@ -365,7 +365,7 @@ const toggleLike = useCallback(async (id: string) => {
         </ScrollView>
 
         {currentTrack && (
-          <Animated.View style={[styles.miniPlayer, { paddingBottom: insets.bottom, transform: [{ translateY: miniPlayerAnim }] }]}>
+          <Animated.View style={[styles.miniPlayer, {  transform: [{ translateY: miniPlayerAnim }] }]}>
             <View style={styles.miniPlayerInner}>
               <View style={styles.miniRow}>
                 <TouchableOpacity onPress={() => setPlayerModalOpen(true)} style={styles.miniLeft}>
@@ -487,8 +487,8 @@ const styles = StyleSheet.create({
   bg:     { flex: 1, height: "100%", width: "100%" },
   glowTop: { position: "absolute", top: -80, left: -60, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(0,73,39,0.22)", pointerEvents: "none" },
   screen: { flex: 1, paddingHorizontal: 20 },
-  tabBar: { marginTop: 40, flexDirection: "row", backgroundColor: "rgba(0,26,17,0.53)", borderRadius: 12, marginBottom: 30, borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
-  tabBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 10, borderRadius: 12 },
+  tabBar: { marginTop: 40, flexDirection: "row", backgroundColor: "rgba(0,26,17,0.53)", borderRadius: 50, marginBottom: 30, borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
+  tabBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 10, borderRadius: 50 },
   tabBtnActive: { backgroundColor: "#004927", shadowColor: "#004927", shadowOffset: { width:0, height:4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 6 },
   tabText: { color: "#999", fontSize: 14, fontFamily: "Poppins_400Regular" },
   tabTextActive: { color: "#fff" },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   filterPillActive: { backgroundColor: "#004927", borderColor: "rgba(74,222,128,0.5)" },
   filterText: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular" },
   filterTextActive: { color: "#fff", fontFamily: "Poppins_400Regular" },
-  trackCard: { flexDirection: "row", alignItems: "center", padding: 10, borderRadius: 12, marginBottom: 12, backgroundColor: "rgba(0,26,17,0.53)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
+  trackCard: { flexDirection: "row", alignItems: "center", padding: 10, borderRadius: 12, marginBottom: 12, backgroundColor: "rgba(0, 26, 17, 0.50)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
   trackCardActive: { borderColor: "rgba(74,222,128,0.7)", backgroundColor: "rgba(0,73,39,0.25)" },
   thumbWrap: { position: "relative" },
   trackThumb: { width: 56, height: 56, borderRadius: 12, backgroundColor: "#111" },
@@ -515,8 +515,8 @@ const styles = StyleSheet.create({
   catPillText: { fontSize: 10, letterSpacing: 0.8, textTransform: "uppercase", color: "#4ade80", fontFamily: "Poppins_400Regular" },
   trackDur: { fontSize: 10, color: "#999", fontFamily: "Poppins_400Regular" },
   likeBtn: { paddingLeft: 10 },
-  miniPlayer: { position: "absolute", paddingBottom: 40, bottom: 0, left: 0, right: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderTopColor: "rgba(74,222,128,0.3)", overflow: "hidden" },
-  miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, paddingBottom: 90 },
+  miniPlayer: { position: "absolute", bottom: 0, left: 0, right: 0, borderTopLeftRadius: 25, borderTopRightRadius: 25, borderTopWidth: 1,borderLeftWidth: 1,borderRightWidth: 1, borderColor: "rgba(74,222,128,0.3)", overflow: "hidden", height: 170 },
+  miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, height: 170 },
   miniRow: { flexDirection: "row", alignItems: "center", paddingVertical: 16 },
   miniLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
   miniThumb: { width: 40, height: 40, borderRadius: 10, backgroundColor: "#111" },
@@ -525,8 +525,8 @@ const styles = StyleSheet.create({
   miniArtist: { color: "#4ade80", fontSize: 10, marginTop: 2, fontFamily: "Poppins_400Regular" },
   miniControls: { flexDirection: "row", alignItems: "center", gap: 10 },
   miniPlayBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#004927", alignItems: "center", justifyContent: "center", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
-  videoGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingBottom: 80 },
-  videoCardHalf: { width: "48%", borderRadius: 12, overflow: "hidden", backgroundColor: "rgba(0,26,17,0.53)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1, marginBottom: 14 },
+  videoGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  videoCardHalf: { width: "48%", borderRadius: 12, overflow: "hidden",backgroundColor: "rgba(0, 26, 17, 0.50)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1, marginBottom: 14 },
   videoThumbWrap: { position: "relative" },
   videoThumbHalf: { width: "100%", height: 110, resizeMode: "cover" },
   videoPlayBtn: { position: "absolute", top:0, left:0, right:0, bottom:0, alignItems: "center", justifyContent: "center" },
@@ -538,8 +538,8 @@ const styles = StyleSheet.create({
   videoCardTitle: { color: "#fff", fontSize: 11, fontFamily: "Poppins_400Regular", lineHeight: 16 },
   videoCatPill: { marginTop: 6, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: "rgba(0,73,39,0.4)" },
   videoCatText: { color: "#4ade80", fontSize: 10, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: "Poppins_400Regular" },
-  videoMetaRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginTop: 14 },
-  videoMetaDur: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular" },
+  videoMetaRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginTop: 15, },
+  videoMetaDur: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", marginTop: 7 },
   playerModal: { flex: 1, backgroundColor: "#0d2718" },
   modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.2)", alignSelf: "center", marginTop: 12 },
   modalClose: { position: "absolute", top: 40, left: 15, zIndex: 10 },

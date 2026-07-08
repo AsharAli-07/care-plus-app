@@ -12,6 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { BASE_URL } from "../api";
 import { useBLEContext } from '../ble';
 
+ import { VitalSigns } from "../components/VitalSigns";
+
 // ─── Animated Score Ring ──────────────────────────────────────────────────────
 const ScoreRing = ({ score }: { score: number }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -161,171 +163,7 @@ const gauge = StyleSheet.create({
 });
 
 // ─── Vital Signs ──────────────────────────────────────────────────────────────
-const VitalCard = ({ watchData, isConnected }: { watchData: any; isConnected: boolean }) => {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const waveAnim  = useRef(new Animated.Value(0)).current;
-  const dotAnim   = useRef(new Animated.Value(0.4)).current;
-  useEffect(() => {
-    if (isConnected) {
-      Animated.loop(Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.2,  duration: 400, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1,    duration: 400, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1,    duration: 700, useNativeDriver: true }),
-      ])).start();
-      Animated.loop(Animated.sequence([
-        Animated.timing(dotAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(dotAnim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ])).start();
-    } else {
-      pulseAnim.setValue(1);
-      dotAnim.setValue(0.4);
-    }
-  }, [isConnected]);
 
-  const vitals = [
-    { label: "Heart\nRate",   value: watchData.heartRate,    unit: "bpm",  icon: "heart-outline",       color: "#f87171" },
-    { label: "SpO₂",          value: watchData.spo2,         unit: "%",    icon: "water-outline",       color: "#60a5fa" },
-    { label: "Body\nTemp",    value: watchData.temperature,  unit: "°C",   icon: "thermometer-outline", color: "#4ade80" },
-  ];
-
-  return (
-    <View style={vital.card}>
-      <LinearGradient colors={["rgba(248,113,113,0.05)", "transparent"]} style={StyleSheet.absoluteFill} />
-      <View style={vital.header}>
-        <Animated.Text style={{ fontSize: 20, transform: [{ scale: isConnected ? pulseAnim : 1 }] }}>❤️</Animated.Text>
-        <Text style={vital.title}>Vital Signs</Text>
-        <View style={[vital.statusBadge, !isConnected && { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)" }]}>
-          {isConnected ? (
-            <Animated.View style={[vital.greenDot, { opacity: dotAnim }]} />
-          ) : (
-            <View style={[vital.greenDot, { backgroundColor: "#555" }]} />
-          )}
-          <Text style={[vital.statusTxt, !isConnected && { color: "#888" }]}>
-            {isConnected ? "Live" : "Offline"}
-          </Text>
-        </View>
-      </View>
-      <View style={vital.row}>
-        {vitals.map((v, i) => (
-          <View key={i} style={[vital.col, i < 2 && vital.border]}>
-            <View style={[vital.iconWrap, { backgroundColor: v.color + "20" }]}>
-              <Ionicons name={v.icon as any} size={20} color={v.color} />
-            </View>
-            <Text style={[vital.val, { color: isConnected && v.value !== "--" ? v.color : "#555" }]}>{v.value}</Text>
-            <Text style={vital.unit}>{v.unit}</Text>
-            <Text style={vital.lbl}>{v.label}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-};
-
-const vital = StyleSheet.create({
- card: {
-    marginBottom: 30,
-    padding: 15,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "rgba(74,222,128,0.3)",
-    backgroundColor: "rgba(0, 26, 17, 0.53)",
-    overflow: "hidden",
-
-    shadowColor: "#004927",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-
-  title: {
-    flex: 1,
-    marginLeft: 10,
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: "Poppins_600SemiBold",
-  },
-
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: "rgba(74,222,128,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(74,222,128,0.30)",
-  },
-
-  greenDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4ade80",
-    marginRight: 5,
-  },
-
-  statusTxt: {
-    color: "#4ade80",
-    fontSize: 10,
-    fontFamily: "Poppins_500Medium",
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  col: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-  },
-
-  border: {
-    borderRightWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-
-  iconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-
-  val: {
-    fontSize: 16,
-    fontFamily: "Poppins_600SemiBold",
-    marginTop: 4,
-  },
-
-  unit: {
-    color: "#888",
-    fontSize: 10,
-    fontFamily: "Poppins_400Regular",
-  },
-
-  lbl: {
-    color: "#999",
-    fontSize: 10,
-    fontFamily: "Poppins_400Regular",
-    textAlign: "center",
-    marginTop: 4,
-    lineHeight: 14,
-  },
-});
 
 // ─── Wellness Rings ───────────────────────────────────────────────────────────
 const WellnessRings = ({ data }: any) => {
@@ -576,7 +414,7 @@ const Dashboard = ({ navigation }: any) => {
       </View>
     );
   }
-
+ const { isConnected, watchData } = useBLEContext();
   return (
     <View style={{ flex: 1, backgroundColor: "#050f09" }}>
       <StatusBar barStyle="light-content" />
@@ -611,7 +449,14 @@ const Dashboard = ({ navigation }: any) => {
 
           {/* Vital Signs */}
           <SectionHeader label="Vital Signs" icon="heart-outline" color="#f87171" />
-          <VitalCard watchData={bleWatchData} isConnected={bleConnected} />
+             <VitalSigns
+                        isConnected={isConnected}
+                        heartRate={watchData.heartRate}
+                        spo2={watchData.spo2}
+                        temperature={watchData.temperature}
+                        onConnect={() => navigation.navigate('ConnectWatch')}
+                       
+                      />
 
           {/* Body Wellness */}
           <SectionHeader label="Body Wellness" icon="body-outline" color="#60a5fa" />

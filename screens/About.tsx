@@ -4,67 +4,117 @@ import {
   Text,
   StyleSheet,
   ImageBackground,
-  ScrollView, StatusBar
+  ScrollView,
+  StatusBar,
+  Dimensions,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+export const SectionHeader = ({ label, icon, color = "#4ade80" }: any) => (
+  <View style={sh.row}>
+    <View style={[sh.bar, { backgroundColor: color }]} />
+    <Ionicons name={icon} size={14} color={color} />
+    <Text style={[sh.txt, { color }]}>{label}</Text>
+  </View>
+);
+
+const sh = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 15 },
+  bar: { width: 3, height: 16, borderRadius: 2 },
+  txt: { fontSize: 16, fontFamily: "Poppins_500Medium" },
+});
+const { width } = Dimensions.get("window");
+const CARD_WIDTH = width * 0.89;
 
 export default function About() {
   return (
-  <View style={{ flex: 1,backgroundColor: "#050f09", }}>
-           <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: "#050f09" }}>
+      <StatusBar barStyle="light-content" />
       <ImageBackground
         source={require("../assets/images/home-bg.jpg")}
         style={{ height: "100%", width: "100%" }}
         resizeMode="cover"
       >
-   <LinearGradient
-                  colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.glowTop} />
-                <View style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <LinearGradient
+          colors={["rgba(0,20,10,0.55)", "rgba(5,15,10,0.88)"]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.glowTop} />
 
-          {/* HEADER */}
-          <Text style={styles.title}>About Care Plus</Text>
-
-          {/* APP INFO */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.container}
+        >
+          {/* HERO */}
           <View style={styles.card}>
+            <Ionicons
+              name="heart-circle-outline"
+              size={70}
+              color="#4ade80"
+              style={{ alignSelf: "center", marginBottom: 15 }}
+            />
             <Text style={styles.heading}>Care Plus</Text>
-            <Text style={styles.text}>
-              Care Plus is a smart wellness and emergency support application designed to help users
-              monitor their mental and physical well-being while providing quick emergency assistance
-              when needed.
+            <Text style={styles.subtitle}>
+              A smart wellness and emergency support app designed to help you
+              monitor your mental and physical well-being while providing
+              quick emergency assistance when needed.
             </Text>
           </View>
 
           {/* MISSION */}
+           <SectionHeader label="Our Mission" icon="flag-outline" color="#4ade80" />
           <View style={styles.card}>
-            <Text style={styles.heading}>Our Mission</Text>
             <Text style={styles.text}>
-              To improve daily wellness tracking and ensure instant emergency response support
-              through technology, location sharing, and instant communication tools.
+              To improve daily wellness tracking and ensure instant emergency
+              response support through technology, location sharing, and
+              instant communication tools.
             </Text>
           </View>
 
           {/* FEATURES */}
-          <View style={styles.card}>
-            <Text style={styles.heading}>Key Features</Text>
-
-            <Text style={[styles.text, { lineHeight: 20 }]}>•  Daily Wellness Tracking</Text>
-            <Text style={[styles.text, { lineHeight: 20 }]}>•  Mood & Mental Health Monitoring</Text>
-            <Text style={[styles.text, { lineHeight: 20 }]}>•  Therapy & Meditation</Text>
-            <Text style={[styles.text, { lineHeight: 20 }]}>•  Emergency SOS System</Text>
-            <Text style={[styles.text, { lineHeight: 20 }]}>•  WhatsApp & SMS Alerts</Text>
-            <Text style={[styles.text, { lineHeight: 20 }]}>•  Live Location Sharing</Text>
-            <Text style={styles.text}>•  Emergency Contact Management</Text>
-
+          <SectionHeader label="Key Features" icon="layers-outline" color="#4ade80" />
+          <View style={styles.cardF}>
+            <FeatureRow
+              icon="pulse-outline"
+              title="Daily Wellness Tracking"
+              description="Log sleep, water, meals, and meditation to build a complete picture of your day."
+            />
+            <FeatureRow
+              icon="happy-outline"
+              title="Mood & Mental Health Monitoring"
+              description="Track how you're feeling over time and spot patterns before they become problems."
+            />
+            <FeatureRow
+              icon="chatbubble-ellipses-outline"
+              title="Therapy & Meditation"
+              description="Chat or talk with Sera, your AI companion, and access guided breathing and meditation."
+            />
+            <FeatureRow
+              icon="alert-circle-outline"
+              title="Emergency SOS System"
+              description="Trigger an instant alert to your emergency contacts with one tap when it matters most."
+            />
+            <FeatureRow
+              icon="mail-outline"
+              title="Instant Email Alerts"
+              description="Emergency contacts are notified by email the moment Panic Mode is activated."
+            />
+            <FeatureRow
+              icon="location-outline"
+              title="Live Location Sharing"
+              description="Share your real-time location with trusted contacts during an emergency."
+            />
+            <FeatureRow
+              icon="people-outline"
+              title="Emergency Contact Management"
+              description="Add and manage up to 5 trusted contacts who can be reached instantly."
+              isLast
+            />
           </View>
 
           {/* VERSION */}
+      <SectionHeader label="Version" icon="cube-outline" color="#4ade80" />
           <View style={styles.card}>
-            <Text style={styles.heading}>Version</Text>
             <Text style={styles.text}>Care Plus v1.0.0</Text>
           </View>
 
@@ -72,67 +122,26 @@ export default function About() {
           <Text style={styles.footer}>
             Built with ❤️ for better health and safety
           </Text>
-
         </ScrollView>
-    </View>
-
       </ImageBackground>
     </View>
   );
 }
 
+const FeatureRow = ({ icon, title, description, isLast }: any) => (
+  <View style={[styles.featureRow, !isLast && styles.rowDivider]}>
+    <View style={styles.featureIconWrap}>
+      <Ionicons name={icon} size={18} color="#4ade80" />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.featureTitle}>{title}</Text>
+      <Text style={styles.featureDescription}>{description}</Text>
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 40
-  },
-    overlay: {
-    flex: 1,
-
-    justifyContent: "center",
-  },
-
-  title: {
-    fontSize: 20,
-    fontFamily: "Poppins_500Medium",
-    color: "#fff",
-    marginBottom: 30,
-    textAlign: 'center'
-  },
-
-  card: {
-    borderRadius: 25,
-    padding: 15,
-    marginBottom: 15,
-    overflow: "hidden",
-     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
- backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
-  },
-
-  heading: {
-    fontSize: 16,
-    fontFamily: "Poppins_400Regular",
-    color: "#fff",
-    marginBottom: 13,
-  },
-
-  text: {
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-    color: "#ffffffff",
-
-  },
-
-  footer: {
-    textAlign: "center",
-    color: "#aaa",
-    fontSize: 10,
-    fontFamily: "Poppins_400Regular",
-  },
-            glowTop: {
+  glowTop: {
     position: "absolute",
     top: -80,
     left: -60,
@@ -141,5 +150,102 @@ const styles = StyleSheet.create({
     borderRadius: 140,
     backgroundColor: "rgba(0,73,39,0.22)",
     pointerEvents: "none",
+  },
+
+  container: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 40,
+    alignItems: "flex-start",
+
+  },
+
+  card: {
+    width: CARD_WIDTH,
+    padding: 20,
+    borderRadius: 25,
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+    backgroundColor: "rgba(0, 26, 17, 0.50)",
+    marginBottom: 30,
+  },
+
+  cardF: {
+    width: CARD_WIDTH,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderColor: "rgba(74,222,128,0.3)",
+    borderWidth: 1,
+    backgroundColor: "rgba(0, 26, 17, 0.50)",
+    marginBottom: 30,
+    paddingVertical: 8,
+
+  },
+  heading: {
+    fontSize: 20,
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 5,
+    fontFamily: "Poppins_500Medium",
+  },
+
+  subtitle: {
+    fontSize: 12,
+    color: "#aaa",
+    textAlign: "center",
+    lineHeight: 18,
+    fontFamily: "Poppins_400Regular",
+  },
+
+
+
+  text: {
+    fontSize: 12,
+    color: "#aaa",
+    lineHeight: 20,
+    fontFamily: "Poppins_400Regular",
+  },
+
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingVertical: 12,
+  },
+
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+
+  featureIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(74,222,128,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  featureTitle: {
+    color: "#fff",
+    fontSize: 13,
+    fontFamily: "Poppins_500Medium",
+    marginBottom: 4,
+  },
+
+  featureDescription: {
+    color: "#aaa",
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: "Poppins_400Regular",
+  },
+
+  footer: {
+    textAlign: "center",
+    color: "#aaa",
+    fontSize: 10,
+    fontFamily: "Poppins_400Regular",
   },
 });

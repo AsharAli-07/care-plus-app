@@ -133,9 +133,9 @@ const updatePreference = async (key: string, value: any) => {
 
         <ScrollView showsVerticalScrollIndicator={false} style={{paddingTop: 40, paddingBottom: 25}}>
 
-          <Text style={styles.heading}>
+          {/* <Text style={styles.heading}>
             Wellness Preferences
-          </Text>
+          </Text> */}
 
           {/* SLEEP GOAL */}
           <View style={styles.card}>
@@ -362,9 +362,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     padding: 15,
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
-     backgroundColor: "rgba(0, 26, 17, 0.53)",
+    backgroundColor: "rgba(0, 26, 17, 0.50)",
   },
 
   row: {

@@ -2,17 +2,18 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
-import Home from "./Home";
 import Therapy from "./Therapy";
 import Peace from "./Peace";
 import Meditation from "./Meditation";
 import Settings from "./Settings";
 import HomeDrawer from "./HomeDrawer";
+import { BLEProvider } from "../ble";
 
 const Tab = createBottomTabNavigator();
 
 export default function BottomTabs() {
   return (
+
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -24,19 +25,21 @@ export default function BottomTabs() {
     tabBarLabel: "",
         tabBarStyle: {
           position: "absolute",
-          height: 40,
+          height: 47,
           backgroundColor: "#004927ff",
-          borderRadius: 12,
+          borderRadius: 50,
           overflow: "hidden",
-          elevation: 6,
+paddingTop: 3,
+
+
+
+
           margin: 20,
           marginBottom: 40,
           borderColor: "rgba(74,222,128,0.3)",
           borderWidth: 1,
-          shadowColor: "#004927",
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.55,
-          shadowRadius: 14,
+          borderTopWidth: 1
+    
         },
         tabBarIcon: ({ color, focused }) => {
           switch (route.name) {
@@ -66,5 +69,6 @@ export default function BottomTabs() {
       <Tab.Screen name="Meditation" component={Meditation} />
       <Tab.Screen name="Settings" component={Settings} />
     </Tab.Navigator>
+
   );
 }
