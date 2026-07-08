@@ -3,59 +3,26 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet } from "react-native
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 type VitalSignsProps = {
-  status: string;
-  isConnected: boolean;
-  heartRate: string;
-  spo2: string;
-  temperature: string;
-  oxygen: number;
-  onCheck: () => void;
+  status?: string;
+  isConnected?: boolean;
+  heartRate?: string;
+  spo2?: string;
+  temperature?: string;
+  oxygen?: number;
+  onCheck?: () => void;
+  onConnect?: () => void;
 };
 
 export const VitalSigns: React.FC<VitalSignsProps> = ({
-  status,
-  onConnect: () => void;
-};
-
-export const VitalSigns: React.FC<VitalSignsProps> = ({
-  isConnected,
-  heartRate,
-  spo2,
-  temperature,
-  oxygen,
+  status = "Good",
+  isConnected = false,
+  heartRate = "--",
+  spo2 = "--",
+  temperature = "--",
+  oxygen = 0,
   onCheck,
-}) => {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.2,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1.15,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
   onConnect,
 }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -63,7 +30,6 @@ export const VitalSigns: React.FC<VitalSignsProps> = ({
 
   useEffect(() => {
     if (isConnected) {
-      // Heartbeat pulse animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
@@ -73,7 +39,6 @@ export const VitalSigns: React.FC<VitalSignsProps> = ({
         ])
       ).start();
 
-      // Live dot blink
       Animated.loop(
         Animated.sequence([
           Animated.timing(dotAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
@@ -85,8 +50,6 @@ export const VitalSigns: React.FC<VitalSignsProps> = ({
       dotAnim.setValue(0.4);
     }
   }, [isConnected]);
-
-  const isLive = isConnected && heartRate !== "--";
 
   const vitals = [
     {
@@ -109,152 +72,59 @@ export const VitalSigns: React.FC<VitalSignsProps> = ({
       unit: "%",
       icon: "pulse-outline",
       color: "#34d399",
-      icon: "heart" as const,
-      color: "#f87171",
     },
     {
       label: "SpO₂",
       value: spo2,
       unit: "%",
-      icon: "water" as const,
+      icon: "water-outline",
       color: "#60a5fa",
-    },
-    {
-      label: "Temperature",
-      value: temperature,
-      unit: "°C",
-      icon: "thermometer" as const,
-      color: "#4ade80",
     },
   ];
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onCheck}>
-      <View style={styles.card}>
-
-
-        <View style={styles.header}>
-          <Animated.Text
-            style={{
-              fontSize: 22,
-              transform: [{ scale: pulseAnim }],
-            }}
-          >
-            ❤️
-          </Animated.Text>
-
-          <Text style={styles.title}>Vital Signs</Text>
-
-          <View style={styles.statusBadge}>
-            <View style={styles.greenDot} />
-            <Text style={styles.statusTxt}>{status}</Text>
-    <BlurView
-      intensity={50}
-      tint="dark"
-      style={styles.container}
-    >
+    <BlurView intensity={50} tint="dark" style={styles.container}>
       <LinearGradient
-        colors={
-          isConnected
-            ? ["rgba(74,222,128,0.06)", "transparent"]
-            : ["rgba(255,255,255,0.03)", "transparent"]
-        }
+        colors={isConnected ? ["rgba(74,222,128,0.08)", "transparent"] : ["rgba(255,255,255,0.03)", "transparent"]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Animated.Text style={{ fontSize: 18, transform: [{ scale: isLive ? pulseAnim : 1 }] }}>
-            ❤️
-          </Animated.Text>
-          <Text style={styles.headerTitle}>Vital Signs</Text>
+          <Animated.Text style={[styles.heartIcon, { transform: [{ scale: isConnected ? pulseAnim : 1 }] }]}>❤️</Animated.Text>
+          <View>
+            <Text style={styles.headerTitle}>Vital Signs</Text>
+            <Text style={styles.statusText}>{status}</Text>
+          </View>
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.statusBadge,
-            isConnected ? styles.statusConnected : styles.statusDisconnected,
-          ]}
+          style={[styles.statusBadge, isConnected ? styles.statusConnected : styles.statusDisconnected]}
           onPress={onConnect}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          {isConnected ? (
-            <Animated.View
-              style={[styles.liveDot, { opacity: dotAnim }]}
-            />
-          ) : (
-            <Ionicons name="watch-outline" size={12} color="#888" />
-          )}
-          <Text
-            style={[
-              styles.statusText,
-              isConnected ? styles.statusTextConnected : styles.statusTextDisconnected,
-            ]}
-          >
+          {isConnected ? <Animated.View style={[styles.liveDot, { opacity: dotAnim }]} /> : <Ionicons name="watch-outline" size={12} color="#888" />}
+          <Text style={[styles.statusText, isConnected ? styles.statusTextConnected : styles.statusTextDisconnected]}>
             {isConnected ? "Live" : "Connect Watch"}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Vitals Grid */}
       <View style={styles.vitalsRow}>
-        {vitals.map((v, i) => (
-          <View
-            key={v.label}
-            style={[styles.vitalCol, i < 2 && styles.vitalBorder]}
-          >
-            <View style={[styles.iconWrap, { backgroundColor: v.color + "18" }]}>
-              <Ionicons name={v.icon} size={18} color={v.color} />
+        {vitals.map((v) => (
+          <View key={v.label} style={styles.vitalCol}>
+            <View style={[styles.iconWrap, { backgroundColor: `${v.color}20` }]}> 
+              <Ionicons name={v.icon as any} size={20} color={v.color} />
             </View>
-            <Text style={[styles.vitalValue, { color: isLive ? v.color : "#555" }]}>
-              {v.value}
-            </Text>
+            <Text style={[styles.vitalValue, { color: isConnected ? v.color : "#fff" }]}>{v.value}</Text>
             <Text style={styles.vitalUnit}>{v.unit}</Text>
             <Text style={styles.vitalLabel}>{v.label}</Text>
           </View>
         ))}
       </View>
 
-        <View style={styles.row}>
-          {vitals.map((v, i) => (
-            <View
-              key={i}
-              style={[styles.col, i < vitals.length - 1 && styles.border]}
-            >
-              <View
-                style={[
-                  styles.iconWrap,
-                  {
-                    backgroundColor:
-                      v.color === "#34d399"
-                        ? "rgba(52,211,153,0.18)"
-                        : v.color === "#60a5fa"
-                        ? "rgba(96,165,250,0.18)"
-                        : "rgba(248,113,113,0.18)",
-                  },
-                ]}
-              >
-                <Ionicons name={v.icon as any} size={25} color={v.color} />
-              </View>
-
-              <Text style={[styles.val, { color: v.color }]}>
-                {v.value}
-              </Text>
-
-              <Text style={styles.unit}>{v.unit}</Text>
-
-              <Text style={styles.lbl}>{v.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </TouchableOpacity>
-      {/* Footer */}
-      <TouchableOpacity style={styles.footer} onPress={onConnect}>
-        <Text style={styles.footerText}>
-          {isConnected ? "View Details" : "Connect Watch to See Live Data"}
-        </Text>
+      <TouchableOpacity style={styles.footer} onPress={onCheck} activeOpacity={0.85}>
+        <Text style={styles.footerText}>{isConnected ? "Refresh vitals" : "Check watch status"}</Text>
         <Ionicons name="arrow-forward" size={16} color="#4ade80" />
       </TouchableOpacity>
     </BlurView>
@@ -262,149 +132,56 @@ export const VitalSigns: React.FC<VitalSignsProps> = ({
 };
 
 const styles = StyleSheet.create({
-  card: {
+  container: {
     marginBottom: 30,
-    padding: 18,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "rgba(74,222,128,0.3)",
-    backgroundColor: "rgba(0, 26, 17, 0.53)",
-    overflow: "hidden",
-
-    shadowColor: "#004927",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-
-  title: {
-    flex: 1,
-    marginLeft: 10,
-  container: {
-    marginBottom: 20,
-    borderRadius: 16,
     borderColor: "rgba(74,222,128,0.25)",
-    borderWidth: 1,
     overflow: "hidden",
-    paddingVertical: 14,
+    backgroundColor: "rgba(3,16,11,0.72)",
+    padding: 16,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 18,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+  },
+  heartIcon: {
+    fontSize: 22,
+    marginRight: 10,
   },
   headerTitle: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "Poppins_600SemiBold",
   },
-
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: "rgba(74,222,128,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(74,222,128,0.30)",
-  },
-
-  greenDot: {
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   statusConnected: {
-    backgroundColor: "rgba(74,222,128,0.1)",
-    borderColor: "rgba(74,222,128,0.3)",
+    backgroundColor: "rgba(74,222,128,0.12)",
+    borderColor: "rgba(74,222,128,0.28)",
   },
   statusDisconnected: {
     backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4ade80",
-    marginRight: 5,
-  },
-
-  statusTxt: {
-    color: "#4ade80",
-    fontSize: 10,
-    fontFamily: "Poppins_500Medium",
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  col: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-  },
-
-  border: {
-    borderRightWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-
-  iconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-
-  val: {
-    fontSize: 16,
-    fontFamily: "Poppins_600SemiBold",
-    marginTop: 4,
-  },
-
-  unit: {
-    color: "#aaa",
-    fontSize: 10,
-    fontFamily: "Poppins_400Regular",
-  },
-
-  lbl: {
-    color: "#aaa",
-    fontSize: 10,
-    fontFamily: "Poppins_400Regular",
-    textAlign: "center",
-    marginTop: 4,
-    lineHeight: 14,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   statusText: {
-    fontSize: 10,
+    color: "#aaa",
+    fontSize: 11,
     fontFamily: "Poppins_500Medium",
   },
   statusTextConnected: {
@@ -413,56 +190,59 @@ const styles = StyleSheet.create({
   statusTextDisconnected: {
     color: "#888",
   },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4ade80",
+    marginRight: 6,
+  },
   vitalsRow: {
     flexDirection: "row",
-    paddingHorizontal: 8,
+    justifyContent: "space-between",
+    marginBottom: 16,
   },
   vitalCol: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 6,
-  },
-  vitalBorder: {
-    borderRightWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    paddingHorizontal: 8,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 10,
   },
   vitalValue: {
-    fontSize: 26,
+    fontSize: 20,
     fontFamily: "Poppins_700Bold",
-    lineHeight: 30,
+    marginBottom: 2,
   },
   vitalUnit: {
-    color: "#777",
-    fontSize: 9,
+    color: "#aaa",
+    fontSize: 10,
     fontFamily: "Poppins_400Regular",
   },
   vitalLabel: {
     color: "#aaa",
-    fontSize: 9,
+    fontSize: 10,
     fontFamily: "Poppins_400Regular",
-    marginTop: 2,
+    marginTop: 4,
+    textAlign: "center",
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingTop: 12,
-    marginTop: 6,
     borderTopWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: "rgba(255,255,255,0.08)",
   },
   footerText: {
-    color: "#888",
-    fontSize: 11,
+    color: "#aaa",
+    fontSize: 12,
     fontFamily: "Poppins_400Regular",
   },
 });

@@ -573,21 +573,12 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
   </TouchableOpacity>
                           
                         </View>
-     <VitalSigns
+            <VitalSigns
               status={wellness?.vitals_status ?? "Good"}
               heartRate={heartRate}
               temperature={temperature}
               oxygen={oxygenLevel}
               onCheck={loadWellnessData}
-            <MoodSection
-              selected={selected}
-              selectedEmoji={selectedEmoji}
-              textOpacity={textOpacity}
-              emojiOpacity={emojiOpacity}
-              responseOpacity={responseOpacity}
-              startBtnOpacity={startBtnOpacity}
-              onEmojiPress={handleEmojiPress}
-              onStartConversation={() => navigation.navigate("Therapy")}
             />
 
             {/* 3. Live Health Watch Data */}
@@ -608,11 +599,6 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
               sleep={sleepPct}
               hydration={hydrationPct}
               onCheck={loadWellnessData}
-              status={isConnected ? "Live" : "Offline"}
-              oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
-              food={70}
-              sleep={80}
-              onCheck={() => navigation.navigate('ConnectWatch')}
             />
 
             {/* 5. Horizontal Audio Media Stream Carousels Options */}
