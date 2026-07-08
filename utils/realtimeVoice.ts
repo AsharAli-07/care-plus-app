@@ -14,6 +14,7 @@ import {
   mediaDevices,
   MediaStream,
 } from "react-native-webrtc";
+import InCallManager from "react-native-incall-manager";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL } from "../api";
 
@@ -62,6 +63,12 @@ export class RealtimeVoiceSession {
       const token = await AsyncStorage.getItem("token");
       if (!token) throw new Error("Not authenticated");
 
+      // 0. Activate the native audio session for a voice call and force speaker output.
+      // Without this, react-native-webrtc may route remote audio to the earpiece
+      // or leave the audio session in the wrong mode, so nothing is audible.
+      InCallManager.start({ media: "audio" });
+      InCallManager.setForceSpeakerphoneOn(true);
+
       // 1. Get ephemeral key from our server
       const tokenRes = await fetch(`${BASE_URL}/api/therapy/realtime-session`, {
         method: "POST",
@@ -87,8 +94,12 @@ export class RealtimeVoiceSession {
 
       // Handle remote audio track (model's voice)
       this.pc.ontrack = (event: any) => {
-        // The remote stream is the model's spoken audio —
-        // react-native-webrtc plays it automatically via the earpiece/speaker
+        const [remoteStream] = event.streams;
+        if (remoteStream) {
+          remoteStream.getAudioTracks().forEach((track: any) => {
+            track.enabled = true;
+          });
+        }
       };
 
       // 3. Capture microphone
@@ -245,10 +256,21 @@ export class RealtimeVoiceSession {
   }
 
   /**
+   * Toggle audio output between speaker and earpiece
+   */
+  setSpeakerOn(on: boolean): void {
+    try {
+      InCallManager.setForceSpeakerphoneOn(on);
+    } catch {}
+  }
+  
+  /**
    * Stop the session and clean up all resources
    */
   stop(): void {
     this._isConnected = false;
+
+    try { InCallManager.stop(); } catch {}
 
     if (this.dc) {
       try { this.dc.close(); } catch {}

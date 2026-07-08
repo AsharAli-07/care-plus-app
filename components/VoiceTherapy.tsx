@@ -73,6 +73,7 @@ const VoiceTherapy = ({ navigation, route }: any) => {
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<"idle" | "connecting" | "listening" | "thinking" | "speaking">("idle");
+  const [speakerOn, setSpeakerOn] = useState(false); // NEW: speaker toggle state
   const scrollRef = useRef<ScrollView>(null);
   const voiceSessionRef = useRef<RealtimeVoiceSession | null>(null);
   const exchangeCountRef = useRef(0);
@@ -100,6 +101,13 @@ const VoiceTherapy = ({ navigation, route }: any) => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   }, []);
 
+  // ─── Toggle speaker / earpiece ───────────────────────────────────────────────
+  const toggleSpeaker = () => {
+    const next = !speakerOn;
+    setSpeakerOn(next);
+    voiceSessionRef.current?.setSpeakerOn(next);
+  };
+
   // ─── Start Realtime Voice Session ────────────────────────────────────────────
   const startSession = async () => {
     setIsConnecting(true);
@@ -110,6 +118,9 @@ const VoiceTherapy = ({ navigation, route }: any) => {
         setIsConnecting(false);
         setSessionActive(true);
         setCurrentPhase("idle");
+
+        // Apply current speaker preference once connected
+        rtSession.setSpeakerOn(speakerOn);
 
         // Send opening prompt to get Sera to greet the user
         const openingPrompt = session
@@ -276,6 +287,22 @@ const VoiceTherapy = ({ navigation, route }: any) => {
               {session ? `"${session.title}"` : "with Sera · AI Companion"}
             </Text>
           </View>
+
+          {/* NEW: Speaker toggle button */}
+          <TouchableOpacity
+            onPress={toggleSpeaker}
+            style={[
+              styles.speakerBtn,
+              speakerOn && { backgroundColor: "rgba(74,222,128,0.18)", borderColor: "rgba(74,222,128,0.4)" },
+            ]}
+          >
+            <Ionicons
+              name={speakerOn ? "volume-high" : "volume-medium-outline"}
+              size={16}
+              color={speakerOn ? "#4ade80" : "#aaa"}
+            />
+          </TouchableOpacity>
+
           <View style={styles.liveChip}>
             <View style={[styles.liveDot, { backgroundColor: sessionActive ? "#4ade80" : isConnecting ? "#facc15" : "#444" }]} />
             <Text style={styles.liveText}>{sessionActive ? "Live" : isConnecting ? "Connecting" : "Ready"}</Text>
@@ -388,8 +415,14 @@ const styles = StyleSheet.create({
   backBtn: { },
   headerTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15 },
   headerSub: { color: "#4ade80", fontFamily: "Poppins_400Regular", fontSize: 10, marginTop: 1 },
+  speakerBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
+  },
   liveChip: {
-    marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5,
+    marginLeft: 8, flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: "rgba(255,255,255,0.06)",
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
   },
