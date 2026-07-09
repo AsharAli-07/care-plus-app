@@ -38,6 +38,37 @@ yarn-error.*
 
 # generated native folders
 /ios
+
+# Environment variables
 .env
-scripts
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# test coverage
+coverage/
+.nyc_output/
+
+# build outputs
+build/
 *.zip
+
+# package manager
+package-lock.json
+yarn.lock
+
+# misc
+.turbo/
+scripts
