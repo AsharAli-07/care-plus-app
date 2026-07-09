@@ -39,6 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 
+# scripts with credentials
+scripts/push.js
+
 # Environment variables
 .env
 .env.local
