@@ -69,12 +69,12 @@ const Profile = ({ navigation }: any) => {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+const result = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes: ["images"], // was: ImagePicker.MediaTypeOptions.Images
+  allowsEditing: true,
+  aspect: [1, 1],
+  quality: 1,
+});
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
@@ -101,58 +101,64 @@ const Profile = ({ navigation }: any) => {
   // =========================
   // UPDATE PROFILE
   // =========================
-  const updateProfile = async () => {
-    setError("");
+const updateProfile = async () => {
+  setError("");
 
-    if (!name.trim() || !email.trim() || !phone.trim()) {
-      setError("Please fill all fields");
-      return;
+  if (!name.trim() || !email.trim() || !phone.trim()) {
+    setError("Please fill all fields");
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    setError("Please enter a valid email address");
+    return;
+  }
+
+  if (phone.replace(/\D/g, "").length !== 11) {
+    setError("Please enter a valid phone number");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const token = await AsyncStorage.getItem("token");
+
+    const formData = new FormData();
+    formData.append("name", name.trim());
+    formData.append("email", email.trim());
+    formData.append("phone_number", phone);
+
+    // Only attach a new image if the user picked one that isn't already
+    // a remote URL (i.e. it's a fresh local file from the picker)
+    if (profileImage && !profileImage.startsWith("http")) {
+      const filename = profileImage.split("/").pop() || "profile.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : "image/jpeg";
+
+      formData.append("profile_image", {
+        uri: profileImage,
+        name: filename,
+        type,
+      } as any);
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address");
-      return;
-    }
+    await axios.put(`${BASE_URL}/update-profile`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-    if (phone.replace(/\D/g, "").length !== 11) {
-      setError("Please enter a valid phone number");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const token = await AsyncStorage.getItem("token");
-
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("email", email.trim());
-      formData.append("phone_number", phone);
-
-      // WEB IMAGE FIX
-      const response = await fetch(profileImage);
-      const blob = await response.blob();
-
-      formData.append("profile_image", blob, "profile.jpg");
-
-      await axios.put(`${BASE_URL}/update-profile`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      Alert.alert("Success", "Profile updated successfully");
-
-      loadUser();
-    } catch (err: any) {
-      console.log("UPDATE ERROR:", err);
-      setError(err?.response?.data?.message || "Something went wrong. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    Alert.alert("Success", "Profile updated successfully");
+    loadUser();
+  } catch (err: any) {
+    console.log("UPDATE ERROR:", err);
+    setError(err?.response?.data?.message || "Something went wrong. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const mask = (value: string) => {
     return privacyMode ? "••••••••" : value;
@@ -199,14 +205,16 @@ const Profile = ({ navigation }: any) => {
 </Text>
               {/* PROFILE IMAGE */}
               <View style={styles.imageWrapper}>
-                <Image
-                  source={
-                    privacyMode
-                      ? require("../assets/images/profile.png")
-                      : { uri: profileImage }
-                  }
-                  style={styles.profileImage}
-                />
+<Image
+  source={
+    privacyMode
+      ? require("../assets/images/profile.png")
+      : profileImage
+      ? { uri: profileImage }
+      : require("../assets/images/profile.png")
+  }
+  style={styles.profileImage}
+/>
 
                 <TouchableOpacity style={styles.editImageBtn} onPress={pickImage}>
                   <Ionicons name="camera" size={18} color="#4ade80" />
@@ -425,6 +433,7 @@ subtitle:{
     borderColor: "rgba(74,222,128,0.3)",
     borderWidth: 1,
     marginTop: 5,
+    paddingVertical: 12
   },
 
   buttonText: {

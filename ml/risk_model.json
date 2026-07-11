@@ -1,0 +1,29 @@
+{
+  "features": [
+    "Heart Rate",
+    "Oxygen Saturation",
+    "Body Temperature"
+  ],
+  "feature_units": {
+    "Heart Rate": "bpm",
+    "Oxygen Saturation": "percent",
+    "Body Temperature": "celsius"
+  },
+  "mean": [
+    79.54506424357564,
+    97.50113359115306,
+    36.748036141972754
+  ],
+  "scale": [
+    11.557949013226054,
+    1.4427768803855774,
+    0.433159655388534
+  ],
+  "coef": [
+    0.8098431571405297,
+    -0.006103580206628248,
+    0.0024486744470993338
+  ],
+  "intercept": 0.11843460357274498,
+  "threshold": 0.5
+}

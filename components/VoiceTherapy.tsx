@@ -277,7 +277,7 @@ const VoiceTherapy = ({ navigation, route }: any) => {
         <View style={styles.glowBottom} />
 
         {/* Header */}
-        <BlurView intensity={50} tint="dark" style={styles.header}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={endSession} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
@@ -307,7 +307,7 @@ const VoiceTherapy = ({ navigation, route }: any) => {
             <View style={[styles.liveDot, { backgroundColor: sessionActive ? "#4ade80" : isConnecting ? "#facc15" : "#444" }]} />
             <Text style={styles.liveText}>{sessionActive ? "Live" : isConnecting ? "Connecting" : "Ready"}</Text>
           </View>
-        </BlurView>
+        </View>
 
         {/* Central orb */}
         <View style={styles.orbContainer}>
@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 15, paddingHorizontal: 20,
     borderBottomWidth: 1, borderBottomColor: "rgba(74,222,128,0.1)", gap: 12,
+     backgroundColor: 'rgba(0, 26, 17, 0.50)',
   },
   backBtn: { },
   headerTitle: { color: "#fff", fontFamily: "Poppins_500Medium", fontSize: 15 },
@@ -453,14 +454,13 @@ const styles = StyleSheet.create({
     width: "100%",
     top: 30,
     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-    shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, borderRadius: 12
+   borderRadius: 12
   },
   startBtnText: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 12 },
 
   activeControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", top: 30 },
   controlBtn: {
-    width: 55, height: 55, borderRadius: 30,
+    width: 70, height: 70, borderRadius: 50,
     backgroundColor: "rgba(255,255,255,0.06)",
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
@@ -468,10 +468,9 @@ const styles = StyleSheet.create({
   controlBtnLabel: { color: "#fff", fontFamily: "Poppins_400Regular", fontSize: 10 },
   controlBtnLabel2: { color: "#aaa", fontFamily: "Poppins_400Regular", fontSize: 9, marginTop: 4 },
   micBtn: {
-    width: 55, height: 55, borderRadius: 39,
+    width: 70, height: 70, borderRadius: 50,
     backgroundColor: "#004927", alignItems: "center", justifyContent: "center",
-    shadowColor: "#004927", shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45, shadowRadius: 18, elevation: 10,   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
+     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
   },
   liveIndicator: {
     width: 12, height: 12, borderRadius: 6,

@@ -88,7 +88,7 @@ const Onboarding = ({ navigation }: any) => {
                   temperature, and daily activity.
                 </Text>
 
-                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("ConnectWatch")}>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.replace("ConnectWatch")}>
                   <Text style={styles.buttonText}>Connect Now</Text>
                 </TouchableOpacity>
 

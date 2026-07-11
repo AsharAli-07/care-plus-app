@@ -79,7 +79,7 @@ const ConnectWatch = ({ navigation }: any) => {
     style={[styles.button, styles.disconnectButton]}
     onPress={disconnect}
   >
-    <Text style={styles.buttonText}>Disconnect</Text>
+    <Text style={styles.disconnectText}>Disconnect</Text>
   </TouchableOpacity>
 )}
 
@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 40,
+    paddingTop: 60,
+    paddingBottom: 100,
     paddingHorizontal: 20,
   },
   card: {
@@ -227,9 +227,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Poppins_400Regular',
   },
+  disconnectText:{
+color: "#ef4444"
+  },
   disconnectButton: {
-    backgroundColor: '#f44336',
-    borderColor: '#ff7961',
+    backgroundColor: 'rgba(248,113,113,0.08)',
+    borderColor: 'rgba(248,113,113,0.2)',
   },
   exploreButton: {
     marginTop: 20,

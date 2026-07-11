@@ -13,6 +13,7 @@ import { BASE_URL } from "../api";
 import { useBLEContext } from '../ble';
 
  import { VitalSigns } from "../components/VitalSigns";
+ import { MetricsCharts } from "../components/MetricsCharts";
 
 // ─── Animated Score Ring ──────────────────────────────────────────────────────
 const ScoreRing = ({ score }: { score: number }) => {
@@ -65,13 +66,6 @@ const sr = StyleSheet.create({
   status: { fontSize: 11, fontFamily: "Poppins_600SemiBold", marginTop: 2 },
 });
 
-
-
-
-
-
-
-
 // ─── Animated Bar ─────────────────────────────────────────────────────────────
 const AnimBar = ({ value, max, color }: { value: number; max: number; color: string }) => {
   const anim = useRef(new Animated.Value(0)).current;
@@ -94,7 +88,6 @@ const MetricCard = ({
   display,
   max,
   color,
-  
   delay = 0
 }: any) => {
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -121,11 +114,12 @@ const MetricCard = ({
 };
 
 const mcc = StyleSheet.create({
-   card:     { padding: 15, borderRadius: 16,   borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
- backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6},
-  iconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 8, backgroundColor: "rgba(74,222,128,0.10)", },
+  card:     {
+    padding: 15, borderRadius: 16,
+    borderColor: "rgba(74,222,128,0.3)", borderWidth: 1,
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
+  iconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 8, backgroundColor: "rgba(74,222,128,0.10)" },
   emoji:    { fontSize: 18 },
   label:    { color: "#888", fontSize: 10, fontFamily: "Poppins_400Regular" },
   value:    { fontSize: 18, fontFamily: "Poppins_700Bold", marginTop: 2 },
@@ -155,61 +149,27 @@ const MentalGauge = ({ label, value, invert, delay = 0 }: any) => {
 };
 
 const gauge = StyleSheet.create({
-  card:    { padding: 15, borderRadius: 12, marginBottom: 15, borderColor: "rgba(74,222,128,0.15)", borderWidth: 1, overflow: "hidden",  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, backgroundColor: "rgba(0, 26, 17, 0.53)", },
+  card:    {
+    padding: 15, borderRadius: 12, marginBottom: 15,
+    borderColor: "rgba(74,222,128,0.2)", borderWidth: 1, overflow: "hidden",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
   label:   { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular" },
   pill:    { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
   pillTxt: { fontSize: 11, fontFamily: "Poppins_600SemiBold" },
 });
 
-// ─── Vital Signs ──────────────────────────────────────────────────────────────
-
-
 // ─── Wellness Rings ───────────────────────────────────────────────────────────
-const WellnessRings = ({ data }: any) => {
-  const rings = [
-    { label: "Oxygen",    value: 98,     color: "#60a5fa"},
-    { label: "Hydration", value: Math.min(100, ((data?.water_intake || 0) / 3) * 100), color: "#34d399" },
-    { label: "Rest",      value: Math.min(100, ((data?.sleep_hours  || 0) / 9) * 100), color: "#a78bfa"},
-  ];
 
-  const RingItem = ({ label, value, color, emoji }: any) => {
-    const anim = useRef(new Animated.Value(0.3)).current;
-    useEffect(() => {
-      Animated.spring(anim, { toValue: 1, tension: 50, friction: 7, useNativeDriver: true }).start();
-    }, []);
-    return (
-      <Animated.View style={[wr2.item, { transform: [{ scale: anim }] }]}>
-        <View style={[wr2.outerRing, { borderColor: color + "25" }]}>
-          <View style={[wr2.ring, { borderColor: color }]}>
-            <Text style={wr2.emoji}>{emoji}</Text>
-            <Text style={[wr2.pct, { color }]}>{Math.round(value)}%</Text>
-          </View>
-        </View>
-        <Text style={wr2.label}>{label}</Text>
-      </Animated.View>
-    );
-  };
-
-  return (
-    <View style={wr2.card}>
-      <LinearGradient colors={["rgba(0, 41, 90, 0.36)", "transparent"]} style={StyleSheet.absoluteFill} />
-      <View style={wr2.header}>
-        <View style={wr2.dot} />
-        <Text style={wr2.title}>Body Wellness</Text>
-      </View>
-      <View style={wr2.row}>
-        {rings.map((r, i) => <RingItem key={i} {...r} />)}
-      </View>
-    </View>
-  );
-};
 
 const wr2 = StyleSheet.create({
-  card:      { borderRadius: 25, padding: 15, marginBottom: 30, borderColor: "rgba(96,165,250,0.2)", borderWidth: 1, overflow: "hidden",  shadowColor: "#00114983", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  card:      {
+    borderRadius: 25, padding: 15, marginBottom: 30,
+    borderColor: "rgba(74,222,128,0.25)", borderWidth: 1, overflow: "hidden",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
   header:    { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 },
-  dot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: "#60a5fa" },
+  dot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: "#4ade80" },
   title:     { color: "#fff", fontSize: 14, fontFamily: "Poppins_600SemiBold" },
   row:       { flexDirection: "row", justifyContent: "space-around" },
   item:      { alignItems: "center" },
@@ -290,16 +250,19 @@ const DailyAchievements = ({ token }: { token: string }) => {
 
 const ach = StyleSheet.create({
   wrapper:       {  },
-  progressCard:  { borderRadius: 12, padding: 15, borderColor: "rgba(74,222,128,0.2)", borderWidth: 1, overflow: "hidden", marginBottom: 15,  backgroundColor: "rgba(0, 26, 17, 0.53)",shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,},
-
+  progressCard:  {
+    borderRadius: 12, padding: 15,
+    borderColor: "rgba(74,222,128,0.2)", borderWidth: 1, overflow: "hidden", marginBottom: 15,
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
   progressLabel: { color: "#fff", fontSize: 12, fontFamily: "Poppins_400Regular" },
   progressCount: { color: "#4ade80", fontSize: 12, fontFamily: "Poppins_500Medium" },
   track:         { height: 6, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" },
   fill:          { height: 6, backgroundColor: "#4ade80", borderRadius: 3 },
-  badge:         { width: 112, padding: 12, borderRadius: 16, marginRight: 10, alignItems: "center", overflow: "hidden" },
-  done:          { borderColor: "rgba(74,222,128,0.4)", borderWidth: 1,   shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,  },
+  badge:         { width: 112, padding: 12, borderRadius: 16, marginRight: 10, alignItems: "center", overflow: "hidden", backgroundColor: "rgba(0, 26, 17, 0.53)" },
+  done:          {
+    borderColor: "rgba(74,222,128,0.4)", borderWidth: 1,
+  },
   locked:        { borderColor: "rgba(255,255,255,0.08)", borderWidth: 1 },
   badgeEmoji:    { fontSize: 26, marginBottom: 6 },
   badgeTitle:    { color: "#fff", fontSize: 10, fontFamily: "Poppins_400Regular", textAlign: "center" },
@@ -325,11 +288,11 @@ const sh = StyleSheet.create({
 // ─── Streak Card ──────────────────────────────────────────────────────────────
 const StreakCards = ({ current, longest }: any) => {
   const items = [
-    { emoji: "🔥", val: current, label: "Current Streak", color: "#fb923c", sub: "days" },
-    { emoji: "🏆", val: longest, label: "Best Streak",    color: "#facc15", sub: "days" },
+    { emoji: "🔥", val: current, label: "Current Streak", color: "#4ade80", sub: "days" },
+    { emoji: "🏆", val: longest, label: "Best Streak",    color: "#6ee7b7", sub: "days" },
   ];
   return (
-    <View style={{ flexDirection: "row", gap: 15, marginBottom: 30,  }}>
+    <View style={{ flexDirection: "row", gap: 15, marginBottom: 30 }}>
       {items.map((item, i) => {
         const scaleAnim = useRef(new Animated.Value(0.8)).current;
         useEffect(() => {
@@ -352,9 +315,10 @@ const StreakCards = ({ current, longest }: any) => {
 };
 
 const stk = StyleSheet.create({
-  card:  { padding: 18, borderRadius: 18, alignItems: "center", borderWidth: 1, overflow: "hidden", backgroundColor: "rgba(26, 19, 0, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  card:  {
+    padding: 18, borderRadius: 18, alignItems: "center", borderWidth: 1, overflow: "hidden",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
   emoji: { fontSize: 28, marginBottom: 4 },
   num:   { fontSize: 32, fontFamily: "Poppins_700Bold", lineHeight: 36 },
   sub:   { color: "#888", fontSize: 10, fontFamily: "Poppins_400Regular" },
@@ -369,31 +333,86 @@ const Dashboard = ({ navigation }: any) => {
   const [localMoodEmoji, setLocalMoodEmoji] = useState<string | null>(null);
   const [localMoodText,  setLocalMoodText]  = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const { isConnected: bleConnected, watchData: bleWatchData } = useBLEContext();
+
+  const { isConnected, watchData } = useBLEContext();
+
+  const [lastVitals, setLastVitals] = useState<any>(null);
+
+  const loadLastVitals = async () => {
+    try {
+      const t = await AsyncStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      setLastVitals(res.data);
+    } catch (err) {
+      console.log("Last vitals load error:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadLastVitals();
+    const interval = setInterval(loadLastVitals, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isLive = isConnected && watchData?.heartRate !== "--" && watchData?.heartRate != null;
+
+  const displayHeartRate = isLive
+    ? watchData.heartRate
+    : lastVitals?.heart_rate_bpm != null
+    ? String(lastVitals.heart_rate_bpm)
+    : "--";
+
+  const displaySpo2 = isLive
+    ? watchData.spo2
+    : lastVitals?.blood_oxygen_percent != null
+    ? String(lastVitals.blood_oxygen_percent)
+    : "--";
+
+  const displayTemp = isLive
+    ? watchData.temperature
+    : lastVitals?.temperature_fahrenheit != null
+    ? String(lastVitals.temperature_fahrenheit)
+    : "--";
+
+  const sensorSource: "live" | "last-known" | null = isLive
+    ? "live"
+    : lastVitals?.updated_at
+    ? "last-known"
+    : null;
+
+  const lastUpdatedAt = lastVitals?.updated_at ?? null;
+
+  // Body's Needs percentages — same formula as Home.tsx, sourced from `data`
+  // (Dashboard's single wellness-dashboard fetch) instead of a separate
+  // `wellness` state.
+  const foodPct = Math.min(100, Math.round(((data?.meals_count ?? 0) / 3) * 100));
+  const sleepPct = Math.min(100, Math.round(((data?.sleep_hours ?? 0) / 9) * 100));
+  const hydrationPct = Math.min(100, Math.round(((data?.water_intake ?? 0) / 3) * 100));
 
   const moodMap: Record<string, string> = {
     "😄": "Happy", "🙂": "Good", "😐": "Neutral", "😕": "Sad", "😔": "Very Sad",
   };
 
-  useFocusEffect(useCallback(() => {
-    const load = async () => {
-      try {
-        const t = await AsyncStorage.getItem("token") || "";
-        setToken(t);
-        const res = await axios.get(`${BASE_URL}/wellness-dashboard`, {
-          headers: { Authorization: `Bearer ${t}` },
-        });
-        setData(res.data);
-        if (res.data?.mood) {
-          setLocalMoodEmoji(res.data.mood.emoji);
-          setLocalMoodText(res.data.mood.text);
-        }
-        Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
-      } catch (err) { console.log(err); }
-      finally { setLoading(false); }
-    };
-    load();
-  }, []));
+  const loadDashboard = useCallback(async () => {
+    try {
+      const t = await AsyncStorage.getItem("token") || "";
+      setToken(t);
+      const res = await axios.get(`${BASE_URL}/wellness-dashboard`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      setData(res.data);
+      if (res.data?.mood) {
+        setLocalMoodEmoji(res.data.mood.emoji);
+        setLocalMoodText(res.data.mood.text);
+      }
+      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
+    } catch (err) { console.log(err); }
+    finally { setLoading(false); }
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadDashboard(); }, [loadDashboard]));
 
   const handleMoodPress = async (item: string | null) => {
     if (!item) { setLocalMoodEmoji(null); setLocalMoodText(null); return; }
@@ -414,7 +433,7 @@ const Dashboard = ({ navigation }: any) => {
       </View>
     );
   }
- const { isConnected, watchData } = useBLEContext();
+
   return (
     <View style={{ flex: 1, backgroundColor: "#050f09" }}>
       <StatusBar barStyle="light-content" />
@@ -433,50 +452,55 @@ const Dashboard = ({ navigation }: any) => {
             <ScoreRing score={data?.score || 0} />
           </View>
 
-
           {/* Streaks */}
-          <SectionHeader label="Streaks" icon="flame-outline" color="#fb923c" />
+          <SectionHeader label="Streaks" icon="flame-outline" color="#4ade80" />
           <StreakCards current={data?.streaks?.current || 0} longest={data?.streaks?.longest || 0} />
 
           {/* Health Metrics */}
           <SectionHeader label="Health Metrics" icon="stats-chart-outline" color="#4ade80" />
           <View style={s.grid}>
-            <MetricCard emoji="💤" label="Sleep"      value={data?.sleep_hours || 0}       max={9}  display={`${data?.sleep_hours || 0}h`}    color="#a78bfa" delay={0}   />
+            <MetricCard emoji="💤" label="Sleep"      value={data?.sleep_hours || 0}       max={9}  display={`${data?.sleep_hours || 0}h`}    color="#4ade80" delay={0}   />
             <MetricCard emoji="💧" label="Water"      value={data?.water_intake || 0}      max={3}  display={`${data?.water_intake || 0}L`}    color="#34d399" delay={80}  />
-            <MetricCard emoji="🍴" label="Meals"      value={data?.meals_count || 0}       max={3}  display={`${data?.meals_count || 0}/3`}    color="#fb923c" delay={160} />
-            <MetricCard emoji="🧘" label="Meditation" value={data?.meditation_minutes || 0} max={30} display={`${data?.meditation_minutes || 0}m`} color="#60a5fa" delay={240} />
+            <MetricCard emoji="🍴" label="Meals"      value={data?.meals_count || 0}       max={3}  display={`${data?.meals_count || 0}/3`}    color="#6ee7b7" delay={160} />
+            <MetricCard emoji="🧘" label="Meditation" value={data?.meditation_minutes || 0} max={30} display={`${data?.meditation_minutes || 0}m`} color="#4ade80" delay={240} />
           </View>
 
           {/* Vital Signs */}
-          <SectionHeader label="Vital Signs" icon="heart-outline" color="#f87171" />
-             <VitalSigns
-                        isConnected={isConnected}
-                        heartRate={watchData.heartRate}
-                        spo2={watchData.spo2}
-                        temperature={watchData.temperature}
-                        onConnect={() => navigation.navigate('ConnectWatch')}
-                       
-                      />
+          <SectionHeader label="Vital Signs" icon="heart-outline" color="#4ade80" />
+          <VitalSigns
+            isConnected={isConnected}
+            heartRate={displayHeartRate}
+            spo2={displaySpo2}
+            temperature={displayTemp}
+            sensorSource={sensorSource}
+            lastUpdatedAt={lastUpdatedAt}
+            onConnect={() => navigation.navigate('ConnectWatch')}
+          />
 
           {/* Body Wellness */}
-          <SectionHeader label="Body Wellness" icon="body-outline" color="#60a5fa" />
-          <WellnessRings data={data} />
+          <SectionHeader label="Body Wellness" icon="nutrition-outline" color="#4ade80" />
+          <MetricsCharts
+            food={foodPct}
+            sleep={sleepPct}
+            hydration={hydrationPct}
+            onCheck={loadDashboard}
+          />
 
           {/* Mental Wellness */}
-          <SectionHeader label="Mental Wellness" icon="bulb" color="#a78bfa" />
+          <SectionHeader label="Mental Wellness" icon="bulb" color="#4ade80" />
           <MentalGauge label="Stress Level"  value={data?.stress_level  || 0} invert delay={0}   />
           <MentalGauge label="Anxiety Level" value={data?.anxiety_level || 0} invert delay={100} />
           <MentalGauge label="Energy Level"  value={data?.energy_level  || 0}        delay={200} />
 
           {/* Achievements */}
           <View style={{height: 15}}/>
-          <SectionHeader label="Today's Goals" icon="trophy-outline" color="#facc15" style={{marginTop: 55}}/>
+          <SectionHeader label="Today's Goals" icon="trophy-outline" color="#4ade80" style={{marginTop: 55}}/>
           {token ? <DailyAchievements token={token} /> : null}
 
           {/* AI Insights */}
-          <SectionHeader label="AI Insights" icon="bulb-outline" color="#facc15" />
+          <SectionHeader label="AI Insights" icon="bulb-outline" color="#4ade80" />
           {data?.recommendations?.map((rec: string, i: number) => (
-            <View key={i}  style={s.recCard}>
+            <View key={i} style={s.recCard}>
               <View style={s.recDot} />
               <Text style={s.recText}>{rec}</Text>
             </View>
@@ -491,14 +515,19 @@ const Dashboard = ({ navigation }: any) => {
 
 const s = StyleSheet.create({
   scroll:    { padding: 20, paddingTop: 40 },
-  heroCard:  { borderRadius: 25, padding: 20, marginBottom: 30, alignItems: "center", borderColor: "rgba(74,222,128,0.2)", borderWidth: 1, overflow: "hidden", backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
+  heroCard:  {
+    borderRadius: 25, padding: 20, marginBottom: 30, alignItems: "center",
+    borderColor: "rgba(74,222,128,0.2)", borderWidth: 1, overflow: "hidden",
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
   heroLabel: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", letterSpacing: 0.5 },
   grid:      { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 15 },
-  recCard:   { flexDirection: "row", alignItems: "flex-start", padding: 14, borderRadius: 14, marginBottom: 10, borderColor: "rgba(250, 204, 21, 0.34)", borderWidth: 1, overflow: "hidden", gap: 10, backgroundColor: "#5a480044",   shadowColor: "#492700ff", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, },
-  recDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: "#facc15", marginTop: 4 },
+  recCard:   {
+    flexDirection: "row", alignItems: "flex-start", padding: 14, borderRadius: 14, marginBottom: 10,
+    borderColor: "rgba(74,222,128,0.3)", borderWidth: 1, overflow: "hidden", gap: 10,
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+  },
+  recDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: "#4ade80", marginTop: 4 },
   recText:   { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular", flex: 1, lineHeight: 19 },
 });
 

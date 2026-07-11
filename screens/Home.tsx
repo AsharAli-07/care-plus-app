@@ -12,6 +12,9 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
+import { SleepInput }       from "../components/SleepInput";
+import { HydrationTracker } from "../components/HydrationTracker";
+import { NutritionCheck }   from "../components/NutritionCheck";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Audio } from "expo-av";
@@ -21,6 +24,8 @@ import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import YoutubePlayer from "react-native-youtube-iframe";
+import { useFocusEffect } from "@react-navigation/native";
+
 
 // 📦 Modular Interface Elements Imports
 import { HeaderSection, NotificationOverlay } from "../components/HeaderSection";
@@ -28,7 +33,7 @@ import { VitalSigns } from "../components/VitalSigns";
 import { useBLEContext } from '../ble';
 import { MetricsCharts } from "../components/MetricsCharts";
 import { SleepSuggestions } from "../components/SleepSuggestions";
-import { DailyQuestions, DailyQuestion } from "../components/DailyQuestions";
+import { DailyQuestions, CheckInSection } from "../components/DailyQuestions";
 import { MotivationalSuggestions } from "../components/MotivationalSuggestions";
 import { FooterQuickActions } from "../components/FooterQuickActions";
 import { MoodSelector } from "../components/MoodSelector"
@@ -66,6 +71,11 @@ type VideoItem = {
   category?: string;
   duration?: string;
 };
+
+// ─── Daily Check-In: types + constants (module scope, no hooks here) ────────
+const MEAL_KEYS = ["breakfast", "lunch", "dinner"] as const;
+type MealKey = typeof MEAL_KEYS[number];
+type MealsType = { breakfast: boolean; lunch: boolean; dinner: boolean };
 
 const AUDIO_DATA: AudioItem[] = [
   {
@@ -106,54 +116,41 @@ const AUDIO_DATA: AudioItem[] = [
   },
 ];
 
+// Recitations by Mishary Rashid Alafasy, served from everyayah.com / mp3quran.net —
+// these are real, publicly reachable audio files (the old example.com URLs were placeholders
+// and would fail to load, which is why nothing played and the mini player got stuck).
 const sleepItems: SleepItem[] = [
   {
-    thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?fit=crop&w=400&h=300",
-    title: "Ocean Waves",
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1585036156171-384164a8c675?fit=crop&w=400&h=300",
+    title: "Ayat al-Kursi — 2:255",
+    audioUrl: "https://everyayah.com/data/Alafasy_128kbps/002255.mp3",
   },
   {
-    thumbnail: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?fit=crop&w=400&h=300",
-    title: "Soft Piano",
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?fit=crop&w=400&h=300",
+    title: "Surah Al-Mulk — 67",
+    audioUrl: "https://server8.mp3quran.net/afs/067.mp3",
   },
   {
-    thumbnail: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?fit=crop&w=400&h=300",
-    title: "Forest Sounds",
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-  },
-];
-
-// ─── Daily Check-In question bank ──────────────────────────────────────────
-// Options are ordered worst -> best; calculateDiagnosticResult() scores off
-// the selected option's position in this list, so edit freely as long as the
-// ordering stays worst-to-best.
-const dailyQuestions: DailyQuestion[] = [
-  {
-    text: "How many hours did you sleep last night?",
-    options: ["Less than 4h", "4–6h", "6–8h", "8h or more"],
+    thumbnail: "https://images.unsplash.com/photo-1609599006353-e629aaabfeae?fit=crop&w=400&h=300",
+    title: "Surah Ad-Duha — 93",
+    audioUrl: "https://server8.mp3quran.net/afs/093.mp3",
   },
   {
-    text: "Did you drink enough water today?",
-    options: ["Not really", "A little", "Yes, plenty"],
+    thumbnail: "https://images.unsplash.com/photo-1519817650390-64a93db51149?fit=crop&w=400&h=300",
+    title: "Surah Al-Inshirah — 94",
+    audioUrl: "https://server8.mp3quran.net/afs/094.mp3",
   },
   {
-    text: "Did you eat properly today?",
-    options: ["No", "Partially", "Yes"],
-  },
-  {
-    text: "Do you feel stressed today?",
-    options: ["Very stressed", "A little stressed", "Not at all"],
-  },
-  {
-    text: "Do you feel anxious or calm?",
-    options: ["Very anxious", "Somewhat anxious", "Calm"],
+    thumbnail: "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?fit=crop&w=400&h=300",
+    title: "Surah Al-Ikhlas — 112",
+    audioUrl: "https://server8.mp3quran.net/afs/112.mp3",
   },
 ];
 
 const videos: VideoItem[] = [
   { title: "Stay Strong Motivation", videoId: "ZbZSe6N_BXs", category: "Motivation", duration: "3:45" },
-  { title: "Never Give Up", videoId: "2Lz0VOltZKA", category: "Motivation", duration: "4:12" },
+  { title: "Morning Yoga Flow", videoId: "s-1vMbAgYWU", category: "Yoga", duration: "20:00" },
+  { title: "Stress Relief Yoga", videoId: "bYQwM841ED4", category: "Yoga", duration: "25:00" },
   { title: "Mindset Shift Motivation", videoId: "ZXsQAXx_ao0", category: "Mindset", duration: "5:30" },
   { title: "Mental Strength", videoId: "mgmVOuLgFB0", category: "Mindset", duration: "6:00" },
 ];
@@ -169,124 +166,105 @@ export default function Home({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { isConnected, watchData } = useBLEContext();
 
-  
+
   const { width } = useWindowDimensions();
   const [moodEmoji, setMoodEmoji] = useState<string | null>(null);
   const [moodText, setMoodText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sleepGoal, setSleepGoal] = useState(9);
+const [waterGoal, setWaterGoal] = useState(3);
 
   // === Real wellness data, pulled from the same endpoint the Dashboard uses ===
   const [wellness, setWellness] = useState<any>(null);
 
-  const loadWellnessData = async () => {
-    try {
-      setLoading(true);
-      const token = await AsyncStorage.getItem("token");
-      const res = await axios.get(`${BASE_URL}/wellness-dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = res.data;
-      setWellness(data);
-      if (data?.mood) {
-        setMoodEmoji(data.mood.emoji ?? null);
-        setMoodText(data.mood.text ?? null);
-      }
-    } catch (err) {
-      console.log("Wellness Load Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-useEffect(() => {
-  // console.log("[Home] isConnected:", isConnected, "watchData:", watchData);
-}, [isConnected, watchData]);
-  useEffect(() => {
-    loadWellnessData();
-  }, []);
-
-// Home.tsx
-// const [lastVitals, setLastVitals] = useState<any>(null);
-
-// const loadLastVitals = async () => {
-//   try {
-//     const token = await AsyncStorage.getItem("token");
-//     const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
-//       headers: { Authorization: `Bearer ${token}` },
-//     });
-//     setLastVitals(res.data);
-//   } catch (err) {
-//     console.log("Last vitals load error:", err);
-//   }
-// };
-
-// useEffect(() => {
-//   loadLastVitals();
-//   const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
-//   return () => clearInterval(interval);
-// }, []);
-
-// const isLive = isConnected && watchData.heartRate !== "--";
-// const displayHeartRate = isLive ? watchData.heartRate : (lastVitals?.heart_rate_bpm != null ? String(lastVitals.heart_rate_bpm) : "--");
-// const displaySpo2      = isLive ? watchData.spo2      : (lastVitals?.blood_oxygen_percent != null ? String(lastVitals.blood_oxygen_percent) : "--");
-// const displayTemp      = isLive ? watchData.temperature : (lastVitals?.temperature_fahrenheit != null ? String(lastVitals.temperature_fahrenheit) : "--");
-// const vitalsLabel = isLive
-//   ? "Live"
-//   : lastVitals?.updated_at
-//     ? `Last seen ${new Date(lastVitals.uppdated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-//     : "No data yet";
-
-const [lastVitals, setLastVitals] = useState<any>(null);
-
-const loadLastVitals = async () => {
+ const loadWellnessData = async () => {
   try {
+    setLoading(true);
     const token = await AsyncStorage.getItem("token");
-    const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setLastVitals(res.data); // { heart_rate_bpm, temperature_celsius, blood_oxygen_percent, movement, recorded_at } or null
+    const [dashRes, prefRes] = await Promise.all([
+      axios.get(`${BASE_URL}/wellness-dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${BASE_URL}/wellness-preferences`, { headers: { Authorization: `Bearer ${token}` } }),
+    ]);
+
+    const data = dashRes.data;
+    setWellness(data);
+    if (data?.mood) {
+      setMoodEmoji(data.mood.emoji ?? null);
+      setMoodText(data.mood.text ?? null);
+    }
+
+    const prefs = prefRes.data || {};
+    if (prefs.sleep_goal) setSleepGoal(parseFloat(prefs.sleep_goal));
+    if (prefs.water_goal) setWaterGoal(parseFloat(prefs.water_goal));
   } catch (err) {
-    console.log("Last vitals load error:", err);
+    console.log("Wellness Load Error:", err);
+  } finally {
+    setLoading(false);
   }
 };
 
-useEffect(() => {
-  loadLastVitals();
-  const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
-  return () => clearInterval(interval);
-}, []);
-
-const isLive = isConnected && watchData.heartRate !== "--";
-
-const displayHeartRate = isLive
-  ? watchData.heartRate
-  : lastVitals?.heart_rate_bpm != null
-  ? String(lastVitals.heart_rate_bpm)
-  : "--";
-
-const displaySpo2 = isLive
-  ? watchData.spo2
-  : lastVitals?.blood_oxygen_percent != null
-  ? String(lastVitals.blood_oxygen_percent)
-  : "--";
-
-const displayTemp = isLive
-  ? watchData.temperature // already °F from the watch firmware, per your earlier note
-  : lastVitals?.temperature_fahrenheit != null
-  ? String(lastVitals.temperature_fahrenheit)
-  : "--";
-
-const sensorSource: "live" | "last-known" | null = isLive
-  ? "live"
-  : lastVitals?.updated_at
-  ? "last-known"
-  : null;
-
-const lastUpdatedAt = lastVitals?.updated_at ?? null;
 
 
 
+  useEffect(() => {
+    // console.log("[Home] isConnected:", isConnected, "watchData:", watchData);
+  }, [isConnected, watchData]);
+
+useFocusEffect(
+  useCallback(() => {
+    loadWellnessData();
+  }, [])
+);
 
 
+
+  const [lastVitals, setLastVitals] = useState<any>(null);
+
+  const loadLastVitals = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/health-monitoring-live`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLastVitals(res.data); // { heart_rate_bpm, temperature_celsius, blood_oxygen_percent, movement, recorded_at } or null
+    } catch (err) {
+      console.log("Last vitals load error:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadLastVitals();
+    const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
+    return () => clearInterval(interval);
+  }, []);
+
+  const isLive = isConnected && watchData.heartRate !== "--";
+
+  const displayHeartRate = isLive
+    ? watchData.heartRate
+    : lastVitals?.heart_rate_bpm != null
+    ? String(lastVitals.heart_rate_bpm)
+    : "--";
+
+  const displaySpo2 = isLive
+    ? watchData.spo2
+    : lastVitals?.blood_oxygen_percent != null
+    ? String(lastVitals.blood_oxygen_percent)
+    : "--";
+
+  const displayTemp = isLive
+    ? watchData.temperature // already °F from the watch firmware, per your earlier note
+    : lastVitals?.temperature_fahrenheit != null
+    ? String(lastVitals.temperature_fahrenheit)
+    : "--";
+
+  const sensorSource: "live" | "last-known" | null = isLive
+    ? "live"
+    : lastVitals?.updated_at
+    ? "last-known"
+    : null;
+
+  const lastUpdatedAt = lastVitals?.updated_at ?? null;
 
   const foodPct = Math.min(100, Math.round(((wellness?.meals_count ?? 0) / 3) * 100));
   const sleepPct = Math.min(100, Math.round(((wellness?.sleep_hours ?? 0) / 9) * 100));
@@ -296,14 +274,101 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // === Daily Check-In (Sleep / Hydration / Nutrition) — real, precise values ===
+  const [sleepHours, setSleepHours] = useState(0);
+  const [waterML, setWaterML]       = useState(0);
+  const [meals, setMeals]           = useState<MealsType>({ breakfast: false, lunch: false, dinner: false });
+  const [checkInSaving, setCheckInSaving] = useState(false);
+  const [checkInSaved, setCheckInSaved]   = useState(false);
+  const [openIndex, setOpenIndex]         = useState<number | null>(null);
 
-  // === Diagnostics Survey Tracking State ===
-  // null = unanswered, otherwise the index of the selected option for that question
-  const [answers, setAnswers] = useState<(number | null)[]>(
-    Array(dailyQuestions.length).fill(null)
-  );
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const animatedHeights = useRef([
+    new Animated.Value(0), // sleep
+    new Animated.Value(0), // hydration
+    new Animated.Value(0), // nutrition
+  ]).current;
+
+  const toggleMeal = (key: MealKey) => setMeals(prev => ({ ...prev, [key]: !prev[key] }));
+  const getMealScore = () => [meals.breakfast, meals.lunch, meals.dinner].filter(Boolean).length;
+
+  // Pre-fill from the same dashboard payload Home already loads
+  useEffect(() => {
+    if (!wellness) return;
+    setSleepHours(Number(wellness.sleep_hours ?? 0));
+    setWaterML(Number(wellness.water_intake ?? 0) * 1000);
+    const mc = Number(wellness.meals_count ?? 0);
+    setMeals({ breakfast: mc >= 1, lunch: mc >= 2, dinner: mc >= 3 });
+  }, [wellness]);
+
+useEffect(() => {
+  AsyncStorage.getItem("token").then(token => {
+    console.log("MY TOKEN:", token);
+  });
+}, []);
+
+  const handleToggleSection = (index: number) => {
+    const isOpen = openIndex === index;
+    setOpenIndex(isOpen ? null : index);
+    animatedHeights.forEach((anim, i) => {
+      Animated.timing(anim, {
+        toValue: i === index && !isOpen ? 1 : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+  };
+
+  const saveBodyNeeds = async () => {
+    try {
+      setCheckInSaving(true);
+      const token = await AsyncStorage.getItem("token");
+      await axios.post(`${BASE_URL}/wellness-log`, {
+        sleep_hours:  sleepHours > 0 ? sleepHours : undefined,
+        water_intake: waterML / 1000,
+        meals_count:  getMealScore(),
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
+      setCheckInSaved(true);
+      loadWellnessData(); // refresh Body's Needs % bars
+      setTimeout(() => setCheckInSaved(false), 2000);
+    } catch (err) {
+      console.log("Save body needs error:", err);
+    } finally {
+      setCheckInSaving(false);
+    }
+  };
+
+const checkInSections: CheckInSection[] = [
+  {
+    text: "How many hours did you sleep?",
+    height: 230,
+    content: <SleepInput value={sleepHours} onChange={setSleepHours} goal={sleepGoal} />,
+  },
+  {
+    text: "Did you drink enough water today?",
+    height: 250,
+    content: (
+      <HydrationTracker
+        waterML={waterML}
+        onAdd={() => setWaterML(p => p + 250)}
+        onRemove={() => setWaterML(p => Math.max(0, p - 250))}
+        goalL={waterGoal}
+      />
+    ),
+  },
+  {
+    text: "Did you eat properly today?",
+    height: 270,
+    content: (
+      <NutritionCheck
+        meals={meals}
+        mealKeys={MEAL_KEYS}
+        onToggleMeal={toggleMeal}
+        mealScore={getMealScore()}
+      />
+    ),
+  },
+];
 
   // === Modal State ===
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
@@ -315,7 +380,6 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
 
   // === Dynamic Internal Layout Animations Refs ===
   const videoAnim = useRef(new Animated.Value(0)).current;
-  const animatedHeights = useRef(dailyQuestions.map(() => new Animated.Value(0))).current;
 
   // === Audio Infrastructure Processing State Engine ===
   const [currentTrack, setCurrentTrack] = useState<AudioItem | null>(null);
@@ -323,14 +387,13 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const miniPlayerAnim = useRef(new Animated.Value(100)).current;
   const moodMap: Record<string, string> = {
     "😄": "Happy", "🙂": "Good", "😐": "Neutral", "😕": "Sad", "😔": "Very Sad",
   };
 
-
-
-    const handleMoodPress = async (emoji: string | null) => {
+  const handleMoodPress = async (emoji: string | null) => {
     if (!emoji) { setMoodEmoji(null); setMoodText(null); return; }
     setMoodEmoji(emoji);
     setMoodText(moodMap[emoji]);
@@ -339,6 +402,7 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
       await axios.post(`${BASE_URL}/mood`, { mood_emoji: emoji }, { headers: { Authorization: `Bearer ${token}` } });
     } catch (err) { console.log(err); }
   };
+
   // --- Network Endpoint side-effects Operations ---
   const loadNotifications = async () => {
     try {
@@ -380,8 +444,6 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
 
   const hasUnread = notifications.some((n) => n.read_status === 0);
 
-
-
   // --- Like Toggle ---
   const toggleLike = (id: string) => {
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -392,50 +454,6 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
     if (!soundRef.current || !currentTrack) return;
     const targetMs = ratio * currentTrack.durationSec * 1000;
     await soundRef.current.setPositionAsync(targetMs);
-  };
-
-  // --- Dynamic Diagnostic Surveys Math ---
-  const handleToggleQuestion = (index: number) => {
-    const isCurrentlyOpen = openIndex === index;
-    setOpenIndex(isCurrentlyOpen ? null : index);
-    animatedHeights.forEach((anim, i) => {
-      Animated.timing(anim, {
-        toValue: i === index && !isCurrentlyOpen ? 1 : 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-  };
-
-  const handleSelectOption = (questionIndex: number, optionIndex: number) => {
-    setAnswers((prev) => {
-      const updated = [...prev];
-      updated[questionIndex] = optionIndex;
-      return updated;
-    });
-  };
-
-  const calculateDiagnosticResult = () => {
-    let total = 0;
-    let answeredCount = 0;
-
-    answers.forEach((selectedIndex, qIdx) => {
-      if (selectedIndex === null) return;
-      const optionsCount = dailyQuestions[qIdx].options.length;
-      // Normalize each question to a 0–2 score based on how good the picked option is
-      const normalized = optionsCount > 1 ? selectedIndex / (optionsCount - 1) : 1;
-      total += normalized * 2;
-      answeredCount += 1;
-    });
-
-    if (answeredCount === 0) {
-      setResult("Answer at least one question to get a result");
-      return;
-    }
-
-    if (total >= 8) setResult("🟢 You are mentally healthy and stable");
-    else if (total >= 5) setResult("🟡 Mild stress detected, take rest & relax");
-    else setResult("🔴 High stress detected, consider self-care or support");
   };
 
   // --- Video Modal Controls ---
@@ -453,69 +471,102 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
   // --- Audio Playback ---
   const playTrack = useCallback(
     async (item: AudioItem) => {
+      // Toggle play/pause if this is already the loaded track
       if (currentTrack?.id === item.id && soundRef.current) {
-        if (isPlaying) {
-          await soundRef.current.pauseAsync();
-          setIsPlaying(false);
-        } else {
-          await soundRef.current.playAsync();
-          setIsPlaying(true);
+        try {
+          if (isPlaying) {
+            await soundRef.current.pauseAsync();
+            setIsPlaying(false);
+          } else {
+            await soundRef.current.playAsync();
+            setIsPlaying(true);
+          }
+        } catch (err) {
+          console.log("Playback toggle error:", err);
         }
         return;
       }
 
+      // Unload whatever was previously loaded
       if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
+        try {
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
+        } catch (err) {
+          console.log("Unload previous track error:", err);
+        }
         soundRef.current = null;
       }
 
+      setAudioError(null);
       setCurrentTrack(item);
       setProgress(0);
       setCurrentTimeSec(0);
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: item.id },
-        { shouldPlay: true },
-        (status) => {
-          if (!status.isLoaded) return;
-          const dur = status.durationMillis ?? item.durationSec * 1000;
-          const pos = status.positionMillis ?? 0;
-          setProgress(dur > 0 ? pos / dur : 0);
-          setCurrentTimeSec(pos / 1000);
-          if (status.didJustFinish) {
-            const idx = AUDIO_DATA.findIndex((a) => a.id === item.id);
-            if (idx < AUDIO_DATA.length - 1) playTrack(AUDIO_DATA[idx + 1]);
-            else {
-              setIsPlaying(false);
-              setProgress(0);
-            }
-          }
-        }
-      );
-
-      soundRef.current = sound;
-      setIsPlaying(true);
-
+      // Bring the mini player into view immediately — don't wait on the
+      // network load, so the UI never gets stuck mid-animation if the
+      // load fails or is slow.
       Animated.spring(miniPlayerAnim, {
         toValue: 0,
         useNativeDriver: true,
         tension: 80,
       }).start();
+
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: item.id },
+          { shouldPlay: true },
+          (status) => {
+            if (!status.isLoaded) {
+              if ((status as any).error) {
+                console.log("Playback status error:", (status as any).error);
+                setAudioError("This track couldn't be played.");
+                setIsPlaying(false);
+              }
+              return;
+            }
+            const dur = status.durationMillis ?? item.durationSec * 1000;
+            const pos = status.positionMillis ?? 0;
+            setProgress(dur > 0 ? pos / dur : 0);
+            setCurrentTimeSec(pos / 1000);
+            if (status.didJustFinish) {
+              const idx = AUDIO_DATA.findIndex((a) => a.id === item.id);
+              if (idx !== -1 && idx < AUDIO_DATA.length - 1) playTrack(AUDIO_DATA[idx + 1]);
+              else {
+                setIsPlaying(false);
+                setProgress(0);
+              }
+            }
+          }
+        );
+
+        soundRef.current = sound;
+        setIsPlaying(true);
+      } catch (err) {
+        console.log("Audio load error:", err);
+        setAudioError("Couldn't load this audio. Check the URL or your connection.");
+        setIsPlaying(false);
+        soundRef.current = null;
+      }
     },
     [currentTrack, isPlaying]
   );
 
   const stopAudio = useCallback(async () => {
     if (soundRef.current) {
-      await soundRef.current.stopAsync();
-      await soundRef.current.unloadAsync();
+      try {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+      } catch (err) {
+        console.log("Stop audio error:", err);
+      }
       soundRef.current = null;
     }
     setCurrentTrack(null);
     setIsPlaying(false);
     setProgress(0);
     setCurrentTimeSec(0);
+    setAudioError(null);
     Animated.timing(miniPlayerAnim, {
       toValue: 100,
       duration: 250,
@@ -527,6 +578,7 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
     async (dir: "prev" | "next") => {
       if (!currentTrack) return;
       const idx = AUDIO_DATA.findIndex((a) => a.id === currentTrack.id);
+      if (idx === -1) return; // current track isn't part of AUDIO_DATA (e.g. a verse) — nothing to skip within
       const nextIdx =
         dir === "next"
           ? Math.min(AUDIO_DATA.length - 1, idx + 1)
@@ -536,20 +588,19 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
     [currentTrack, playTrack]
   );
 
-  // --- SleepSuggestions track handler ---
+  // --- SleepSuggestions (Quran verse) track handler ---
   // Matches a SleepItem's audioUrl to AUDIO_DATA, falls back to a minimal AudioItem
   const handleSleepTrackSelect = (item: SleepItem) => {
     const match = AUDIO_DATA.find((a) => a.id === item.audioUrl);
     if (match) {
       playTrack(match);
     } else {
-      // Build a minimal AudioItem so playTrack can still work
       const fallback: AudioItem = {
         id: item.audioUrl,
         title: item.title,
-        artist: "Sleep Sounds",
+        artist: "Quran Recitation",
         thumbnail: item.thumbnail,
-        category: "Sleep",
+        category: "Verse",
         duration: "0:00",
         durationSec: 0,
       };
@@ -557,45 +608,42 @@ const lastUpdatedAt = lastVitals?.updated_at ?? null;
     }
   };
 
+  const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: string) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/therapy/sessions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const sessions: any[] = res.data || [];
 
-const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: string) => {
-  try {
-    const token = await AsyncStorage.getItem("token");
-    const res = await axios.get(`${BASE_URL}/therapy/sessions`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const sessions: any[] = res.data || [];
- 
-    // Find the matching upcoming session by title
-    const match = sessions.find(
-      (s) =>
-        s.title === sessionTitle &&
-        (s.status === "upcoming" || s.status === "active")
-    );
- 
-    // Also fetch user for context
-    const userRes = await axios.get(`${BASE_URL}/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const user = userRes.data;
- 
-    if (match) {
-      if (match.session_type === "voice") {
-        navigation.navigate("VoiceTherapy", { session: match, user });
+      // Find the matching upcoming session by title
+      const match = sessions.find(
+        (s) =>
+          s.title === sessionTitle &&
+          (s.status === "upcoming" || s.status === "active")
+      );
+
+      // Also fetch user for context
+      const userRes = await axios.get(`${BASE_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = userRes.data;
+
+      if (match) {
+        if (match.session_type === "voice") {
+          navigation.navigate("VoiceTherapy", { session: match, user });
+        } else {
+          navigation.navigate("ChatTherapy", { session: match, user });
+        }
       } else {
-        navigation.navigate("ChatTherapy", { session: match, user });
+        // No exact match — navigate to Therapy tab so user can find their session
+        navigation.navigate("Therapy");
       }
-    } else {
-      // No exact match — navigate to Therapy tab so user can find their session
+    } catch (err) {
+      console.log("Session navigate error:", err);
       navigation.navigate("Therapy");
     }
-  } catch (err) {
-    console.log("Session navigate error:", err);
-    navigation.navigate("Therapy");
-  }
-};
-
-
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#050f09" }}>
@@ -628,49 +676,37 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
 
             {/* 3. Live Health Watch Data */}
             <View style={styles.sectionRow}>
-              <SectionHeader label="Vital's Sign" icon="happy-outline" color="#4ade80" />
-              {/* <TouchableOpacity
-                style={styles.connectBadge}
-                onPress={() => navigation.navigate("ConnectWatch")}
+              <SectionHeader label="Vital's Sign" icon="heart-outline" color="#4ade80" />
+              <TouchableOpacity
+                style={[
+                  styles.connectBadge,
+                  isConnected && { backgroundColor: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.2)" } // Red theme background when connected
+                ]}
+                onPress={() => {
+                  navigation.navigate("ConnectWatch");
+                }}
                 activeOpacity={0.8}
               >
                 <Ionicons
-                  name="watch-outline"
+                  name={isConnected ? "watch-outline" : "watch-outline"}
                   size={14}
-                  color="#4ade80"
+                  color={isConnected ? "#ef4444" : "#4ade80"} // Switches to theme red if live
                   style={{ marginRight: 6 }}
                 />
-                <Text style={styles.connectText}>Connect</Text>
-              </TouchableOpacity> */}
-              <TouchableOpacity
-    style={[
-      styles.connectBadge, 
-      isConnected && { backgroundColor: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.2)" } // Red theme background when connected
-    ]}
-    onPress={() => {navigation.navigate("ConnectWatch");
-    }}
-    activeOpacity={0.8}
-  >
-    <Ionicons
-      name={isConnected ? "watch-outline" : "watch-outline"}
-      size={14}
-      color={isConnected ? "#ef4444" : "#4ade80"} // Switches to theme red if live
-      style={{ marginRight: 6 }}
-    />
-    <Text style={[styles.connectText, { color: isConnected ? "#ef4444" : "#4ade80" }]}>
-      {isConnected ? "Disconnect" : "Connect"}
-    </Text>
-  </TouchableOpacity>
+                <Text style={[styles.connectText, { color: isConnected ? "#ef4444" : "#4ade80" }]}>
+                  {isConnected ? "Disconnect" : "Connect"}
+                </Text>
+              </TouchableOpacity>
             </View>
-<VitalSigns
-  isConnected={isConnected}
-  heartRate={displayHeartRate}
-  spo2={displaySpo2}
-  temperature={displayTemp}
-  sensorSource={sensorSource}
-  lastUpdatedAt={lastUpdatedAt}
-  onConnect={() => navigation.navigate("ConnectWatch")}
-/>
+            <VitalSigns
+              isConnected={isConnected}
+              heartRate={displayHeartRate}
+              spo2={displaySpo2}
+              temperature={displayTemp}
+              sensorSource={sensorSource}
+              lastUpdatedAt={lastUpdatedAt}
+              onConnect={() => navigation.navigate("ConnectWatch")}
+            />
 
             {/* 4. Body's Needs — Food / Sleep / Hydration */}
             <SectionHeader label="Body's Needs" icon="nutrition-outline" color="#4ade80" />
@@ -679,34 +715,38 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
               sleep={sleepPct}
               hydration={hydrationPct}
               onCheck={loadWellnessData}
-              // status={isConnected ? "Live" : "Offline"}
-              // oxygen={watchData.spo2 !== "--" ? parseFloat(watchData.spo2) : 0}
             />
 
-            {/* 5. Horizontal Audio Media Stream Carousels Options */}
-            <SectionHeader label="Sleep Sounds" icon="moon-outline" color="#4ade80" />
-     <SleepSuggestions
-  items={sleepItems}
-  currentAudioUrl={currentTrack?.id ?? null}
-  isPlaying={isPlaying}
-  onSelectTrack={handleSleepTrackSelect}
-/>
 
-            {/* 6. Accordion Dropdown Health Evaluation Questionnaire Form */}
+            {/* 6. Dropdown Health Fulfillment Check-In (Sleep / Hydration / Nutrition) */}
             <SectionHeader label="Daily Check-In" icon="clipboard-outline" color="#4ade80" />
             <DailyQuestions
-              questions={dailyQuestions}
-              answers={answers}
+              sections={checkInSections}
+              openIndex={openIndex}
               animatedHeights={animatedHeights}
-              result={result}
-
-              onToggleQuestion={handleToggleQuestion}
-              onSelectOption={handleSelectOption}
-              onGetResult={calculateDiagnosticResult}
+              saving={checkInSaving}
+              saved={checkInSaved}
+              onToggleSection={handleToggleSection}
+              onSave={saveBodyNeeds}
             />
 
+
+            {/* 5. Today's Quran verses carousel */}
+            <SectionHeader label="Audio Suggestions" icon="moon-outline" color="#4ade80" />
+            <SleepSuggestions
+              items={sleepItems}
+              currentAudioUrl={currentTrack?.id ?? null}
+              isPlaying={isPlaying}
+              onSelectTrack={handleSleepTrackSelect}
+            />
+            {audioError && (
+              <Text style={styles.audioErrorText}>{audioError}</Text>
+            )}
+
+
+
             {/* 7. YouTube Embedding Navigation Block Container */}
-            <SectionHeader label="Motivation" icon="play-circle-outline" color="#4ade80" />
+            <SectionHeader label="Video Suggestions" icon="play-circle-outline" color="#4ade80" />
             <MotivationalSuggestions
               videos={videos}
               selectedVideo={selectedVideo?.videoId ?? null}
@@ -724,108 +764,107 @@ const fetchSessionAndNavigate = async (sessionTitle: string, sessionType?: strin
             <FooterQuickActions />
           </View>
         </ScrollView>
-    {/* ── Notification Overlay (outside ScrollView so it never scrolls) ── */}
-<NotificationOverlay
-  visible={showDropdown}
-  notifications={
-    notifications.length === 0
-      ? [
-          {
-            id: "welcome-back",
-            title: "Welcome Back!",
-            message:
-              "We're glad to see you again. Check out your daily wellness goals.",
-            read_status: 0,
-          },
-        ]
-      : notifications
-  }
-  onClose={handleToggleNotifications}
-  onNotificationPress={(n) => {
-    handleToggleNotifications(); // close dropdown first
- 
-    const title: string = n.title || "";
-    const message: string = n.message || "";
- 
-    // ── Therapy / session notifications → navigate to the correct chat ──
-    if (
-      title.includes("Session Reminder") ||
-      title.includes("Session Starting") ||
-      title.includes("Session Booked") ||
-      title.includes("Session Starting Soon") ||
-      title.includes("Session Starting Now") ||
-      title.includes("Session Complete") ||
-      title.includes("Voice Session Complete")
-    ) {
-      // Extract session title from the notification message if present
-      // Message format: `Your Chat/Voice session "TITLE" ...`
-      const titleMatch = message.match(/"([^"]+)"/);
-      const sessionTitle = titleMatch ? titleMatch[1] : null;
- 
-      if (sessionTitle) {
-        fetchSessionAndNavigate(sessionTitle);
-      } else {
-        navigation.navigate("Therapy");
-      }
-      return;
-    }
- 
-    // ── Wellness notifications → Wellness Tracker ──
-    if (
-      title.includes("Hydration") ||
-      title.includes("Sleep") ||
-      title.includes("Mood Check") ||
-      title.includes("Meal") ||
-      title.includes("Wellness Log") ||
-      title.includes("Wellness Support")
-    ) {
-      navigation.navigate("WellnessTracker");
-      return;
-    }
- 
-    // ── Meditation / Journal notifications ──
+        {/* ── Notification Overlay (outside ScrollView so it never scrolls) ── */}
+        <NotificationOverlay
+          visible={showDropdown}
+          notifications={
+            notifications.length === 0
+              ? [
+                  {
+                    id: "welcome-back",
+                    title: "Welcome Back!",
+                    message:
+                      "We're glad to see you again. Check out your daily wellness goals.",
+                    read_status: 0,
+                  },
+                ]
+              : notifications
+          }
+          onClose={handleToggleNotifications}
+          onNotificationPress={(n) => {
+            handleToggleNotifications(); // close dropdown first
 
-    if (title.includes("Journal")) {
-  navigation.navigate("JournalScreen");
-  return;
-}
-    if (
-      title.includes("Mind Reset") ||
-      title.includes("Meditation") ||
-      title.includes("Breathing")
-    ) {
-      navigation.navigate("Meditation");
-      return;
-    }
- 
-    // ── Achievement notifications → Dashboard ──
-    if (title.includes("Achievement") || title.includes("Streak")) {
-      navigation.navigate("Dashboard");
-      return;
-    }
- 
-    // ── Health alert notifications → Health Monitoring screen ──
-    if (
-      title.includes("Heart Rate") ||
-      title.includes("SpO₂") ||
-      title.includes("Temperature") ||
-      title.includes("Stress Detected") ||
-      title.includes("Anxiety Alert")
-    ) {
-      // Navigate to therapy chat for immediate support on health alerts
-      navigation.navigate("Therapy");
-      return;
-    }
- 
-    // ── Motivation quotes → Home (already here) ──
-    if (title.includes("Motivation") || title.includes("Daily")) {
-      return; // stay on Home
-    }
- 
-    // ── Fallback ──
-    navigation.navigate("Therapy");
-  }}
-/>
+            const title: string = n.title || "";
+            const message: string = n.message || "";
+
+            // ── Therapy / session notifications → navigate to the correct chat ──
+            if (
+              title.includes("Session Reminder") ||
+              title.includes("Session Starting") ||
+              title.includes("Session Booked") ||
+              title.includes("Session Starting Soon") ||
+              title.includes("Session Starting Now") ||
+              title.includes("Session Complete") ||
+              title.includes("Voice Session Complete")
+            ) {
+              // Extract session title from the notification message if present
+              // Message format: `Your Chat/Voice session "TITLE" ...`
+              const titleMatch = message.match(/"([^"]+)"/);
+              const sessionTitle = titleMatch ? titleMatch[1] : null;
+
+              if (sessionTitle) {
+                fetchSessionAndNavigate(sessionTitle);
+              } else {
+                navigation.navigate("Therapy");
+              }
+              return;
+            }
+
+            // ── Wellness notifications → Wellness Tracker ──
+            if (
+              title.includes("Hydration") ||
+              title.includes("Sleep") ||
+              title.includes("Mood Check") ||
+              title.includes("Meal") ||
+              title.includes("Wellness Log") ||
+              title.includes("Wellness Support")
+            ) {
+              navigation.navigate("WellnessTracker");
+              return;
+            }
+
+            // ── Meditation / Journal notifications ──
+            if (title.includes("Journal")) {
+              navigation.navigate("JournalScreen");
+              return;
+            }
+            if (
+              title.includes("Mind Reset") ||
+              title.includes("Meditation") ||
+              title.includes("Breathing")
+            ) {
+              navigation.navigate("Meditation");
+              return;
+            }
+
+            // ── Achievement notifications → Dashboard ──
+            if (title.includes("Achievement") || title.includes("Streak")) {
+              navigation.navigate("Dashboard");
+              return;
+            }
+
+            // ── Health alert notifications → Health Monitoring screen ──
+            if (
+              title.includes("Heart Rate") ||
+              title.includes("SpO₂") ||
+              title.includes("Temperature") ||
+              title.includes("Stress Detected") ||
+              title.includes("Anxiety Alert")
+            ) {
+              // Navigate to therapy chat for immediate support on health alerts
+              navigation.navigate("Therapy");
+              return;
+            }
+
+            // ── Motivation quotes → Home (already here) ──
+            if (title.includes("Motivation") || title.includes("Daily")) {
+              return; // stay on Home
+            }
+
+            // ── Fallback ──
+            navigation.navigate("Therapy");
+          }}
+        />
         {/* 9. MiniPlayer */}
         {currentTrack && (
           <Animated.View
@@ -1069,9 +1108,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     borderTopWidth: 1,
     borderTopColor: "rgba(74,222,128,0.3)",
-    height: 170,borderLeftWidth: 1,borderRightWidth: 1,
+    height: 170, borderLeftWidth: 1, borderRightWidth: 1,
   },
-    miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, height: 170 },
+  miniPlayerInner: { backgroundColor: "rgba(0,26,17,0.95)", paddingHorizontal: 20, height: 170 },
   miniRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1263,12 +1302,11 @@ const styles = StyleSheet.create({
   },
 
   // Video Cards
-
   videoGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingBottom: 80 },
   videoCardHalf: { width: "48%", borderRadius: 12, overflow: "hidden", backgroundColor: "rgba(0,26,17,0.53)", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1, marginBottom: 14 },
   videoThumbWrap: { position: "relative" },
   videoThumbHalf: { width: "100%", height: 110, resizeMode: "cover" },
-  videoPlayBtn: { position: "absolute", top:0, left:0, right:0, bottom:0, alignItems: "center", justifyContent: "center" },
+  videoPlayBtn: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
   videoPlayCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,73,39,0.85)", alignItems: "center", justifyContent: "center", borderColor: "rgba(74,222,128,0.3)", borderWidth: 1 },
   videoLikeBtn: { position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
   videoDurBadge: { position: "absolute", bottom: 6, right: 6, backgroundColor: "rgba(0,0,0,0.7)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
@@ -1280,24 +1318,30 @@ const styles = StyleSheet.create({
   videoMetaRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginTop: 14 },
   videoMetaDur: { color: "#999", fontSize: 12, fontFamily: "Poppins_400Regular" },
   sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-    videoModal: { flex: 1, backgroundColor: "#060e0a" },
+  videoModal: { flex: 1, backgroundColor: "#060e0a" },
   videoModalTitle: { color: "#fff", fontSize: 14, fontFamily: "Poppins_500Medium", paddingHorizontal: 20, marginBottom: 16, lineHeight: 22 },
   videoPlayerWrap: { overflow: "hidden", backgroundColor: "#000" },
-connectBadge: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: 12,
-  paddingVertical: 6,
-  borderRadius: 20,
-   backgroundColor: "rgba(0, 26, 17, 0.53)",
-  borderWidth: 1,
-  borderColor: "rgba(74,222,128,0.30)",
-  marginBottom: 15
-},
-
-connectText: {
-  color: "#4ade80",
-  fontSize: 12,
-  fontFamily: "Poppins_400Regular",
-},
+  connectBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 26, 17, 0.53)",
+    borderWidth: 1,
+    borderColor: "rgba(74,222,128,0.30)",
+    marginBottom: 15
+  },
+  connectText: {
+    color: "#4ade80",
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+  },
+  audioErrorText: {
+    color: "#f87171",
+    fontSize: 11,
+    marginTop: -10,
+    marginBottom: 15,
+    fontFamily: "Poppins_400Regular",
+  },
 });

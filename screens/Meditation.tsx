@@ -900,24 +900,44 @@ function StroopTest({ addScore, onRecord }: {
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const feedbackTimeout = useRef<any>(null);
 
-  const answer = (word: string) => {
+  // const answer = (word: string) => {
+  //   if (!running) return;
+  //   clearTimeout(feedbackTimeout.current);
+  //   const ok = word === item.color;
+  //   setFeedback(ok ? "correct" : "wrong");
+  //   if (ok) {
+  //     const pts = 15 + streak * 5;
+  //     setScore(sc => {
+  //       const next = sc + pts;
+  //       onRecord(next);
+  //       return next;
+  //     });
+  //     setStreak(sc => sc + 1);
+  //     addScore("Stroop", pts);
+  //   } else { setStreak(0); }
+  //   feedbackTimeout.current = setTimeout(() => { setItem(generateStroop()); setFeedback(null); }, 500);
+  // };
+
+
+const answer = (word: string) => {
     if (!running) return;
     clearTimeout(feedbackTimeout.current);
     const ok = word === item.color;
     setFeedback(ok ? "correct" : "wrong");
     if (ok) {
       const pts = 15 + streak * 5;
-      setScore(sc => {
-        const next = sc + pts;
-        onRecord(next);
-        return next;
-      });
+      const next = score + pts;
+      setScore(next);
+      onRecord(next);
       setStreak(sc => sc + 1);
       addScore("Stroop", pts);
-    } else { setStreak(0); }
+    } else {
+      setStreak(0);
+    }
     feedbackTimeout.current = setTimeout(() => { setItem(generateStroop()); setFeedback(null); }, 500);
   };
-
+  
+  
   return (
     <View style={ex.wrap}>
       <Text style={s.titleText}>Color Match</Text>
@@ -1152,13 +1172,21 @@ function TapStar({ addScore, onRecord }: {
     return () => clearInterval(intervalRef.current);
   }, [running]);
 
-  const tapStar = (id: number) => {
+  // const tapStar = (id: number) => {
+  //   setStars(prev => prev.filter(s => s.id !== id));
+  //   setScore(sc => {
+  //     const next = sc + 10;
+  //     onRecord(next);
+  //     return next;
+  //   });
+  //   addScore("Tap Star", 10);
+  // };
+
+const tapStar = (id: number) => {
     setStars(prev => prev.filter(s => s.id !== id));
-    setScore(sc => {
-      const next = sc + 10;
-      onRecord(next);
-      return next;
-    });
+    const next = score + 10;
+    setScore(next);
+    onRecord(next);
     addScore("Tap Star", 10);
   };
 

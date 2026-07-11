@@ -14,7 +14,7 @@ export const CircleChart = ({ value }: { value: number }) => {
     <View style={{ justifyContent: "center", alignItems: "center" }}>
       <Svg width={size} height={size}>
         <Circle
-          stroke="#4ade80"
+          stroke="#fff"
           fill="none"
           cx={size / 2}
           cy={size / 2}
@@ -23,7 +23,7 @@ export const CircleChart = ({ value }: { value: number }) => {
         />
 
         <Circle
-          stroke="#4ade80"
+          stroke="#004927"
           fill="none"
           cx={size / 2}
           cy={size / 2}

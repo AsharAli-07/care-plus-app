@@ -51,14 +51,10 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     borderWidth: 1,
     borderColor: "rgba(74,222,128,0.3)",
-    backgroundColor: "rgba(0, 26, 17, 0.53)",
+    backgroundColor: 'rgba(0, 26, 17, 0.50)',
     overflow: "hidden",
 
-    shadowColor: "#004927",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    elevation: 6,
+
   },
 
   chartBox: {

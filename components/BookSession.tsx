@@ -55,6 +55,13 @@ const TIMES = [
   "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM",
 ];
 
+const toLocalISODate = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 const getNext7Days = () => {
   const days = [];
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -65,7 +72,7 @@ const getNext7Days = () => {
     days.push({
       label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : dayNames[d.getDay()],
       full: `${d.getDate()} ${monthNames[d.getMonth()]}`,
-      value: d.toISOString().split("T")[0],
+      value: toLocalISODate(d), // was: d.toISOString().split("T")[0]
     });
   }
   return days;
@@ -507,9 +514,8 @@ const styles = StyleSheet.create({
     borderRadius: 16, overflow: "hidden",
     padding: 16, marginBottom: 16,
      borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
- backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, 
+   backgroundColor: 'rgba(0, 26, 17, 0.50)',
+ 
   },
   seraAvatarWrap: {
     width: 44, height: 44, borderRadius: 22,
@@ -534,9 +540,7 @@ const styles = StyleSheet.create({
   // Session type cards
   typeCardTouch: { marginBottom: 12, borderRadius: 16, overflow: "hidden" },
   typeCard: { padding: 15, borderRadius: 16,     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
- backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,  },
+    backgroundColor: 'rgba(0, 26, 17, 0.50)', },
 
     
   typeIconWrap: {
@@ -550,9 +554,7 @@ const styles = StyleSheet.create({
     width: 50, height: 50, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
         borderColor: "rgba(74, 205, 222, 0.3)",  borderWidth: 1,
- backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6, 
+   backgroundColor: 'rgba(0, 26, 17, 0.50)',
   },
   typeLabel: { color: "#bbb", fontFamily: "Poppins_500Medium", fontSize: 14, marginBottom: 3 },
   typeDesc: { color: "#666", fontFamily: "Poppins_400Regular", fontSize: 11, marginBottom: 8 },
@@ -601,9 +603,7 @@ const styles = StyleSheet.create({
     borderRadius: 14, overflow: "hidden",
     borderWidth: 1, borderColor: "rgba(74,222,128,0.15)",
     padding: 14,
-    backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    backgroundColor: 'rgba(0, 26, 17, 0.50)',
     marginBottom: 10
   },
   notesInput: {
@@ -617,9 +617,7 @@ const styles = StyleSheet.create({
     borderRadius: 18, overflow: "hidden",
     padding: 18, borderWidth: 1,
     borderColor: "rgba(74,222,128,0.3)", marginBottom: 14,
-     backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+   backgroundColor: 'rgba(0, 26, 17, 0.50)',
 
   },
   confirmHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
@@ -641,9 +639,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "flex-start", gap: 10,
     padding: 13, borderRadius: 13, overflow: "hidden",
     borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
- backgroundColor: "rgba(0, 26, 17, 0.53)",
-  shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+    backgroundColor: 'rgba(0, 26, 17, 0.50)',
   },
   noticeText: { color: "#999", fontFamily: "Poppins_400Regular", fontSize: 11, flex: 1, lineHeight: 17 },
 
@@ -655,7 +651,8 @@ const styles = StyleSheet.create({
     justifyContent: "center", gap: 10,
     alignSelf: "center",
    position: 'absolute',
-   bottom: 40,
+   bottom: 50,
+   paddingVertical: 12,
 
 
  
@@ -670,8 +667,7 @@ const styles = StyleSheet.create({
   width: "88%",
 
    borderColor: "rgba(74,222,128,0.3)",  borderWidth: 1,
-       shadowColor: "#004927", shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.55, shadowRadius: 14, elevation: 6,
+     
   },
   ctaBtnText: { color: "#ffffffff", fontFamily: "Poppins_400Regular", fontSize: 12 },
 });
