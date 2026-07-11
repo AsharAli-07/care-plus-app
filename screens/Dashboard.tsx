@@ -333,11 +333,12 @@ const Dashboard = ({ navigation }: any) => {
   const [localMoodEmoji, setLocalMoodEmoji] = useState<string | null>(null);
   const [localMoodText,  setLocalMoodText]  = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  
 
   const { isConnected, watchData } = useBLEContext();
 
   const [lastVitals, setLastVitals] = useState<any>(null);
-
+const riskInfo = lastVitals?.risk ?? null;
   const loadLastVitals = async () => {
     try {
       const t = await AsyncStorage.getItem("token");
@@ -355,6 +356,8 @@ const Dashboard = ({ navigation }: any) => {
     const interval = setInterval(loadLastVitals, 30000);
     return () => clearInterval(interval);
   }, []);
+
+
 
   const isLive = isConnected && watchData?.heartRate !== "--" && watchData?.heartRate != null;
 
@@ -414,16 +417,26 @@ const Dashboard = ({ navigation }: any) => {
 
   useFocusEffect(useCallback(() => { loadDashboard(); }, [loadDashboard]));
 
-  const handleMoodPress = async (item: string | null) => {
-    if (!item) { setLocalMoodEmoji(null); setLocalMoodText(null); return; }
-    setLocalMoodEmoji(item);
-    setLocalMoodText(moodMap[item]);
-    try {
-      await axios.post(`${BASE_URL}/mood`, { mood_emoji: item }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch (err) { console.log(err); }
-  };
+  // const handleMoodPress = async (item: string | null) => {
+  //   if (!item) { setLocalMoodEmoji(null); setLocalMoodText(null); return; }
+  //   setLocalMoodEmoji(item);
+  //   setLocalMoodText(moodMap[item]);
+  //   try {
+  //     await axios.post(`${BASE_URL}/mood`, { mood_emoji: item }, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //   } catch (err) { console.log(err); }
+  // };
+
+  useEffect(() => {
+  loadDashboard();
+}, []);
+
+useFocusEffect(
+  useCallback(() => {
+    loadDashboard();
+  }, [])
+);
 
   if (loading) {
     return (
@@ -467,15 +480,16 @@ const Dashboard = ({ navigation }: any) => {
 
           {/* Vital Signs */}
           <SectionHeader label="Vital Signs" icon="heart-outline" color="#4ade80" />
-          <VitalSigns
-            isConnected={isConnected}
-            heartRate={displayHeartRate}
-            spo2={displaySpo2}
-            temperature={displayTemp}
-            sensorSource={sensorSource}
-            lastUpdatedAt={lastUpdatedAt}
-            onConnect={() => navigation.navigate('ConnectWatch')}
-          />
+     <VitalSigns
+       isConnected={isConnected}
+       heartRate={displayHeartRate}
+       spo2={displaySpo2}
+       temperature={displayTemp}
+       sensorSource={sensorSource}
+       lastUpdatedAt={lastUpdatedAt}
+       risk={riskInfo}
+       onConnect={() => navigation.navigate("ConnectWatch")}
+     />
 
           {/* Body Wellness */}
           <SectionHeader label="Body Wellness" icon="nutrition-outline" color="#4ade80" />

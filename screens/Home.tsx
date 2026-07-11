@@ -54,6 +54,34 @@ const sh = StyleSheet.create({
   txt: { fontSize: 16, fontFamily: "Poppins_500Medium" },
 });
 
+const RiskBadge = ({ category, probability }: { category: string; probability: number }) => {
+  const isHigh = category === "High Risk";
+  const colors = isHigh
+    ? { text: "#ff6b6b", bg: "rgba(255,107,107,0.10)", border: "rgba(255,107,107,0.3)" }
+    : { text: "#4ade80", bg: "rgba(74,222,128,0.10)", border: "rgba(74,222,128,0.3)" };
+
+  return (
+    <View style={{
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      alignSelf: "flex-start",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      marginBottom: 15,
+      backgroundColor: colors.bg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    }}>
+      <Ionicons name={isHigh ? "alert-circle" : "checkmark-circle"} size={14} color={colors.text} />
+      <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: colors.text }}>
+        {category} · {Math.round(probability * 100)}% confidence
+      </Text>
+    </View>
+  );
+};
+
 
 type SleepItem = { thumbnail: string; title: string; audioUrl: string };
 type AudioItem = {
@@ -234,12 +262,12 @@ useFocusEffect(
 
   useEffect(() => {
     loadLastVitals();
-    const interval = setInterval(loadLastVitals, 30000); // backup refresh while disconnected
+    const interval = setInterval(loadLastVitals, 3000); // backup refresh while disconnected
     return () => clearInterval(interval);
   }, []);
 
   const isLive = isConnected && watchData.heartRate !== "--";
-
+const riskInfo = lastVitals?.risk ?? null; // { probability, category } | null
   const displayHeartRate = isLive
     ? watchData.heartRate
     : lastVitals?.heart_rate_bpm != null
@@ -265,7 +293,11 @@ useFocusEffect(
     : null;
 
   const lastUpdatedAt = lastVitals?.updated_at ?? null;
-
+useEffect(() => {
+  loadLastVitals();
+  const interval = setInterval(loadLastVitals, 10000); // was 30000
+  return () => clearInterval(interval);
+}, []);
   const foodPct = Math.min(100, Math.round(((wellness?.meals_count ?? 0) / 3) * 100));
   const sleepPct = Math.min(100, Math.round(((wellness?.sleep_hours ?? 0) / 9) * 100));
   const hydrationPct = Math.min(100, Math.round(((wellness?.water_intake ?? 0) / 3) * 100));
@@ -300,11 +332,11 @@ useFocusEffect(
     setMeals({ breakfast: mc >= 1, lunch: mc >= 2, dinner: mc >= 3 });
   }, [wellness]);
 
-useEffect(() => {
-  AsyncStorage.getItem("token").then(token => {
-    console.log("MY TOKEN:", token);
-  });
-}, []);
+// useEffect(() => {
+//   AsyncStorage.getItem("token").then(token => {
+//     console.log("MY TOKEN:", token);
+//   });
+// }, []);
 
   const handleToggleSection = (index: number) => {
     const isOpen = openIndex === index;
@@ -698,15 +730,17 @@ const checkInSections: CheckInSection[] = [
                 </Text>
               </TouchableOpacity>
             </View>
-            <VitalSigns
-              isConnected={isConnected}
-              heartRate={displayHeartRate}
-              spo2={displaySpo2}
-              temperature={displayTemp}
-              sensorSource={sensorSource}
-              lastUpdatedAt={lastUpdatedAt}
-              onConnect={() => navigation.navigate("ConnectWatch")}
-            />
+<VitalSigns
+  isConnected={isConnected}
+  heartRate={displayHeartRate}
+  spo2={displaySpo2}
+  temperature={displayTemp}
+  sensorSource={sensorSource}
+  lastUpdatedAt={lastUpdatedAt}
+  risk={riskInfo}
+  onConnect={() => navigation.navigate("ConnectWatch")}
+/>
+
 
             {/* 4. Body's Needs — Food / Sleep / Hydration */}
             <SectionHeader label="Body's Needs" icon="nutrition-outline" color="#4ade80" />
@@ -1345,3 +1379,4 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
   },
 });
+

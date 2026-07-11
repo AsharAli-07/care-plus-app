@@ -137,6 +137,13 @@ const WellnessTracker = ({ navigation }: any) => {
     loadTodayData();
   }, []);
 
+
+useFocusEffect(
+  useCallback(() => {
+    loadTodayData();
+  }, [])
+);
+
 const loadTodayData = async () => {
   try {
     setLoading(true);
