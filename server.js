@@ -14,7 +14,7 @@ const FormData   = require("form-data");
 const { predictRisk } = require("./ml/predictRisk");
 
 
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+// const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 const OPENAI_API_KEY  = process.env.OPENAI_API_KEY;
 
 const app = express();
@@ -185,21 +185,25 @@ async function initDB() {
         exchange_count INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`,
-      `CREATE TABLE IF NOT EXISTS health_monitoring (
+`CREATE TABLE IF NOT EXISTS health_monitoring (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT,
   heart_rate_bpm INT NOT NULL,
-  temperature_fahrenheit DECIMAL(4,2) NOT NULL,
+  temperature_fahrenheit DECIMAL(5,2) NOT NULL,
   blood_oxygen_percent INT NOT NULL,
   movement ENUM('still','moving','fall') NOT NULL DEFAULT 'still',
+  risk_category VARCHAR(20) NULL,
+  risk_probability DECIMAL(5,3) NULL,
   recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`,
 `CREATE TABLE IF NOT EXISTS health_monitoring_live (
   user_id INT PRIMARY KEY,
   heart_rate_bpm INT NOT NULL,
-  temperature_fahrenheit DECIMAL(4,2) NOT NULL,
+  temperature_fahrenheit DECIMAL(5,2) NOT NULL,
   blood_oxygen_percent INT NOT NULL,
   movement ENUM('still','moving','fall') NOT NULL DEFAULT 'still',
+  risk_category VARCHAR(20) NULL,
+  risk_probability DECIMAL(5,3) NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )`,
     ];
@@ -1104,15 +1108,121 @@ async function updateUserStreak(userId) {
   }
 }
 
-function generateRecommendations(data) {
+// function generateRecommendations(data) {
+//   const rec = [];
+//   if ((data.sleep_hours || 0) < 7)   rec.push("Try to sleep at least 7–8 hours for better recovery.");
+//   if ((data.water_intake || 0) < 2)  rec.push("Increase water intake to 2–3 liters daily.");
+//   if ((data.stress_level || 0) > 6)  rec.push("Try breathing exercises or short walks to reduce stress.");
+//   if ((data.energy_level || 0) < 5)  rec.push("Low energy detected — improve sleep and nutrition.");
+//   if ((data.anxiety_level || 0) > 6) rec.push("High anxiety — consider a session with Sera for grounding techniques.");
+//   if (rec.length === 0) rec.push("Great job! Keep maintaining your healthy routine.");
+//   return rec;
+// }
+
+const VITALS_STALE_MS = 2 * 60 * 60 * 1000; // 2 hours
+ 
+function computeVitalsScore(vitals) {
+  if (!vitals) return { score: null, flags: [] };
+ 
+  if (vitals.updated_at) {
+    const age = Date.now() - new Date(vitals.updated_at).getTime();
+    if (age > VITALS_STALE_MS) return { score: null, flags: [] };
+  }
+ 
+  let score = 100;
+  const flags = [];
+  const { heart_rate_bpm: hr, blood_oxygen_percent: spo2, temperature_fahrenheit: temp, movement, risk_category, risk_probability } = vitals;
+ 
+  if (hr != null) {
+    if (hr > 130) { score -= 30; flags.push("Very high heart rate"); }
+    else if (hr > 120) { score -= 20; flags.push("High heart rate"); }
+    else if (hr > 100) { score -= 10; flags.push("Elevated heart rate"); }
+    else if (hr < 50) { score -= 20; flags.push("Low heart rate"); }
+  }
+ 
+  if (spo2 != null) {
+    if (spo2 < 90) { score -= 35; flags.push("Critically low oxygen"); }
+    else if (spo2 < 94) { score -= 20; flags.push("Low blood oxygen"); }
+    else if (spo2 < 96) { score -= 8; flags.push("Slightly low oxygen"); }
+  }
+ 
+  if (temp != null) {
+    if (temp > 103) { score -= 25; flags.push("High fever"); }
+    else if (temp > 101) { score -= 15; flags.push("Fever"); }
+    else if (temp > 99.5) { score -= 5; flags.push("Slightly elevated temperature"); }
+  }
+ 
+  if (movement === "fall") { score -= 40; flags.push("Fall detected"); }
+ 
+  if (risk_category === "High Risk") {
+    score -= Math.round(20 * (parseFloat(risk_probability) || 0.7));
+    flags.push("AI model flags elevated risk");
+  } else if (risk_category === "Moderate Risk") {
+    score -= Math.round(10 * (parseFloat(risk_probability) || 0.5));
+    flags.push("AI model flags moderate risk");
+  }
+ 
+  score = Math.max(0, Math.min(100, score));
+  return { score, flags };
+}
+ 
+// ─── MOOD SCORING ────────────────────────────────────────────────────
+function computeMoodScore(mood) {
+  if (!mood) return null;
+  const map = { "😄": 100, "🙂": 85, "😐": 65, "😕": 40, "😔": 20 };
+  return map[mood.mood_emoji] ?? 65;
+}
+ 
+// ─── WEIGHTED BLEND ──────────────────────────────────────────────────
+// Weights only apply to components that are actually present; missing
+// components are excluded and the rest are renormalized, so a user with
+// no watch connected isn't penalized for a vitalsScore that doesn't exist.
+const SCORE_WEIGHTS = { activity: 0.5, vitals: 0.35, mood: 0.15 };
+ 
+function blendScores({ activityScore, vitalsScore, moodScore }) {
+  const parts = [{ key: "activity", score: activityScore, weight: SCORE_WEIGHTS.activity }];
+  if (vitalsScore != null) parts.push({ key: "vitals", score: vitalsScore, weight: SCORE_WEIGHTS.vitals });
+  if (moodScore != null) parts.push({ key: "mood", score: moodScore, weight: SCORE_WEIGHTS.mood });
+ 
+  const totalWeight = parts.reduce((s, p) => s + p.weight, 0);
+  const overall = totalWeight > 0
+    ? Math.round(parts.reduce((s, p) => s + p.score * p.weight, 0) / totalWeight)
+    : activityScore;
+ 
+  return Math.max(0, Math.min(100, overall));
+}
+ 
+// ─── AI INSIGHTS ─────────────────────────────────────────────────────
+// Vitals-driven safety flags surface first (highest signal), then
+// habit-based recommendations, then mood-based support. Capped so the
+// dashboard doesn't get flooded.
+function generateRecommendations(data, vitalsFlags = [], moodEmoji = null) {
   const rec = [];
-  if ((data.sleep_hours || 0) < 7)   rec.push("Try to sleep at least 7–8 hours for better recovery.");
-  if ((data.water_intake || 0) < 2)  rec.push("Increase water intake to 2–3 liters daily.");
-  if ((data.stress_level || 0) > 6)  rec.push("Try breathing exercises or short walks to reduce stress.");
-  if ((data.energy_level || 0) < 5)  rec.push("Low energy detected — improve sleep and nutrition.");
+ 
+  const flagMessages = {
+    "Fall detected": "⚠️ A fall was detected by your sensor. If you're hurt or unsure, reach out to a trusted contact or emergency services right away.",
+    "Critically low oxygen": "🩺 Your blood oxygen reading is critically low. Please seek medical attention as soon as possible.",
+    "Low blood oxygen": "🩺 Your blood oxygen is lower than normal. Keep an eye on it and rest.",
+    "Very high heart rate": "❤️ Your heart rate is very elevated. Sit down, breathe slowly, and avoid exertion.",
+    "High heart rate": "❤️ Your heart rate is higher than usual. Try slow breathing for a few minutes.",
+    "High fever": "🌡️ Your temperature is significantly elevated. Rest, hydrate, and consider medical advice.",
+    "Fever": "🌡️ You're running a slight fever. Rest and stay hydrated.",
+    "AI model flags elevated risk": "💙 Your recent vitals pattern suggests elevated risk. Consider checking in with Sera or a healthcare provider.",
+  };
+  vitalsFlags.forEach((f) => { if (flagMessages[f]) rec.push(flagMessages[f]); });
+ 
+  if ((data.sleep_hours || 0) < 7) rec.push("Try to sleep at least 7–8 hours for better recovery.");
+  if ((data.water_intake || 0) < 2) rec.push("Increase water intake to 2–3 liters daily.");
+  if ((data.stress_level || 0) > 6) rec.push("Try breathing exercises or short walks to reduce stress.");
+  if ((data.energy_level || 0) < 5) rec.push("Low energy detected — improve sleep and nutrition.");
   if ((data.anxiety_level || 0) > 6) rec.push("High anxiety — consider a session with Sera for grounding techniques.");
+ 
+  if (moodEmoji === "😔" || moodEmoji === "😕") {
+    rec.push("It looks like today's been emotionally tough. Sera is here anytime you want to talk.");
+  }
+ 
   if (rec.length === 0) rec.push("Great job! Keep maintaining your healthy routine.");
-  return rec;
+  return rec.slice(0, 6);
 }
 
 // =====================
@@ -1158,6 +1268,84 @@ app.get("/moods/latest", authMiddleware, async (req, res) => {
   }
 });
 
+// app.get("/wellness-dashboard", authMiddleware, async (req, res) => {
+//   const userId = req.userId;
+//   try {
+//     const [logs]         = await db.execute("SELECT * FROM wellness_logs WHERE user_id=? AND log_date=CURDATE() LIMIT 1", [userId]);
+//     const [mood]         = await db.execute("SELECT mood_emoji, mood_text FROM moods WHERE user_id=? AND DATE(created_at)=CURDATE() ORDER BY created_at DESC LIMIT 1", [userId]);
+//     const [streak]       = await db.execute("SELECT current_streak, longest_streak FROM wellness_streaks WHERE user_id=? LIMIT 1", [userId]);
+//     const [achievements] = await db.execute("SELECT id, title, description, unlocked_at FROM achievements WHERE user_id=? ORDER BY unlocked_at DESC", [userId]);
+
+//     const log = logs[0] || { score:0, sleep_hours:0, water_intake:0, meals_count:0,
+//                              meditation_minutes:0, stress_level:0, anxiety_level:0, energy_level:0 };
+
+//     res.json({
+//       ...log,
+//       mood: mood.length > 0 ? { emoji: mood[0].mood_emoji, text: mood[0].mood_text } : null,
+//       streaks: { current: streak[0]?.current_streak || 0, longest: streak[0]?.longest_streak || 0 },
+//       achievements: achievements || [],
+//       recommendations: generateRecommendations(log),
+//     });
+//   } catch (err) {
+//     console.log(err);
+//     res.status(500).json({ error: "Dashboard error" });
+//   }
+// });
+
+
+// app.get("/wellness-dashboard", authMiddleware, async (req, res) => {
+//   const userId = req.userId;
+//   try {
+//     const [logs]         = await db.execute("SELECT * FROM wellness_logs WHERE user_id=? AND log_date=CURDATE() LIMIT 1", [userId]);
+//     const [mood]         = await db.execute("SELECT mood_emoji, mood_text FROM moods WHERE user_id=? AND DATE(created_at)=CURDATE() ORDER BY created_at DESC LIMIT 1", [userId]);
+//     const [streak]       = await db.execute("SELECT current_streak, longest_streak FROM wellness_streaks WHERE user_id=? LIMIT 1", [userId]);
+//     const [achievements] = await db.execute("SELECT id, title, description, unlocked_at FROM achievements WHERE user_id=? ORDER BY unlocked_at DESC", [userId]);
+//     const [vitalsRows]   = await db.execute(
+//       "SELECT heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, risk_category, risk_probability FROM health_monitoring_live WHERE user_id=?",
+//       [userId]
+//     );
+
+//     const log    = logs[0]   || { score:0, sleep_hours:0, water_intake:0, meals_count:0,
+//                                    meditation_minutes:0, stress_level:0, anxiety_level:0, energy_level:0 };
+//     const vitals = vitalsRows[0] || null;
+
+//     // Live composite: start from the logged-habits score, subtract for
+//     // elevated risk vitals and low mood, so the ring reflects the whole picture.
+//     let overallScore = log.score ?? 0;
+
+//     if (vitals) {
+//       if (vitals.risk_category === "High Risk") {
+//         overallScore -= Math.round(30 * (vitals.risk_probability ?? 0.7));
+//       } else if (vitals.risk_category === "Moderate Risk") {
+//         overallScore -= Math.round(15 * (vitals.risk_probability ?? 0.5));
+//       }
+//       if (vitals.heart_rate_bpm > 120)        overallScore -= 10;
+//       if (vitals.blood_oxygen_percent < 94)   overallScore -= 15;
+//       if (vitals.temperature_fahrenheit > 101) overallScore -= 10;
+//     }
+
+//     const moodPenalty = { "😔": 10, "😕": 5 };
+//     if (mood[0]?.mood_emoji && moodPenalty[mood[0].mood_emoji]) {
+//       overallScore -= moodPenalty[mood[0].mood_emoji];
+//     }
+
+//     overallScore = Math.max(0, Math.min(100, overallScore));
+
+//     res.json({
+//       ...log,
+//       score: overallScore,
+//       activityScore: log.score,   // keep the raw habits number too, in case the UI wants to show both
+//       mood: mood.length > 0 ? { emoji: mood[0].mood_emoji, text: mood[0].mood_text } : null,
+//       streaks: { current: streak[0]?.current_streak || 0, longest: streak[0]?.longest_streak || 0 },
+//       achievements: achievements || [],
+//       recommendations: generateRecommendations(log),
+//     });
+//   } catch (err) {
+//     console.log(err);
+//     res.status(500).json({ error: "Dashboard error" });
+//   }
+// });
+
 app.get("/wellness-dashboard", authMiddleware, async (req, res) => {
   const userId = req.userId;
   try {
@@ -1165,22 +1353,49 @@ app.get("/wellness-dashboard", authMiddleware, async (req, res) => {
     const [mood]         = await db.execute("SELECT mood_emoji, mood_text FROM moods WHERE user_id=? AND DATE(created_at)=CURDATE() ORDER BY created_at DESC LIMIT 1", [userId]);
     const [streak]       = await db.execute("SELECT current_streak, longest_streak FROM wellness_streaks WHERE user_id=? LIMIT 1", [userId]);
     const [achievements] = await db.execute("SELECT id, title, description, unlocked_at FROM achievements WHERE user_id=? ORDER BY unlocked_at DESC", [userId]);
-
-    const log = logs[0] || { score:0, sleep_hours:0, water_intake:0, meals_count:0,
-                             meditation_minutes:0, stress_level:0, anxiety_level:0, energy_level:0 };
-
+    const [vitalsRows]   = await db.execute(
+      "SELECT heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, movement, risk_category, risk_probability, updated_at FROM health_monitoring_live WHERE user_id=?",
+      [userId]
+    );
+ 
+    const log    = logs[0]   || { score: 0, sleep_hours: 0, water_intake: 0, meals_count: 0,
+                                   meditation_minutes: 0, stress_level: 0, anxiety_level: 0, energy_level: 0 };
+    const vitals = vitalsRows[0] || null;
+    const todayMood = mood[0] || null;
+ 
+    const activityScore = log.score ?? 0;
+    const { score: vitalsScore, flags: vitalsFlags } = computeVitalsScore(vitals);
+    const moodScore = computeMoodScore(todayMood);
+ 
+    const overallScore = blendScores({ activityScore, vitalsScore, moodScore });
+ 
     res.json({
       ...log,
-      mood: mood.length > 0 ? { emoji: mood[0].mood_emoji, text: mood[0].mood_text } : null,
+      score: overallScore,          // overall blended score — what the ring should show
+      activityScore,                 // raw habits-only score (kept for anyone relying on old behavior)
+      vitalsScore,                   // null if no live/fresh vitals
+      moodScore,                     // null if no mood logged today
+      vitals: vitals ? {
+        heart_rate_bpm: vitals.heart_rate_bpm,
+        blood_oxygen_percent: vitals.blood_oxygen_percent,
+        temperature_fahrenheit: vitals.temperature_fahrenheit,
+        movement: vitals.movement,
+        risk: vitals.risk_category ? { category: vitals.risk_category, probability: parseFloat(vitals.risk_probability) } : null,
+        updated_at: vitals.updated_at,
+      } : null,
+      vitalsFlags,
+      mood: todayMood ? { emoji: todayMood.mood_emoji, text: todayMood.mood_text } : null,
       streaks: { current: streak[0]?.current_streak || 0, longest: streak[0]?.longest_streak || 0 },
       achievements: achievements || [],
-      recommendations: generateRecommendations(log),
+      recommendations: generateRecommendations(log, vitalsFlags, todayMood?.mood_emoji || null),
     });
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Dashboard error" });
   }
 });
+
+
 
 app.get("/dashboard/:userId", async (req, res) => {
   const userId = req.params.userId;
@@ -1279,13 +1494,17 @@ app.get("/logs/:userId", async (req, res) => {
 app.get("/health-monitoring-live", authMiddleware, async (req, res) => {
   try {
     const [rows] = await db.execute(
-      "SELECT heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, movement, updated_at FROM health_monitoring_live WHERE user_id = ?",
+      "SELECT heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, movement, risk_category, risk_probability, updated_at FROM health_monitoring_live WHERE user_id = ?",
       [req.userId]
     );
     const latest = rows[0] || null;
 
     if (latest) {
-      latest.risk = predictRisk(latest.heart_rate_bpm, latest.blood_oxygen_percent, latest.temperature_fahrenheit);
+      latest.risk = latest.risk_category
+        ? { category: latest.risk_category, probability: parseFloat(latest.risk_probability) }
+        : null;
+      delete latest.risk_category;
+      delete latest.risk_probability;
     }
 
     res.json(latest);
@@ -1301,21 +1520,22 @@ app.post("/health-monitoring", authMiddleware, async (req, res) => {
   const safeMovement = validMovements.includes(movement) ? movement : "still";
 
   try {
+    const risk = predictRisk(heart_rate_bpm, blood_oxygen_percent, temperature_fahrenheit);
+
     // Every ~10s call REPLACES this user's single live row
     await db.execute(
       `INSERT INTO health_monitoring_live
-        (user_id, heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, movement)
-       VALUES (?, ?, ?, ?, ?)
+        (user_id, heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, movement, risk_category, risk_probability)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          heart_rate_bpm = VALUES(heart_rate_bpm),
          temperature_fahrenheit = VALUES(temperature_fahrenheit),
          blood_oxygen_percent = VALUES(blood_oxygen_percent),
-         movement = VALUES(movement)`,
-      [req.userId, heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, safeMovement]
+         movement = VALUES(movement),
+         risk_category = VALUES(risk_category),
+         risk_probability = VALUES(risk_probability)`,
+      [req.userId, heart_rate_bpm, temperature_fahrenheit, blood_oxygen_percent, safeMovement, risk.category, risk.probability]
     );
-
-    // ── ML risk prediction ──
-    const risk = predictRisk(heart_rate_bpm, blood_oxygen_percent, temperature_fahrenheit);
 
     if (risk.category === "High Risk" && risk.probability >= 0.7) {
       await createInAppNotification(
@@ -1636,23 +1856,23 @@ const BASE_PERSONA_PROMPT = `You are Sera, a compassionate AI mental wellness co
 Make every user feel heard, safe, and a little lighter after talking to you.`;
 
 // ─── Mistral — kept for backwards compatibility but no longer primary ──────
-async function callMistral(systemPrompt, messages, maxTokens = 600) {
-  const response = await axios.post(
-    "https://api.mistral.ai/v1/chat/completions",
-    {
-      model: "mistral-large-latest",
-      max_tokens: maxTokens,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${MISTRAL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  return response.data?.choices?.[0]?.message?.content;
-}
+// async function callMistral(systemPrompt, messages, maxTokens = 600) {
+//   const response = await axios.post(
+//     "https://api.mistral.ai/v1/chat/completions",
+//     {
+//       model: "mistral-large-latest",
+//       max_tokens: maxTokens,
+//       messages: [{ role: "system", content: systemPrompt }, ...messages],
+//     },
+//     {
+//       headers: {
+//         Authorization: `Bearer ${MISTRAL_API_KEY}`,
+//         "Content-Type": "application/json",
+//       },
+//     }
+//   );
+//   return response.data?.choices?.[0]?.message?.content;
+// }
 
 // ─── OpenAI — used for voice's text-reply step (spoken by expo-speech) ─────
 async function callOpenAI(systemPrompt, messages, maxTokens = 300) {
